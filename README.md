@@ -19,6 +19,9 @@ Mimari: tek dosya web uygulaması (index.html, PWA) + Supabase (giriş, veri tab
    `ogrenciler.txt` her satırda bir "Ad Soyad" içerir. Script her öğrenciye kullanıcı adı ve 6 haneli PIN üretir, `giris-bilgileri.csv` dosyasına yazar.
 6. **Yayınla:** Klasörü Netlify'a sürükle-bırak (zaten sende kurulu yöntem). Öğrenciler adresi açıp "Ana ekrana ekle" yapar.
 
+## Yapay zekâ modülü
+Deneme görseli okuma, gelişim analizi ve konu önceliklendirme için `README-AI.md` dosyasına bak.
+
 ## Rol ve güvenlik
 - Öğrenci yalnızca kendi verisini okur/yazar, kendi hedefini ve koç notunu görür.
 - Koç tüm öğrencileri canlı görür, hedef/not/deneme girer.

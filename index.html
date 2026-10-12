@@ -146,7 +146,7 @@ function studentView(){
   <button class="chip" data-a="prog" aria-pressed="${S.prog}">✅ Programımı bitirdim</button>
   ${st!=="closed"?`<button class="chip" data-a="close">🌙 Günü kapat</button>`:""}</div>
   ${st==="closed"?`<div class="row"><label>Bugün nasıldı?</label><div class="mood">${[1,2,3,4,5].map(i=>`<button class="chip" data-m="${i}" aria-pressed="${S.mood===i}">${i}</button>`).join("")}</div></div>`:""}</div>`:""}
-  <div class="card"><h2>Bugünün akışı</h2>${S.log.length?`<ul class="tl">${S.log.slice().reverse().map(l=>`<li><time>${hm(l.t)}</time>${esc(l.m)}</li>`).join("")}</ul>`:`<p class="empty">Güne “Uyandım” butonuyla başla.</p>`}</div>`;
+  ${examCard()}<div class="card"><h2>Bugünün akışı</h2>${S.log.length?`<ul class="tl">${S.log.slice().reverse().map(l=>`<li><time>${hm(l.t)}</time>${esc(l.m)}</li>`).join("")}</ul>`:`<p class="empty">Güne “Uyandım” butonuyla başla.</p>`}</div>`;
 }
 const clk=m=>String(Math.floor(m/60)%24).padStart(2,"0")+":"+String(m%60).padStart(2,"0");
 const num=v=>Number(v)||0;
@@ -218,7 +218,7 @@ function denemeCard(x){
 }
 function thCard(){
   const t=C.th,i=(id,l,v,mn,mx)=>`<label>${l}<input id="${id}" type="number" min="${mn}" max="${mx}" value="${v}" inputmode="numeric"></label>`;
-  return `<details class="card"><summary style="cursor:pointer;font-weight:700">⚙️ Uyarı eşikleri</summary><div class="row">${i("th1","Kayıtsız gün",t.gap,1,5)}${i("th2","Süre düşüşü (%)",t.drop,10,95)}${i("th3","Düşük puan ≤",t.mood,1,4)}${i("th4","Uyku (sa) altı",t.sleep,3,9)}<button class="btn" style="padding:11px 16px" id="savth">Kaydet</button></div></details>`;
+  return `<details class="card"><summary style="cursor:pointer;font-weight:700">⚙️ Uyarı eşikleri</summary><div class="row">${i("th1","Kayıtsız gün",t.gap,1,5)}${i("th2","Süre düşüşü (%)",t.drop,10,95)}${i("th3","Düşük puan ≤",t.mood,1,4)}${i("th4","Uyku (sa) altı",t.sleep,3,9)}<button class="btn" style="padding:11px 16px" id="savth">Kaydet</button></div><div class="row"><button class="chip" id="aiping">Yapay zekâ bağlantısını test et</button></div><p class="empty" id="aipo" style="font-size:13px;margin:6px 0 0"></p></details>`;
 }
 function parentCard(x){
   const h=x.hist,n=h.length,sum=k=>h.reduce((a,d)=>a+(d[k]||0),0),am=Math.round(sum("m")/n),sl=h.filter(d=>d.sleep>0),note=(C.notes[x.id]||[]).slice(-1)[0];
@@ -295,7 +295,7 @@ function detailView(){
   <div class="big" style="font-size:34px">${x.n}</div>
   <div class="sub">Net çalışma: ${Math.floor(x.m/60)} sa ${x.m%60} dk</div></section>
   <div class="stats"><div class="stat"><b>${sn}</b><span>çözülen soru</span></div><div class="stat"><b>${sn?"%"+acc:"–"}</b><span>doğruluk</span></div><div class="stat"><b>${x.p>=1?"✓":"–"}</b><span>program</span></div></div>
-  ${past?"":histCard(x.id,x)}<div class="card"><h2>Derslere göre sorular</h2>${Object.keys(by).length?Object.entries(by).map(([k,v])=>`<div class="subj"><span>${esc(k)}${v.k.length?" ("+esc(v.k.join(", "))+")":""}</span><span>${v.n} soru · ${v.c} doğru${v.b?" · "+v.b+" boş":""}</span></div>`).join(""):`<p class="empty">Henüz soru girişi yok.</p>`}</div>
+  ${past?"":histCard(x.id,x)+aiCard(x.id)}<div class="card"><h2>Derslere göre sorular</h2>${Object.keys(by).length?Object.entries(by).map(([k,v])=>`<div class="subj"><span>${esc(k)}${v.k.length?" ("+esc(v.k.join(", "))+")":""}</span><span>${v.n} soru · ${v.c} doğru${v.b?" · "+v.b+" boş":""}</span></div>`).join(""):`<p class="empty">Henüz soru girişi yok.</p>`}</div>
   ${x.mood?`<div class="card"><h2>Gün puanı</h2><p class="empty" style="margin:0">${x.mood} / 5</p></div>`:""}
   ${past?"":trendCard(x)+coachCards(x,sn)+denemeCard(x)+parentCard(x)}<div class="card"><h2>Günün akışı</h2>${x.L.length?`<ul class="tl">${x.L.slice().reverse().map(l=>`<li><time>${l.t}</time>${l.m}</li>`).join("")}</ul>`:`<p class="empty">${past?"Bu güne ait hareket kaydı yok.":"Bugün henüz bir hareket yok."}</p>`}</div>`;
 }
@@ -314,13 +314,18 @@ document.addEventListener("click",e=>{
   else if(t.id==="setgoal"){const q=+document.getElementById("gq").value||0,m=+document.getElementById("gm").value||0;if(!q&&!m)return;const gs=document.getElementById("gs").value;C.goals[sel]={day:day(),s:gs,q,m};render();dbw(sb.from("goals").upsert({student_id:sel,day:day(),subj:gs,q,m}))}
   else if(t.id==="delgoal"){delete C.goals[sel];render();dbw(sb.from("goals").delete().eq("student_id",sel).eq("day",day()))}
   else if(t.id==="addnote"){const v=document.getElementById("note").value.trim();if(!v)return;(C.notes[sel]=C.notes[sel]||[]).push({t:Date.now(),x:v});render();dbw(sb.from("notes").insert({student_id:sel,body:v.slice(0,1000)}))}
+  else if(t.id==="exgo")examExtract();
+  else if(t.id==="exsave")examSave();
+  else if(t.id==="excancel"){PX=null;setEx("");render()}
+  else if(t.id==="airun"){runInsights(t.dataset.sid||ME,t.dataset.force==="1"||t.dataset.sid===ME)}
+  else if(t.id==="aiping")aiPing();
   else if(t.id==="login")doLogin();
   else if(t.id==="out"){sb.auth.signOut().then(()=>location.reload())}
   else if(t.id==="back"){sel=null;selDay=null;render()}
   else if(t.id==="backhist"){selDay=null;render()}
   else if(t.dataset.per){per=t.dataset.per;render()}
   else if(t.dataset.d){selDay=t.dataset.d===day()?null:t.dataset.d;render();if(selDay&&!DSTATE[sel+"|"+selDay]){const id=sel,d=selDay;loadDay(id,d).then(()=>{if(sel===id&&selDay===d)render()})}}
-  else if(t.dataset.i){sel=t.dataset.i;selDay=null;render();const id=sel;loadHist(id).then(()=>{if(sel===id)render()})}
+  else if(t.dataset.i){sel=t.dataset.i;selDay=null;render();const id=sel;Promise.all([loadHist(id),loadExams(id),loadReport(id)]).then(()=>{if(sel===id)render()})}
   else if(t.id==="addq")addQ();
   else if(t.id==="reset"){if(confirm("Bugünün verisi silinsin mi?")){S=fresh();save();render()}}
   else if(t.dataset.s){subj=t.dataset.s;render()}
@@ -329,6 +334,126 @@ document.addEventListener("click",e=>{
 });
 setInterval(()=>{const c=document.getElementById("clock");if(c&&S.status==="study")c.textContent=dur(total())},1000);
 let ME=null,ROLE=null,NAME="",STU=[],ROWS=[];
+let EXMSG="",PX=null,AIBUSY=null;const EX={},AIR={};
+const setEx=m=>{EXMSG=m;const e=document.getElementById("exmsg");if(e)e.textContent=m};
+async function callFn(n,body){
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    const r=await fetch(SUPABASE_URL+"/functions/v1/"+n,{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+(session&&session.access_token),apikey:SUPABASE_KEY},body:JSON.stringify(body)});
+    const j=await r.json().catch(()=>({}));
+    return r.ok?j:{error:j.error||("Sunucu hatası ("+r.status+")")};
+  }catch(e){return {error:"Bağlantı kurulamadı."}}
+}
+async function loadExams(id){try{const {data}=await sb.from("exam_results").select("*").eq("student_id",id).order("exam_date",{ascending:true}).order("created_at",{ascending:true});EX[id]=data||[]}catch(e){EX[id]=[]}}
+async function loadReport(id){try{const {data}=await sb.from("ai_reports").select("content").eq("student_id",id).maybeSingle();AIR[id]=data&&data.content&&data.content.report?data.content:null}catch(e){AIR[id]=null}}
+async function prepImage(file){
+  try{
+    const bmp=await createImageBitmap(file),sc=Math.min(1,1800/Math.max(bmp.width,bmp.height)),c=document.createElement("canvas");
+    c.width=Math.round(bmp.width*sc);c.height=Math.round(bmp.height*sc);c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
+    return {mime:"image/jpeg",b64:c.toDataURL("image/jpeg",.85).split(",")[1]};
+  }catch(e){
+    return await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res({mime:file.type||"image/jpeg",b64:String(r.result).split(",")[1]});r.onerror=rej;r.readAsDataURL(file)});
+  }
+}
+async function examExtract(){
+  const f=document.getElementById("exf").files[0];
+  if(!f){setEx("Önce bir görsel seç.");return}
+  if(f.size>15e6){setEx("Görsel çok büyük (en fazla 15 MB).");return}
+  setEx("Görsel okunuyor, 10-20 saniye sürebilir…");
+  let im;try{im=await prepImage(f)}catch(e){setEx("Görsel açılamadı.");return}
+  const r=await callFn("exam-extract",{image:im.b64,mime:im.mime});
+  if(r.error){setEx(r.error);return}
+  PX={exam:r.exam,uyarilar:r.uyarilar||[]};setEx("");render();
+}
+const netOf=(d,y,k)=>Math.round((d-y/k)*100)/100;
+function recalcExam(){
+  if(!PX)return;
+  const k=document.getElementById("ext").value==="LGS"?3:4;let tot=0,all=true;
+  PX.exam.dersler.forEach((_,i)=>{
+    const v=[0,1,2].map(j=>document.querySelector('[data-rx="'+i+'"][data-c="'+j+'"]').value);
+    const el=document.getElementById("nt"+i);
+    if(v.some(x=>x==="")){el.textContent="–";all=false}else{const n=netOf(+v[0],+v[1],k);tot+=n;el.textContent=n+" net"}
+  });
+  document.getElementById("extot").textContent="Toplam net: "+(all?Math.round(tot*100)/100:"–");
+}
+function examForm(){
+  const e=PX.exam,tur=e.tur==="BILINMIYOR"?"":e.tur;
+  const row=(d,i)=>`<div class="row" style="margin-top:8px;align-items:center"><span style="flex:1;min-width:110px;font-weight:600">${esc(d.ders)}</span>${["dogru","yanlis","bos"].map((c,j)=>`<label>${["D","Y","B"][j]}<input data-rx="${i}" data-c="${j}" type="number" min="0" inputmode="numeric" style="width:64px;${d[c]==null?"border-color:var(--warn)":""}" value="${d[c]==null?"":num(d[c])}"></label>`).join("")}<span id="nt${i}" style="min-width:64px;text-align:right">${d.net==null?"–":num(d.net)+" net"}</span></div>`;
+  return `<div class="card"><h2>Okunan sonucu kontrol et</h2>
+  ${PX.uyarilar.length?`<div class="card" style="border-color:var(--warn);padding:10px;margin:0 0 10px">${PX.uyarilar.map(u=>`<div style="font-size:14px">⚠️ ${esc(u)}</div>`).join("")}</div>`:""}
+  <div class="row" style="margin-top:0"><label>Deneme adı<input id="exn" type="text" maxlength="120" style="width:180px" value="${esc(e.sinav_adi||"")}"></label><label>Tarih<input id="exd" type="date" style="width:150px" value="${esc(e.tarih||"")}"></label><label>Tür<select id="ext">${["","TYT","AYT","LGS","BRANS"].map(t=>`<option value="${t}"${t===tur?" selected":""}>${t||"Seç"}</option>`).join("")}</select></label></div>
+  ${(e.dersler||[]).length?e.dersler.map(row).join(""):`<p class="empty">Görselden ders satırı okunamadı. İptal edip daha net bir görsel dene.</p>`}
+  <p class="empty" id="extot" style="margin:10px 0 0">Toplam net: ${e.dersler.every(d=>d.net!=null)?Math.round(e.dersler.reduce((a,d)=>a+d.net,0)*100)/100:"–"}</p>
+  <p class="empty" style="font-size:13px;margin:4px 0">Turuncu çerçeveli alanlar okunamadı, kendin yaz. Netler yazdığın doğru ve yanlıştan otomatik hesaplanır.${(e.konular||[]).length?" Görselde "+e.konular.length+" konu satırı bulundu, kaydedilecek.":""}</p>
+  <p id="exerr" style="color:var(--warn);margin:4px 0"></p>
+  <div class="row"><button class="btn" id="exsave">Onayla ve kaydet</button><button class="chip" id="excancel">İptal</button></div></div>`;
+}
+async function examSave(){
+  const err=m=>{document.getElementById("exerr").textContent=m};
+  const e=PX.exam,tur=document.getElementById("ext").value,name=document.getElementById("exn").value.trim().slice(0,120),date=document.getElementById("exd").value;
+  if(!tur||!name){err("Deneme adı ve türü gerekli.");return}
+  if(!e.dersler.length){err("Kaydedilecek ders satırı yok.");return}
+  const k=tur==="LGS"?3:4,subs=[];
+  for(let i=0;i<e.dersler.length;i++){
+    const v=[0,1,2].map(j=>document.querySelector('[data-rx="'+i+'"][data-c="'+j+'"]').value);
+    if(v.some(x=>x===""||+x<0)){err("Boş kalan doğru, yanlış ve boş alanlarını doldur.");return}
+    const [d,y,b]=v.map(Number);subs.push({ders:e.dersler[i].ders,dogru:d,yanlis:y,bos:b,net:netOf(d,y,k)});
+  }
+  if((EX[ME]||[]).some(x=>x.exam_name===name&&(x.exam_date||"")===date)&&!confirm("Aynı adla bir deneme zaten kayıtlı. Yine de kaydedilsin mi?"))return;
+  const total=Math.round(subs.reduce((a,s)=>a+s.net,0)*100)/100;
+  const {error}=await sb.from("exam_results").insert({student_id:ME,exam_name:name,exam_date:date||null,exam_type:tur,total_net:total,score:e.puan,rank:e.siralama,subjects:subs,topics:e.konular||[],source:"ai_image",verified:true});
+  if(error){err("Kaydedilemedi: "+error.message);return}
+  PX=null;await loadExams(ME);setEx("Kaydedildi ✓ Analiz hazırlanıyor…");render();runInsights(ME,true);
+}
+async function runInsights(sid,force){
+  AIBUSY=sid;render();
+  const r=await callFn("exam-insights",{student_id:sid,force:!!force});
+  AIBUSY=null;
+  if(r.error)setEx(r.error);else{setEx("");if(r.report)AIR[sid]={report:r.report,stats:r.stats}}
+  render();
+}
+async function aiPing(){
+  const el=document.getElementById("aipo");el.textContent="Test ediliyor…";
+  const r=await callFn("exam-insights",{ping:true});
+  el.textContent=r.error?("Hata: "+r.error):r.ok?(r.model_kullanilabilir?"✓ Bağlantı çalışıyor, model: "+r.model:"Anahtar çalışıyor ama model ("+r.model+") bulunamadı. Kullanılabilir: "+(r.flash_modeller||[]).join(", ")):("Gemini anahtarı kabul edilmedi (kod "+r.status+")");
+}
+function reportHTML(R,title){
+  const r=R.report||{},s=R.stats||{},lv={YUKSEK:"Yüksek",ORTA:"Orta",DUSUK:"Düşük"};
+  const li=a=>(a||[]).map(x=>`<li>${esc(x)}</li>`).join("");
+  const ders=(s.dersler||[]).map(d=>`<div class="subj"><span>${esc(d.ders)}</span><span>${d.onceki_net==null?num(d.son_net)+" net":num(d.onceki_net)+" → "+num(d.son_net)+" ("+(num(d.fark)>0?"+":"")+num(d.fark)+")"}${d.egilim?" · "+esc(d.egilim):""}</span></div>`).join("");
+  const yor=(r.ders_yorumlari||[]).map(d=>`<div class="empty" style="font-size:14px;margin-top:4px"><b>${esc(d.ders)}:</b> ${esc(d.yorum)}</div>`).join("");
+  const pr=(r.oncelikler||[]).map(o=>`<div class="card" style="margin:10px 0 0;padding:12px"><b>${esc(o.ders)}${o.konu?" · "+esc(o.konu):""}</b> <span class="empty">· öncelik: ${esc(lv[o.seviye]||"Orta")}${o.kanit_turu==="DERS_NETI"?" · ders neti temelli":""}</span><div class="empty" style="margin-top:6px">${esc(o.gerekce)}</div><div style="margin-top:6px;font-size:15px"><b>Yöntem:</b> ${esc(o.calisma_yontemi)}<br><b>Miktar:</b> ${esc(o.miktar)}<br><b>Mini test:</b> ${esc(o.mini_test)}</div></div>`).join("");
+  const h2=t=>`<h2 style="font-size:15px;margin-top:14px">${t}</h2>`;
+  return `<div class="card"><h2>${title||"Yapay zekâ gelişim analizi"}</h2><p style="margin:0 0 6px">${esc(r.ozet)}</p><p class="empty" style="margin:0">${esc(r.egilim)}</p>
+  ${ders?h2("Ders bazlı değişim (kayıtlı denemelerden hesaplandı)")+ders+yor:""}
+  ${(r.guclu_yonler||[]).length?h2("Güçlü yönler")+`<ul class="tl">${li(r.guclu_yonler)}</ul>`:""}
+  ${(r.gelistirilecek_alanlar||[]).length?h2("Geliştirilecek alanlar")+`<ul class="tl">${li(r.gelistirilecek_alanlar)}</ul>`:""}
+  ${pr?h2("Öncelikli konular ve çalışma önerisi")+pr:""}
+  ${(r.koc_basliklari||[]).length?h2("Görüşme başlıkları (koç)")+`<ul class="tl">${li(r.koc_basliklari)}</ul>`:""}
+  ${r.veri_notu?`<p class="empty" style="font-size:13px;margin:12px 0 0">${esc(r.veri_notu)}</p>`:""}
+  <p class="empty" style="font-size:12px;margin:8px 0 0">Bu analiz yapay zekâ ile üretilmiştir, kesin bir sonuç değil bir rehberdir.</p></div>`;
+}
+function aiReportCard(sid,title){
+  if(AIBUSY===sid)return `<div class="card"><h2>Yapay zekâ analizi</h2><p class="empty">Analiz hazırlanıyor…</p></div>`;
+  return AIR[sid]?reportHTML(AIR[sid],title):"";
+}
+function examRows(L){return L.slice().reverse().slice(0,8).map(e=>`<div class="subj"><span>${esc(e.exam_name)} · ${esc(e.exam_type)}</span><span>${e.total_net==null?"–":num(e.total_net)+" net"}${e.exam_date?" · "+fd(String(e.exam_date)):""}</span></div>`).join("")}
+function examCard(){
+  if(PX)return examForm();
+  const L=EX[ME]||[];
+  return `<div class="card"><h2>Deneme sonuçlarım</h2>
+  <p class="empty" style="margin:0 0 10px">Deneme sonuç görselini yükle, yapay zekâ okusun. Sen kontrol edip onaylarsın.</p>
+  <div class="row" style="margin-top:0"><input id="exf" type="file" accept="image/*" style="width:100%"><button class="btn" style="padding:11px 16px" id="exgo">Görseli oku</button></div>
+  <p class="empty" id="exmsg" style="margin:8px 0 0;font-size:14px">${esc(EXMSG)}</p>
+  ${L.length?`<div style="margin-top:10px">${examRows(L)}</div><div class="row"><button class="chip" id="airun" data-sid="${ME}">📈 Gelişim analizimi yenile</button></div>`:""}</div>${aiReportCard(ME)}`;
+}
+function aiCard(sid){
+  const L=EX[sid]||[];
+  return `<div class="card"><h2>Deneme sonuçları ve yapay zekâ</h2>${L.length?examRows(L):`<p class="empty">Öğrenci henüz deneme sonucu yüklemedi.</p>`}
+  <p class="empty" id="exmsg" style="margin:8px 0 0;font-size:14px">${esc(EXMSG)}</p>
+  ${L.length?`<div class="row"><button class="chip" id="airun" data-sid="${sid}" data-force="1">🤖 Yapay zekâ koç raporunu üret</button></div>`:""}</div>${aiReportCard(sid,"Yapay zekâ koç raporu")}`;
+}
+
 const setSync=m=>{const e=document.getElementById("sync");if(e)e.textContent=m};
 const dbw=p=>Promise.resolve(p).then(r=>{if(r&&r.error)setSync("⚠️ "+r.error.message);return r},()=>setSync("⚠️ Bağlantı yok"));
 const busy=()=>/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||"");
@@ -343,7 +468,7 @@ async function doLogin(){
 async function loadStudent(){
   const {data}=await sb.from("daily").select("state").eq("student_id",ME).eq("day",day()).maybeSingle();
   S=data?Object.assign(fresh(),data.state):fresh();S.day=day();
-  await pullStudent();
+  await pullStudent();await loadExams(ME);await loadReport(ME);
 }
 async function pullStudent(){
   const [g,n]=await Promise.all([sb.from("goals").select("*").eq("student_id",ME).eq("day",day()).maybeSingle(),sb.from("notes").select("body,created_at").eq("student_id",ME).order("created_at")]);
@@ -358,7 +483,7 @@ async function pullCoach(){
   (e.data||[]).forEach(r=>(C.den[r.student_id]=C.den[r.student_id]||[]).push({ad:r.ad,net:Number(r.net),cz:r.cz}));
 }
 let rt;
-const refresh=()=>{clearTimeout(rt);rt=setTimeout(async()=>{if(!ME||busy())return;try{if(ROLE==="coach"){await pullCoach();if(sel)await loadHist(sel)}else await pullStudent();render();setSync("Güncellendi "+hm(Date.now()))}catch(e){}},2500)};
+const refresh=()=>{clearTimeout(rt);rt=setTimeout(async()=>{if(!ME||busy()||PX||AIBUSY)return;try{if(ROLE==="coach"){await pullCoach();if(sel)await loadHist(sel)}else await pullStudent();render();setSync("Güncellendi "+hm(Date.now()))}catch(e){}},2500)};
 async function start(){
   const app=document.getElementById("app");
   const {data:{session}}=await sb.auth.getSession();
@@ -372,6 +497,7 @@ async function start(){
   else{await loadStudent();setInterval(refresh,45000)}
   render();
 }
+document.addEventListener("input",e=>{if(e.target.dataset&&e.target.dataset.rx!=null||e.target.id==="ext")recalcExam()});
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="lp")doLogin()});
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 if(SUPABASE_URL.includes("PROJE-KODU"))document.getElementById("app").innerHTML=`<div class="card"><h2>Kurulum gerekli</h2><p>index.html içindeki SUPABASE_URL ve SUPABASE_KEY değerlerini kendi projenle değiştir (README.md, 4. adım).</p></div>`;
