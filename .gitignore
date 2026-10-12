@@ -1,0 +1,8 @@
+# Gizli ve kişisel dosyalar GitHub'a gitmesin
+giris-bilgileri.csv
+ogrenciler.txt
+.env
+.env.*
+node_modules/
+*.zip
+.DS_Store
