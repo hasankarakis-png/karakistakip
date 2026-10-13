@@ -24,6 +24,8 @@ Kurallar:
 - Tek deneme varsa karşılaştırma yapma; veri_notu alanında daha fazla deneme gerektiğini söyle.
 - Öğrenciyi suçlama, başarı garantisi verme, akademik verilerden psikolojik sonuç çıkarma. Destekleyici, açık, uygulanabilir bir dil kullan. Türkçe yaz.
 - Öncelikleri en fazla 5 madde ver. Çalışma yöntemi, miktar ve mini_test somut olsun (ör. "her gün 20 soru + hata defteri").
+- konular listesinde tekrar_eden=true olan konular birden fazla denemede yanlış yapılmıştır: önceliği bunlara ver, gerekçede kaç denemede yanlış yapıldığını (yanlis_sinav) belirt. Yalnızca tek denemede yanlış olan konular için "olası eksik" de ve mini_test ile doğrulat, kesin eksik deme.
+- dersler içinde kurumun_altinda=true ise öğrencinin başarı yüzdesi kurum ortalamasının altındadır; veride yüzdeler varsa bunu yorumuna kat.
 - Hedef bilgisi verilmediği için hedef farkı hakkında yorum yapma; veri_notu'nda hedefin tanımlanmadığını belirt.
 - istek_sahibi "KOC" ise koc_basliklari alanına görüşmede ele alınabilecek 3-5 akademik başlık yaz; "OGRENCI" ise boş liste ver.`;
 
@@ -59,19 +61,21 @@ const arr = (v: unknown, n: number, m: number) => (Array.isArray(v) ? v.slice(0,
 
 // Kayıtlı deneme geçmişinden deterministik istatistikler (Gemini kullanılmaz).
 export function buildStats(exams: any[]) {
-  const sub: Record<string, { net: number; acc: number | null }[]> = {};
-  const top: Record<string, { ders: string; konu: string; dogru: number; yanlis: number; bos: number; sinav: number }> = {};
+  const sub: Record<string, { net: number; acc: number | null; oy: number | null; ky: number | null }[]> = {};
+  const top: Record<string, { ders: string; konu: string; dogru: number; yanlis: number; bos: number; sinav: number; yanlis_sinav: number; bos_sinav: number }> = {};
   for (const e of exams) {
     for (const s of (e.subjects ?? [])) {
       if (typeof s.net !== "number") continue;
       const t = (s.dogru ?? 0) + (s.yanlis ?? 0) + (s.bos ?? 0);
       const k = e.exam_type + " " + s.ders;
-      (sub[k] ??= []).push({ net: s.net, acc: s.dogru != null && t > 0 ? r2(s.dogru / t) : null });
+      (sub[k] ??= []).push({ net: s.net, acc: s.dogru != null && t > 0 ? r2(s.dogru / t) : null, oy: typeof s.ogrenci_yuzde === "number" ? s.ogrenci_yuzde : null, ky: typeof s.kurum_yuzde === "number" ? s.kurum_yuzde : null });
     }
     for (const t of (e.topics ?? [])) {
       const k = e.exam_type + "|" + t.ders + "|" + t.konu;
-      const o = (top[k] ??= { ders: e.exam_type + " " + t.ders, konu: t.konu, dogru: 0, yanlis: 0, bos: 0, sinav: 0 });
+      const o = (top[k] ??= { ders: e.exam_type + " " + t.ders, konu: t.konu, dogru: 0, yanlis: 0, bos: 0, sinav: 0, yanlis_sinav: 0, bos_sinav: 0 });
       o.dogru += t.dogru ?? 0; o.yanlis += t.yanlis ?? 0; o.bos += t.bos ?? 0; o.sinav++;
+      if ((t.yanlis ?? 0) > 0) o.yanlis_sinav++;
+      if ((t.bos ?? 0) > 0) o.bos_sinav++;
     }
   }
   const dersler = Object.entries(sub).map(([ders, a]) => {
@@ -89,14 +93,17 @@ export function buildStats(exams: any[]) {
       ders, deneme_sayisi: n, son_net: son, onceki_net: onceki, fark: onceki == null ? null : r2(son - onceki),
       ortalama_net: r2(nets.reduce((p, c) => p + c, 0) / n), en_iyi_net: Math.max(...nets), egilim,
       ortalama_dogruluk: accs.length ? r2(accs.reduce((p, c) => p + c, 0) / accs.length) : null,
+      son_ogrenci_yuzde: a[n - 1].oy, son_kurum_yuzde: a[n - 1].ky,
+      kurumun_altinda: a[n - 1].oy != null && a[n - 1].ky != null ? a[n - 1].oy! < a[n - 1].ky! : null,
     };
   });
   const konular = Object.values(top).map((o) => {
     const t = o.dogru + o.yanlis + o.bos;
-    return { ...o, soru: t, dogruluk: t ? r2(o.dogru / t) : null };
-  }).filter((o) => o.soru > 0).sort((a, b) => (a.dogruluk ?? 1) - (b.dogruluk ?? 1)).slice(0, 25);
+    return { ...o, soru: t, dogruluk: t ? r2(o.dogru / t) : null, tekrar_eden: o.yanlis_sinav >= 2 };
+  }).filter((o) => o.soru > 0 && (o.yanlis + o.bos) > 0)
+    .sort((a, b) => b.yanlis_sinav - a.yanlis_sinav || (b.yanlis + b.bos) - (a.yanlis + a.bos) || (a.dogruluk ?? 1) - (b.dogruluk ?? 1)).slice(0, 40);
   const denemeler = exams.map((e) => ({ ad: e.exam_name, tarih: e.exam_date, tur: e.exam_type, toplam_net: e.total_net, puan: e.score, siralama: e.rank }));
-  return { deneme_sayisi: exams.length, denemeler: denemeler.slice(-12), dersler, konu_verisi_var: konular.length > 0, konular };
+  return { deneme_sayisi: exams.length, denemeler: denemeler.slice(-12), dersler, konu_verisi_var: Object.keys(top).length > 0, konular, tekrar_eden_konular: konular.filter((o) => o.tekrar_eden).slice(0, 15) };
 }
 
 function clean(r: any, coach: boolean) {

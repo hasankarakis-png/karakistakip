@@ -25,7 +25,15 @@ Kurallar:
 - Tür: TYT, AYT, LGS veya BRANS (tek branş denemesi). Anlaşılmıyorsa BILINMIYOR.
 - Tarihi YYYY-MM-DD biçiminde yaz; yoksa null.
 - Ders adlarını görselde yazdığı gibi yaz (ör. Türkçe, Temel Matematik, Fen Bilimleri).
-- Görselde konu bazlı tablo varsa "konular" listesine ekle, yoksa boş liste ver.`;
+- Görselde yalnızca özet konu tablosu (soru bazlı değil) varsa "konular" listesine ekle, yoksa boş liste ver.
+
+Kurum sonuç belgesi formatı (K12Net/K14 tabanlı "SINAV SONUÇ BELGESİ" gibi):
+- Üstte sınav adı (öğrenci/okul adı olmadan), tür, sınav puanı, toplam net, kurum sıralaması ve toplam soru/doğru/yanlış/boş kutuları bulunur. Kurum sıralamasını kurum_siralamasi alanına yaz.
+- "DERSLER" tablosu: ders, soru sayısı, doğru, yanlış, boş, net, öğrenci başarı yüzdesi (ÖĞRENCİ), şube ve kurum ortalaması (KURUM %). Bu sayıları aynen oku; ogrenci_yuzdesi ve kurum_yuzdesi alanlarına yüzdeleri sayı olarak yaz (% işareti olmadan).
+- Altta her ders için soru bazlı "Kazanım Açıklama" tabloları vardır. Sütunlar: Sr (soru no), Ö (öğrencinin işareti), A (doğru anahtar), D (durum simgesi). Yeşil onay işareti = DOGRU. Kırmızı çarpı (genelde Ö sütununda küçük harf) = YANLIS. Simge yok ve Ö boş = BOS.
+- Her soru satırını "sorular" listesine ekle: ders (DERSLER tablosundaki adla), no, kazanim (satırdaki konu açıklaması, görünen kadarı), durum. Hiçbir satırı atlama, uydurma veya tahmin etme. Okuyamadığın satırı ekleme, belirsiz listesine yaz.
+- Bir ders tablosu bir sonraki sütunda devam edebilir; hepsini birleştir.
+Örnek (Fizik, 7 soru): dersler öğesi {"ders":"Fizik","soru_sayisi":7,"dogru":4,"yanlis":3,"bos":0,"net":3.25,"ogrenci_yuzdesi":46.4,"kurum_yuzdesi":50.33}; sorular öğeleri {"ders":"Fizik","no":1,"kazanim":"Genleşme","durum":"DOGRU"}, {"ders":"Fizik","no":2,"kazanim":"Yapışma (adezyon) ve birbirini tutma (kohezyon)","durum":"YANLIS"}.`;
 
 const INT = { type: "INTEGER", nullable: true };
 const SCHEMA = {
@@ -42,6 +50,7 @@ const SCHEMA = {
         properties: {
           ders: { type: "STRING" }, dogru: INT, yanlis: INT, bos: INT,
           net: { type: "NUMBER", nullable: true }, soru_sayisi: INT,
+          ogrenci_yuzdesi: { type: "NUMBER", nullable: true }, kurum_yuzdesi: { type: "NUMBER", nullable: true },
         },
         required: ["ders"],
       },
@@ -49,6 +58,15 @@ const SCHEMA = {
     toplam_net: { type: "NUMBER", nullable: true },
     puan: { type: "NUMBER", nullable: true },
     siralama: { type: "STRING", nullable: true },
+    kurum_siralamasi: { type: "STRING", nullable: true },
+    sorular: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: { ders: { type: "STRING" }, no: { type: "INTEGER" }, kazanim: { type: "STRING" }, durum: { type: "STRING", enum: ["DOGRU", "YANLIS", "BOS"] } },
+        required: ["ders", "no", "kazanim", "durum"],
+      },
+    },
     konular: {
       type: "ARRAY",
       items: {
@@ -62,12 +80,19 @@ const SCHEMA = {
     },
     belirsiz: { type: "ARRAY", items: { type: "STRING" } },
   },
-  required: ["sinav_gorseli_mi", "tur", "dersler", "konular", "belirsiz"],
+  required: ["sinav_gorseli_mi", "tur", "dersler", "sorular", "konular", "belirsiz"],
 };
 
 const r2 = (x: number) => Math.round(x * 100) / 100;
 const toInt = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 500 ? Math.round(v) : null);
 const toNum = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && Math.abs(v) < 100000 ? r2(v) : null);
+const pct = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 100 ? r2(v) : null);
+const norm = (s: string) => s.toLocaleLowerCase("tr").replace(/\s+/g, " ").replace(/[.…]+$/, "").trim();
+const dkey = (s: string) => norm(s).replace(/ dersi$/, "");
+const sameDers = (a: string, b: string) => {
+  const x = dkey(a), y = dkey(b);
+  return x === y || (x.length >= 5 && y.length >= 5 && (x.startsWith(y) || y.startsWith(x)));
+};
 const txt = (v: unknown, n = 120) =>
   typeof v === "string" ? (v.replace(/[\u0000-\u001f<>]/g, " ").trim().slice(0, n) || null) : null;
 
@@ -88,23 +113,57 @@ export function validate(raw: any) {
       if (netG != null && Math.abs(netG - net) > 0.26) warn.push(`${ders}: görseldeki net (${netG}) hesaplanan netten (${net}) farklı.`);
       if (soru != null && dogru + yanlis + bos > soru) warn.push(`${ders}: doğru+yanlış+boş toplamı soru sayısını (${soru}) aşıyor.`);
     }
-    return { ders, dogru, yanlis, bos, net, net_gorsel: netG, soru_sayisi: soru };
+    return { ders, dogru, yanlis, bos, net, net_gorsel: netG, soru_sayisi: soru, ogrenci_yuzde: pct(d?.ogrenci_yuzdesi), kurum_yuzde: pct(d?.kurum_yuzdesi) };
   });
   const hesapToplam = r2(dersler.reduce((a: number, d: any) => a + (d.net ?? 0), 0));
   const tg = toNum(raw?.toplam_net);
   if (tg != null && dersler.length && dersler.every((d: any) => d.net != null) && Math.abs(tg - hesapToplam) > 0.51)
     warn.push(`Görseldeki toplam net (${tg}) ders netlerinden hesaplanan toplamdan (${hesapToplam}) farklı.`);
   const tarih = typeof raw?.tarih === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.tarih) ? raw.tarih : null;
-  const konular = (Array.isArray(raw?.konular) ? raw.konular : []).slice(0, 80).map((t: any) => {
+  // Soru bazlı kazanım satırlarından konu istatistiği: yalnızca tablo sayılarıyla BİREBİR tutarlı dersler kullanılır.
+  const rows: { ders: string; no: number; kazanim: string; durum: string }[] = [];
+  const seen = new Set<string>();
+  for (const q of (Array.isArray(raw?.sorular) ? raw.sorular : []).slice(0, 400)) {
+    const ders = txt(q?.ders, 60), kazanim = txt(q?.kazanim, 100), no = toInt(q?.no);
+    if (!ders || !kazanim || no == null || !["DOGRU", "YANLIS", "BOS"].includes(q?.durum)) continue;
+    const key = dkey(ders) + "#" + no;
+    if (seen.has(key)) { warn.push(`${ders}: ${no}. soru birden fazla okundu, ilki alındı.`); continue; }
+    seen.add(key);
+    rows.push({ ders, no, kazanim, durum: q.durum });
+  }
+  const topicMap = new Map<string, { ders: string; konu: string; dogru: number; yanlis: number; bos: number }>();
+  const topicDers = new Set<string>();
+  for (const d of dersler) {
+    const mine = rows.filter((r) => sameDers(r.ders, d.ders));
+    if (!mine.length) continue;
+    if (d.dogru == null || d.yanlis == null || d.bos == null) { warn.push(`${d.ders}: tablo sayıları okunamadığı için soru bazlı konu verisi doğrulanamadı, kaydedilmeyecek.`); continue; }
+    const c = { DOGRU: 0, YANLIS: 0, BOS: 0 } as Record<string, number>;
+    mine.forEach((r) => c[r.durum]++);
+    if (c.DOGRU !== d.dogru || c.YANLIS !== d.yanlis || c.BOS !== d.bos) {
+      warn.push(`${d.ders}: soru detayı tabloyla uyuşmuyor (tabloda D/Y/B ${d.dogru}/${d.yanlis}/${d.bos}, detayda ${c.DOGRU}/${c.YANLIS}/${c.BOS}). Bu ders için konu verisi kaydedilmeyecek.`);
+      continue;
+    }
+    topicDers.add(dkey(d.ders));
+    for (const r of mine) {
+      const k = dkey(d.ders) + "|" + norm(r.kazanim);
+      const o = topicMap.get(k) ?? { ders: d.ders, konu: r.kazanim, dogru: 0, yanlis: 0, bos: 0 };
+      if (r.durum === "DOGRU") o.dogru++; else if (r.durum === "YANLIS") o.yanlis++; else o.bos++;
+      topicMap.set(k, o);
+    }
+  }
+  rows.filter((r) => !dersler.some((d: any) => sameDers(r.ders, d.ders))).slice(0, 1).forEach((r) => warn.push(`"${r.ders}" dersi tabloda bulunamadı, bu derse ait soru satırları yok sayıldı.`));
+  const derived = [...topicMap.values()].slice(0, 200).map((o) => ({ ...o, basari_yuzdesi: null }));
+  const konularModel = (Array.isArray(raw?.konular) ? raw.konular : []).slice(0, 80).map((t: any) => {
     const ders = txt(t?.ders, 60), konu = txt(t?.konu, 80);
     if (!ders || !konu) return null;
     const by = toNum(t?.basari_yuzdesi);
     return { ders, konu, dogru: toInt(t?.dogru), yanlis: toInt(t?.yanlis), bos: toInt(t?.bos), basari_yuzdesi: by != null && by >= 0 && by <= 100 ? by : null };
-  }).filter(Boolean);
+  }).filter((t: any) => t && !topicDers.has(dkey(t.ders)));
+  const konular = [...derived, ...konularModel];
   const belirsiz = (Array.isArray(raw?.belirsiz) ? raw.belirsiz : []).slice(0, 20).map((s: unknown) => txt(s, 120)).filter(Boolean);
   belirsiz.forEach((b: string) => warn.push("Belirsiz: " + b));
   return {
-    exam: { sinav_adi: txt(raw?.sinav_adi), tarih, tur, dersler, toplam_net_gorsel: tg, puan: toNum(raw?.puan), siralama: txt(raw?.siralama, 60), konular },
+    exam: { sinav_adi: txt(raw?.sinav_adi), tarih, tur, dersler, toplam_net_gorsel: tg, puan: toNum(raw?.puan), siralama: [txt(raw?.kurum_siralamasi, 20) ? "Kurum " + txt(raw?.kurum_siralamasi, 20) : null, txt(raw?.siralama, 60)].filter(Boolean).join(" · ") || null, konular, soru_satiri: rows.length },
     uyarilar: warn,
   };
 }
@@ -116,7 +175,7 @@ async function gemini(key: string, b64: string, mime: string) {
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: SYSTEM }] },
       contents: [{ role: "user", parts: [{ text: "Bu deneme sonuç görselinden verileri çıkar." }, { inline_data: { mime_type: mime, data: b64 } }] }],
-      generationConfig: { responseMimeType: "application/json", responseSchema: SCHEMA, temperature: 0.1 },
+      generationConfig: { responseMimeType: "application/json", responseSchema: SCHEMA, temperature: 0.1, maxOutputTokens: 20000 },
     }),
   });
   if (r.status === 429) throw { code: 429, msg: "Yapay zekâ kotası doldu, biraz sonra tekrar dene." };

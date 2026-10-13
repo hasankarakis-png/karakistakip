@@ -348,9 +348,9 @@ async function loadExams(id){try{const {data}=await sb.from("exam_results").sele
 async function loadReport(id){try{const {data}=await sb.from("ai_reports").select("content").eq("student_id",id).maybeSingle();AIR[id]=data&&data.content&&data.content.report?data.content:null}catch(e){AIR[id]=null}}
 async function prepImage(file){
   try{
-    const bmp=await createImageBitmap(file),sc=Math.min(1,1800/Math.max(bmp.width,bmp.height)),c=document.createElement("canvas");
+    const bmp=await createImageBitmap(file),sc=Math.min(1,2400/Math.max(bmp.width,bmp.height)),c=document.createElement("canvas");
     c.width=Math.round(bmp.width*sc);c.height=Math.round(bmp.height*sc);c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
-    return {mime:"image/jpeg",b64:c.toDataURL("image/jpeg",.85).split(",")[1]};
+    return {mime:"image/jpeg",b64:c.toDataURL("image/jpeg",.88).split(",")[1]};
   }catch(e){
     return await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res({mime:file.type||"image/jpeg",b64:String(r.result).split(",")[1]});r.onerror=rej;r.readAsDataURL(file)});
   }
@@ -384,7 +384,7 @@ function examForm(){
   <div class="row" style="margin-top:0"><label>Deneme adı<input id="exn" type="text" maxlength="120" style="width:180px" value="${esc(e.sinav_adi||"")}"></label><label>Tarih<input id="exd" type="date" style="width:150px" value="${esc(e.tarih||"")}"></label><label>Tür<select id="ext">${["","TYT","AYT","LGS","BRANS"].map(t=>`<option value="${t}"${t===tur?" selected":""}>${t||"Seç"}</option>`).join("")}</select></label></div>
   ${(e.dersler||[]).length?e.dersler.map(row).join(""):`<p class="empty">Görselden ders satırı okunamadı. İptal edip daha net bir görsel dene.</p>`}
   <p class="empty" id="extot" style="margin:10px 0 0">Toplam net: ${e.dersler.every(d=>d.net!=null)?Math.round(e.dersler.reduce((a,d)=>a+d.net,0)*100)/100:"–"}</p>
-  <p class="empty" style="font-size:13px;margin:4px 0">Turuncu çerçeveli alanlar okunamadı, kendin yaz. Netler yazdığın doğru ve yanlıştan otomatik hesaplanır.${(e.konular||[]).length?" Görselde "+e.konular.length+" konu satırı bulundu, kaydedilecek.":""}</p>
+  <p class="empty" style="font-size:13px;margin:4px 0">Turuncu çerçeveli alanlar okunamadı, kendin yaz. Netler yazdığın doğru ve yanlıştan otomatik hesaplanır.${(e.konular||[]).length?" Görselde "+(e.soru_satiri||0)+" soru satırı okundu, "+e.konular.length+" konu kaydedilecek.":""}</p>
   <p id="exerr" style="color:var(--warn);margin:4px 0"></p>
   <div class="row"><button class="btn" id="exsave">Onayla ve kaydet</button><button class="chip" id="excancel">İptal</button></div></div>`;
 }
@@ -397,7 +397,7 @@ async function examSave(){
   for(let i=0;i<e.dersler.length;i++){
     const v=[0,1,2].map(j=>document.querySelector('[data-rx="'+i+'"][data-c="'+j+'"]').value);
     if(v.some(x=>x===""||+x<0)){err("Boş kalan doğru, yanlış ve boş alanlarını doldur.");return}
-    const [d,y,b]=v.map(Number);subs.push({ders:e.dersler[i].ders,dogru:d,yanlis:y,bos:b,net:netOf(d,y,k)});
+    const [d,y,b]=v.map(Number);subs.push({ders:e.dersler[i].ders,dogru:d,yanlis:y,bos:b,net:netOf(d,y,k),ogrenci_yuzde:e.dersler[i].ogrenci_yuzde??null,kurum_yuzde:e.dersler[i].kurum_yuzde??null});
   }
   if((EX[ME]||[]).some(x=>x.exam_name===name&&(x.exam_date||"")===date)&&!confirm("Aynı adla bir deneme zaten kayıtlı. Yine de kaydedilsin mi?"))return;
   const total=Math.round(subs.reduce((a,s)=>a+s.net,0)*100)/100;
@@ -424,8 +424,11 @@ function reportHTML(R,title){
   const yor=(r.ders_yorumlari||[]).map(d=>`<div class="empty" style="font-size:14px;margin-top:4px"><b>${esc(d.ders)}:</b> ${esc(d.yorum)}</div>`).join("");
   const pr=(r.oncelikler||[]).map(o=>`<div class="card" style="margin:10px 0 0;padding:12px"><b>${esc(o.ders)}${o.konu?" · "+esc(o.konu):""}</b> <span class="empty">· öncelik: ${esc(lv[o.seviye]||"Orta")}${o.kanit_turu==="DERS_NETI"?" · ders neti temelli":""}</span><div class="empty" style="margin-top:6px">${esc(o.gerekce)}</div><div style="margin-top:6px;font-size:15px"><b>Yöntem:</b> ${esc(o.calisma_yontemi)}<br><b>Miktar:</b> ${esc(o.miktar)}<br><b>Mini test:</b> ${esc(o.mini_test)}</div></div>`).join("");
   const h2=t=>`<h2 style="font-size:15px;margin-top:14px">${t}</h2>`;
+  const tek=(s.tekrar_eden_konular||[]).slice(0,8).map(o=>`<div class="subj"><span>${esc(o.ders)} · ${esc(o.konu)}</span><span>${num(o.yanlis_sinav)} denemede yanlış</span></div>`).join("");
+  const alt=(s.dersler||[]).filter(d=>d.kurumun_altinda===true).map(d=>`<div class="subj"><span>${esc(d.ders)}</span><span>%${num(d.son_ogrenci_yuzde)} (kurum %${num(d.son_kurum_yuzde)})</span></div>`).join("");
   return `<div class="card"><h2>${title||"Yapay zekâ gelişim analizi"}</h2><p style="margin:0 0 6px">${esc(r.ozet)}</p><p class="empty" style="margin:0">${esc(r.egilim)}</p>
   ${ders?h2("Ders bazlı değişim (kayıtlı denemelerden hesaplandı)")+ders+yor:""}
+  ${tek?h2("Tekrar eden konu eksikleri (birden çok denemede yanlış)")+tek:""}${alt?h2("Kurum ortalamasının altındaki dersler")+alt:""}
   ${(r.guclu_yonler||[]).length?h2("Güçlü yönler")+`<ul class="tl">${li(r.guclu_yonler)}</ul>`:""}
   ${(r.gelistirilecek_alanlar||[]).length?h2("Geliştirilecek alanlar")+`<ul class="tl">${li(r.gelistirilecek_alanlar)}</ul>`:""}
   ${pr?h2("Öncelikli konular ve çalışma önerisi")+pr:""}
