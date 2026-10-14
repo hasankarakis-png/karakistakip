@@ -59,14 +59,6 @@ const SCHEMA = {
     puan: { type: "NUMBER", nullable: true },
     siralama: { type: "STRING", nullable: true },
     kurum_siralamasi: { type: "STRING", nullable: true },
-    sorular: {
-      type: "ARRAY",
-      items: {
-        type: "OBJECT",
-        properties: { ders: { type: "STRING" }, no: { type: "INTEGER" }, kazanim: { type: "STRING" }, durum: { type: "STRING", enum: ["DOGRU", "YANLIS", "BOS"] } },
-        required: ["ders", "no", "kazanim", "durum"],
-      },
-    },
     konular: {
       type: "ARRAY",
       items: {
@@ -80,7 +72,23 @@ const SCHEMA = {
     },
     belirsiz: { type: "ARRAY", items: { type: "STRING" } },
   },
-  required: ["sinav_gorseli_mi", "tur", "dersler", "sorular", "konular", "belirsiz"],
+  required: ["sinav_gorseli_mi", "tur", "dersler", "konular", "belirsiz"],
+};
+
+// Soru bazlı kazanım satırları ayrı bir çağrıda okunur: çıktı küçük kalır, bir çağrı başarısız olursa diğeri kaybolmaz.
+const Q_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    sorular: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: { ders: { type: "STRING" }, no: { type: "INTEGER" }, kazanim: { type: "STRING" }, durum: { type: "STRING", enum: ["DOGRU", "YANLIS", "BOS"] } },
+        required: ["ders", "no", "kazanim", "durum"],
+      },
+    },
+  },
+  required: ["sorular"],
 };
 
 const r2 = (x: number) => Math.round(x * 100) / 100;
@@ -135,7 +143,10 @@ export function validate(raw: any) {
   const topicDers = new Set<string>();
   for (const d of dersler) {
     const mine = rows.filter((r) => sameDers(r.ders, d.ders));
-    if (!mine.length) continue;
+    if (!mine.length) {
+      if (rows.length > 0 && (d.soru_sayisi ?? 1) > 0) warn.push(`${d.ders}: soru detayı okunamadı, bu ders için konu verisi kaydedilmeyecek.`);
+      continue;
+    }
     if (d.dogru == null || d.yanlis == null || d.bos == null) { warn.push(`${d.ders}: tablo sayıları okunamadığı için soru bazlı konu verisi doğrulanamadı, kaydedilmeyecek.`); continue; }
     const c = { DOGRU: 0, YANLIS: 0, BOS: 0 } as Record<string, number>;
     mine.forEach((r) => c[r.durum]++);
@@ -168,21 +179,25 @@ export function validate(raw: any) {
   };
 }
 
-async function gemini(key: string, b64: string, mime: string) {
+async function gemini(key: string, b64: string, mime: string, schema: unknown, prompt: string, maxTok: number, salvage = false) {
   const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-goog-api-key": key },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: SYSTEM }] },
-      contents: [{ role: "user", parts: [{ text: "Bu deneme sonuç görselinden verileri çıkar." }, { inline_data: { mime_type: mime, data: b64 } }] }],
-      generationConfig: { responseMimeType: "application/json", responseSchema: SCHEMA, temperature: 0.1, maxOutputTokens: 20000 },
+      contents: [{ role: "user", parts: [{ text: prompt }, { inline_data: { mime_type: mime, data: b64 } }] }],
+      generationConfig: { responseMimeType: "application/json", responseSchema: schema, temperature: 0.1, maxOutputTokens: maxTok },
     }),
   });
   if (r.status === 429) throw { code: 429, msg: "Yapay zekâ kotası doldu, biraz sonra tekrar dene." };
   if (!r.ok) throw { code: 502, msg: `Yapay zekâ hizmeti hata verdi (${r.status}).` };
   const j = await r.json();
   const t = (j?.candidates?.[0]?.content?.parts ?? []).map((p: any) => p?.text ?? "").join("");
-  try { return JSON.parse(t); } catch { throw { code: 502, msg: "Yapay zekâ yanıtı okunamadı, tekrar dene." }; }
+  try { return JSON.parse(t); } catch {
+    // Yanıt yarıda kesildiyse (uzun liste), tamamlanmış satırları kurtar.
+    if (salvage) { const i = t.lastIndexOf("}"); if (i > 0) { try { return JSON.parse(t.slice(0, i + 1) + "]}"); } catch { /* kurtarılamadı */ } } }
+    throw { code: 502, msg: "Yapay zekâ yanıtı okunamadı, tekrar dene." };
+  }
 }
 
 export async function handler(req: Request): Promise<Response> {
@@ -210,10 +225,15 @@ export async function handler(req: Request): Promise<Response> {
   if (n >= LIMIT) return J({ error: `Günlük görsel okuma sınırına ulaştın (${LIMIT}). Yarın tekrar dene.` }, 429);
 
   try {
-    const raw = await gemini(gk, image, mime);
-    if (raw?.sinav_gorseli_mi === false) return J({ error: "Bu görsel bir deneme sonuç belgesine benzemiyor." }, 422);
+    const [head, q] = await Promise.all([
+      gemini(gk, image, mime, SCHEMA, "Bu deneme sonuç görselinden yalnızca üst bilgileri ve DERSLER özet tablosunu çıkar. Soru bazlı kazanım satırlarını bu çağrıda çıkarma.", 6000),
+      gemini(gk, image, mime, Q_SCHEMA, "SADECE_SORULAR: Bu deneme sonuç görselindeki tüm ders tablolarında yer alan soru bazlı kazanım satırlarını sorular listesine çıkar. Başka alan üretme.", 20000, true).catch((e: any) => ({ __hata: e })),
+    ]);
+    if (head?.sinav_gorseli_mi === false) return J({ error: "Bu görsel bir deneme sonuç belgesine benzemiyor." }, 422);
     await sb.from("ai_usage").upsert({ student_id: user.id, day, kind: "extract", n: n + 1 });
-    return J({ ...validate(raw), model: MODEL });
+    const out = validate({ ...head, sorular: Array.isArray(q?.sorular) ? q.sorular : [] });
+    if (q?.__hata) out.uyarilar.push("Soru bazlı konu detayı okunamadı, yalnızca ders tablosu kaydedilecek. Konu analizi için görseli tekrar yüklemeyi deneyebilirsin.");
+    return J({ ...out, model: MODEL });
   } catch (e: any) {
     return J({ error: e?.msg ?? "Beklenmeyen hata." }, e?.code ?? 500);
   }

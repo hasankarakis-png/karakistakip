@@ -13,6 +13,7 @@ create table public.exam_results (
   topics jsonb not null default '[]',
   source text not null default 'ai_image' check (source in ('ai_image','manual')),
   verified boolean not null default true,
+  extraction_meta jsonb,
   created_at timestamptz not null default now()
 );
 create index exam_results_student_idx on public.exam_results(student_id, exam_date);
