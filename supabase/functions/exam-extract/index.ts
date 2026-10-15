@@ -179,18 +179,38 @@ export function validate(raw: any) {
   };
 }
 
+let RESOLVED: string | null = null;
+const GURL = (m: string) => `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`;
+
+// Ayarlı model bulunamazsa (404), anahtarın erişebildiği en yeni kararlı "flash" modelini seçer.
+async function pickModel(key: string): Promise<string | null> {
+  const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { headers: { "x-goog-api-key": key } });
+  if (!r.ok) return null;
+  const j = await r.json();
+  const names: string[] = (j?.models ?? []).filter((m: any) => (m?.supportedGenerationMethods ?? []).includes("generateContent")).map((m: any) => String(m.name).replace("models/", ""));
+  const ver = (n: string) => parseFloat(n.match(/^gemini-(\d+(?:\.\d+)?)-flash$/)?.[1] ?? "0");
+  const ok = names.filter((n) => /^gemini-\d+(\.\d+)?-flash$/.test(n)).sort((a, b) => ver(b) - ver(a));
+  return ok[0] ?? (names.includes("gemini-flash-latest") ? "gemini-flash-latest" : null);
+}
+
+async function errDetail(r: Response): Promise<string> {
+  try { const m = String(JSON.parse(await r.text())?.error?.message ?? "").replace(/[\u0000-\u001f<>]/g, " ").slice(0, 160); return m ? " " + m : ""; } catch { return ""; }
+}
+
 async function gemini(key: string, b64: string, mime: string, schema: unknown, prompt: string, maxTok: number, salvage = false) {
-  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: SYSTEM }] },
-      contents: [{ role: "user", parts: [{ text: prompt }, { inline_data: { mime_type: mime, data: b64 } }] }],
-      generationConfig: { responseMimeType: "application/json", responseSchema: schema, temperature: 0.1, maxOutputTokens: maxTok },
-    }),
+  const payload = JSON.stringify({
+    systemInstruction: { parts: [{ text: SYSTEM }] },
+    contents: [{ role: "user", parts: [{ text: prompt }, { inline_data: { mime_type: mime, data: b64 } }] }],
+    generationConfig: { responseMimeType: "application/json", responseSchema: schema, temperature: 0.1, maxOutputTokens: maxTok },
   });
+  const send = (m: string) => fetch(GURL(m), { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: payload });
+  let r = await send(RESOLVED ?? MODEL);
+  if (r.status === 404 && !RESOLVED) {
+    const alt = await pickModel(key);
+    if (alt && alt !== MODEL) { RESOLVED = alt; r = await send(alt); }
+  }
   if (r.status === 429) throw { code: 429, msg: "Yapay zekâ kotası doldu, biraz sonra tekrar dene." };
-  if (!r.ok) throw { code: 502, msg: `Yapay zekâ hizmeti hata verdi (${r.status}).` };
+  if (!r.ok) throw { code: 502, msg: `Yapay zekâ hizmeti hata verdi (${r.status}).` + await errDetail(r) };
   const j = await r.json();
   const t = (j?.candidates?.[0]?.content?.parts ?? []).map((p: any) => p?.text ?? "").join("");
   try { return JSON.parse(t); } catch {
@@ -233,7 +253,7 @@ export async function handler(req: Request): Promise<Response> {
     await sb.from("ai_usage").upsert({ student_id: user.id, day, kind: "extract", n: n + 1 });
     const out = validate({ ...head, sorular: Array.isArray(q?.sorular) ? q.sorular : [] });
     if (q?.__hata) out.uyarilar.push("Soru bazlı konu detayı okunamadı, yalnızca ders tablosu kaydedilecek. Konu analizi için görseli tekrar yüklemeyi deneyebilirsin.");
-    return J({ ...out, model: MODEL });
+    return J({ ...out, model: RESOLVED ?? MODEL });
   } catch (e: any) {
     return J({ error: e?.msg ?? "Beklenmeyen hata." }, e?.code ?? 500);
   }
