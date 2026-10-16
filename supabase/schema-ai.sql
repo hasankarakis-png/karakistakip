@@ -149,19 +149,3 @@ end $$;
 revoke all on function public.call_reminders(text) from public, anon, authenticated;
 select cron.schedule('reminders-afternoon','0 12 * * *',$$select public.call_reminders('afternoon')$$); -- 15:00 TSİ
 select cron.schedule('reminders-evening','0 17 * * *',$$select public.call_reminders('evening')$$);   -- 20:00 TSİ
-
--- ===== Deneme takvimi (koç ekler, herkes okur) =====
-create table if not exists public.exam_calendar(
-  id bigint generated always as identity primary key,
-  exam_date date not null,
-  title text not null check (char_length(title) between 1 and 120),
-  exam_type text not null default 'TYT' check (exam_type in ('TYT','AYT','LGS','BRANS','DIGER')),
-  scope text check (char_length(scope) <= 120),
-  created_at timestamptz not null default now());
-create index if not exists exam_calendar_date_idx on public.exam_calendar(exam_date);
-alter table public.exam_calendar enable row level security;
-create policy cal_select on public.exam_calendar for select to authenticated using (true);
-create policy cal_coach_insert on public.exam_calendar for insert to authenticated with check ((select public.is_coach()));
-create policy cal_coach_update on public.exam_calendar for update to authenticated using ((select public.is_coach())) with check ((select public.is_coach()));
-create policy cal_coach_delete on public.exam_calendar for delete to authenticated using ((select public.is_coach()));
-alter publication supabase_realtime add table public.exam_calendar;

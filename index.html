@@ -93,7 +93,6 @@ body.stu .wrap{padding-bottom:100px}
 .chat{display:flex;flex-direction:column;gap:8px;max-height:46vh;overflow:auto;margin-bottom:10px}
 .cm{padding:9px 12px;border-radius:14px;max-width:88%;white-space:pre-wrap;font-size:15px;line-height:1.4}.cm.me{align-self:flex-end;background:var(--acc);color:var(--acc-ink)}.cm.ai{align-self:flex-start;background:var(--cream);border:1px solid var(--line)}
 .bdg{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}.bd{border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center;font-size:13px;opacity:.4}.bd.on{opacity:1;border-color:var(--acc)}.bd b{display:block;font-size:26px}
-.cg{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;margin-bottom:10px}.cg small{color:var(--mute);font-weight:700}.cd{padding:7px 0;border-radius:10px;font-size:14px;border:1px solid transparent}.cd.today{border-color:var(--acc)}.cd.has{background:var(--acc);color:var(--acc-ink);font-weight:800}
 </style>
 </head>
 <body class="intro">
@@ -263,7 +262,7 @@ function coachView(){
   <div class="stat"><b>${c(["study"])}</b><span>çalışıyor</span></div><div class="stat"><b>${c(["break"])}</b><span>molada</span></div>
   <div class="stat"><b>${c(["idle"])}</b><span>başlamadı</span></div><div class="stat"><b>${c(["closed"])}</b><span>günü kapattı</span></div></div>
   <div class="card"><h2>Grup ortalaması</h2><p class="empty" style="margin:0">${Math.floor(avg/60)} sa ${avg%60} dk net çalışma · ${all.reduce((a,x)=>a+x.q,0)} soru (20 öğrenci) · ${all.filter(x=>flags(x.hist).length).length} öğrencide uyarı</p></div>
-  ${classCard()}${calCard(true)}${addStudentCard()}${thCard()}<div class="grid">${all.map(x=>`<button class="s${x.live?" live":""}" data-i="${x.id}"><div class="h"><span class="dot ${DOT[x.st]}"></span>${x.n}${flags(x.hist).length?" 🚩":""}</div><div class="sp">${LBL[x.st]}</div>
+  ${classCard()}${addStudentCard()}${thCard()}<div class="grid">${all.map(x=>`<button class="s${x.live?" live":""}" data-i="${x.id}"><div class="h"><span class="dot ${DOT[x.st]}"></span>${x.n}${flags(x.hist).length?" 🚩":""}</div><div class="sp">${LBL[x.st]}</div>
   <div class="n"><span>${Math.floor(x.m/60)} sa ${x.m%60} dk</span><span>${x.q} soru</span></div><div class="bar"><i style="width:${Math.round(x.p*100)}%"></i></div></button>`).join("")}</div>`;
 }
 let selDay=null,per="hw";const HIST={},DSTATE={};
@@ -328,8 +327,7 @@ function detailView(){
 function render(){
     document.getElementById("app").innerHTML=view==="s"?studentView():coachView();{const c=document.getElementById("chat");if(c)c.scrollTop=c.scrollHeight}
 }
-document.addEventListener("change",e=>{if(e.target.id==="hd"){S.hard=e.target.value.slice(0,60);save()}
-  if(e.target.id==="calpick"){const c=CAL.find(x=>String(x.id)===e.target.value);if(!c)return;const n=document.getElementById("exn"),d=document.getElementById("exd"),t=document.getElementById("ext");if(n)n.value=c.title;if(d)d.value=String(c.exam_date);if(t&&["TYT","AYT","LGS","BRANS"].includes(c.exam_type))t.value=c.exam_type}});
+document.addEventListener("change",e=>{if(e.target.id==="hd"){S.hard=e.target.value.slice(0,60);save()}});
 /* ===== Yeni özellikler: sekmeler, görevler, sohbet, rozetler, koç araçları ===== */
 let tab="b",FZ=null,CHAT=[],CHATBUSY=false,CHATERR="",PLANBUSY=null,PLANMSG="",ADMMSG=null,EXALL=[],TKALL=[];
 const TK={},PD={};
@@ -425,33 +423,6 @@ function pushCard(){
    :`<p class="empty" style="margin:0 0 10px">Çalışmaya başlamadığın veya görevin kaldığı günlerde sana hatırlatma gelir.</p><div class="row" style="margin-top:0">${PUSHON?`<button class="chip" id="pushoff">🔕 Hatırlatmaları kapat</button>`:`<button class="btn" style="padding:11px 16px" id="pushon">🔔 Hatırlatmaları aç</button>`}</div>`;
   return `<div class="card"><h2>Hatırlatmalar</h2>${body}${PUSHMSG?`<p class="empty" style="margin:8px 0 0;font-size:14px">${esc(PUSHMSG)}</p>`:""}</div>`;
 }
-/* deneme takvimi */
-let CAL=[],CALM=day().slice(0,7);
-async function loadCal(){try{const {data}=await sb.from("exam_calendar").select("*").gte("exam_date",dayN(-90)).order("exam_date").order("id");CAL=data||[]}catch(e){CAL=[]}}
-const MONTHS=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
-function calCard(coach){
-  const [y,m]=CALM.split("-").map(Number),first=new Date(y,m-1,1),off=(first.getDay()+6)%7,dim=new Date(y,m,0).getDate();
-  const L=CAL.filter(e=>String(e.exam_date).slice(0,7)===CALM),has={};L.forEach(e=>{has[+String(e.exam_date).slice(8,10)]=1});
-  let cells="";for(let i=0;i<off;i++)cells+="<span></span>";
-  for(let d=1;d<=dim;d++){const k=CALM+"-"+String(d).padStart(2,"0");cells+=`<span class="cd${k===day()?" today":""}${has[d]?" has":""}">${d}</span>`}
-  const list=L.map(e=>`<div class="subj"><span><b>${fd(String(e.exam_date))}</b> · ${esc(e.title)}${e.scope?` <small class="empty">${esc(e.scope)}</small>`:""}</span><span>${esc(e.exam_type)}${coach?` <button class="chip" data-caldel="${e.id}" aria-label="Takvimden sil">Sil</button>`:""}</span></div>`).join("");
-  const form=coach?`<div class="row"><label>Tarih<input id="cdt" type="date" value="${CALM}-01" style="width:150px"></label><label>Deneme<input id="cti" type="text" maxlength="120" style="width:160px"></label><label>Tür<select id="cty">${["TYT","AYT","LGS","BRANS","DIGER"].map(t=>`<option>${t}</option>`).join("")}</select></label><label>Kapsam<input id="csc" type="text" maxlength="120" placeholder="isteğe bağlı" style="width:120px"></label><button class="btn" style="padding:11px 16px" id="caladd">Ekle</button></div>`:"";
-  return `<div class="card"><h2>Deneme takvimi</h2><div class="row" style="margin:0 0 8px;justify-content:space-between;align-items:center"><button class="chip" data-calm="-1" aria-label="Önceki ay">‹</button><b>${MONTHS[m-1]} ${y}</b><button class="chip" data-calm="1" aria-label="Sonraki ay">›</button></div>
-  <div class="cg">${["Pt","Sa","Ça","Pe","Cu","Ct","Pz"].map(x=>`<small>${x}</small>`).join("")}${cells}</div>
-  ${list||`<p class="empty" style="margin:10px 0 0">Bu ay için kayıtlı deneme yok.</p>`}${form}
-  <p style="margin:10px 0 0"><a class="link" href="https://denemetakvimim.com/" target="_blank" rel="noopener noreferrer">Tüm denemeler için denemetakvimim.com ↗</a></p></div>`;
-}
-async function calAdd(){
-  const g=i=>document.getElementById(i).value,title=g("cti").trim().slice(0,120),dt=g("cdt");if(!title||!dt)return;
-  await dbw(sb.from("exam_calendar").insert({exam_date:dt,title,exam_type:g("cty"),scope:g("csc").trim().slice(0,120)||null}));
-  CALM=dt.slice(0,7);await loadCal();render();
-}
-async function calDel(id){if(!confirm("Takvimden silinsin mi?"))return;await dbw(sb.from("exam_calendar").delete().eq("id",id));await loadCal();render()}
-function calPick(){
-  const near=CAL.filter(e=>e.exam_date>=dayN(-45)&&e.exam_date<=dayN(7)).reverse();
-  if(!near.length)return"";
-  return `<label style="flex-basis:100%">Takvimden seç (isteğe bağlı)<select id="calpick" style="width:100%"><option value="">Seç…</option>${near.map(e=>`<option value="${e.id}">${fd(String(e.exam_date))} · ${esc(e.title)} (${esc(e.exam_type)})</option>`).join("")}</select></label>`;
-}
 /* sekmeler */
 function todayTasks(){
   const L=(TK[ME]||[]).filter(t=>t.task_date===day());if(!L.length)return"";
@@ -474,7 +445,7 @@ async function chatSend(){
   CHATBUSY=false;if(r.reply)CHAT.push({role:"model",text:r.reply});else CHATERR=r.error||"Cevap alınamadı.";CHAT=CHAT.slice(-8);render();
 }
 function studentView(){
-  const body=tab==="g"?tasksTab():tab==="d"?examCard()+calCard(false)+netChartsCard(ME):tab==="h"?targetForm(ME,true)+badgeCard()+pushCard():tab==="k"?chatTab():todayTab();
+  const body=tab==="g"?tasksTab():tab==="d"?examCard()+netChartsCard(ME):tab==="h"?targetForm(ME,true)+badgeCard()+pushCard():tab==="k"?chatTab():todayTab();
   return body+`<nav class="bnav" aria-label="Sekmeler">${TABS.map(([k,i,l])=>`<button data-tab="${k}" aria-current="${tab===k}"><span aria-hidden="true">${i}</span>${l}</button>`).join("")}</nav>`;
 }
 
@@ -525,14 +496,12 @@ function classCard(){
 function ui(t){
   const D=t.dataset,id=t.id;
   if(D.tab){tab=D.tab;render();window.scrollTo(0,0);return true}
-  if(D.calm){const [y,m]=CALM.split("-").map(Number),d=new Date(y,m-1+(+D.calm),1);CALM=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");render();return true}
-  if(D.caldel){calDel(D.caldel);return true}
   if(D.tk){togTask(D.tk);return true}
   if(D.tkdel){delTask(D.tkdel);return true}
   if(D.exdel){exDel(D.exdel);return true}
   if(D.exedit){exEdit(D.exedit);return true}
   if(D.fz){FZ=D.fz==="stop"?null:{mode:D.fz,end:Date.now()+(D.fz==="w"?25:5)*60000};render();return true}
-  const m={caladd:calAdd,pushon:pushEnable,pushoff:pushDisable,csend:chatSend,tkadd:addTask,planrun:planRun,planok:planOk,plandel:planDel,adddn:addExam};
+  const m={pushon:pushEnable,pushoff:pushDisable,csend:chatSend,tkadd:addTask,planrun:planRun,planok:planOk,plandel:planDel,adddn:addExam};
   if(m[id]){m[id]();return true}
   if(id==="admadd"){admRun("add");return true}
   if(id==="admreset"){admRun("reset");return true}
@@ -669,7 +638,7 @@ function examForm(){
   const row=(d,i)=>`<div class="row" style="margin-top:8px;align-items:center"><span style="flex:1;min-width:110px;font-weight:600">${esc(d.ders)}</span>${["dogru","yanlis","bos"].map((c,j)=>`<label>${["D","Y","B"][j]}<input data-rx="${i}" data-c="${j}" type="number" min="0" inputmode="numeric" style="width:64px;${d[c]==null?"border-color:var(--warn)":""}" value="${d[c]==null?"":num(d[c])}"></label>`).join("")}<span id="nt${i}" style="min-width:64px;text-align:right">${d.net==null?"–":num(d.net)+" net"}</span></div>`;
   return `<div class="card"><h2>${PX.editId?"Deneme kaydını düzelt":"Okunan sonucu kontrol et"}</h2>
   ${PX.uyarilar.length?`<div class="card" style="border-color:var(--warn);padding:10px;margin:0 0 10px">${PX.uyarilar.map(u=>`<div style="font-size:14px">⚠️ ${esc(u)}</div>`).join("")}</div>`:""}
-  <div class="row" style="margin-top:0">${PX.editId?"":calPick()}<label>Deneme adı<input id="exn" type="text" maxlength="120" style="width:180px" value="${esc(e.sinav_adi||"")}"></label><label>Tarih<input id="exd" type="date" style="width:150px" value="${esc(e.tarih||"")}"></label><label>Tür<select id="ext">${["","TYT","AYT","LGS","BRANS"].map(t=>`<option value="${t}"${t===tur?" selected":""}>${t||"Seç"}</option>`).join("")}</select></label></div>
+  <div class="row" style="margin-top:0"><label>Deneme adı<input id="exn" type="text" maxlength="120" style="width:180px" value="${esc(e.sinav_adi||"")}"></label><label>Tarih<input id="exd" type="date" style="width:150px" value="${esc(e.tarih||"")}"></label><label>Tür<select id="ext">${["","TYT","AYT","LGS","BRANS"].map(t=>`<option value="${t}"${t===tur?" selected":""}>${t||"Seç"}</option>`).join("")}</select></label></div>
   ${(e.dersler||[]).length?e.dersler.map(row).join(""):`<p class="empty">Görselden ders satırı okunamadı. İptal edip daha net bir görsel dene.</p>`}
   <p class="empty" id="extot" style="margin:10px 0 0">Toplam net: ${e.dersler.every(d=>d.net!=null)?Math.round(e.dersler.reduce((a,d)=>a+d.net,0)*100)/100:"–"}</p>
   <p class="empty" style="font-size:13px;margin:4px 0">Turuncu çerçeveli alanlar okunamadı, kendin yaz. Netler yazdığın doğru ve yanlıştan otomatik hesaplanır.${(e.konular||[]).length&&!PX.editId?" Görselde "+(e.soru_satiri||0)+" soru satırı okundu, "+e.konular.length+" konu kaydedilecek.":""}</p>
@@ -768,7 +737,7 @@ async function doLogin(){
 async function loadStudent(){
   const {data}=await sb.from("daily").select("state").eq("student_id",ME).eq("day",day()).maybeSingle();
   S=data?Object.assign(fresh(),data.state):fresh();S.day=day();
-  await pullStudent();await Promise.all([loadExams(ME),loadReport(ME),loadTarget(ME),loadTasks(ME),loadHist(ME),loadCal()]);
+  await pullStudent();await Promise.all([loadExams(ME),loadReport(ME),loadTarget(ME),loadTasks(ME),loadHist(ME)]);
 }
 async function pullStudent(){
   const [g,n]=await Promise.all([sb.from("goals").select("*").eq("student_id",ME).eq("day",day()).maybeSingle(),sb.from("notes").select("body,created_at").eq("student_id",ME).order("created_at")]);
@@ -780,7 +749,7 @@ async function pullCoach(){
   STU=p.data||[];ROWS=d.data||[];C.goals={};C.notes={};C.den={};
   (g.data||[]).forEach(r=>C.goals[r.student_id]={day:r.day,s:r.subj,q:r.q,m:r.m});
   (n.data||[]).forEach(r=>(C.notes[r.student_id]=C.notes[r.student_id]||[]).push({t:Date.parse(r.created_at),x:r.body}));
-  EXALL=e.data||[];TKALL=w.data||[];await loadCal();
+  EXALL=e.data||[];TKALL=w.data||[];
 }
 let rt;
 const refresh=()=>{clearTimeout(rt);rt=setTimeout(async()=>{if(!ME||busy()||PX||AIBUSY||PLANBUSY||CHATBUSY)return;try{if(ROLE==="coach"){await pullCoach();if(sel)await Promise.all([loadHist(sel),loadTasks(sel),loadExams(sel)])}else await Promise.all([pullStudent(),loadTasks(ME)]);render();setSync("Güncellendi "+hm(Date.now()))}catch(e){}},2500)};
@@ -793,7 +762,7 @@ async function start(){
   if(!p){await sb.auth.signOut();ME=null;app.innerHTML=loginView("Profil bulunamadı, koçuna haber ver.");return}
   NAME=p.name;ROLE=p.role;view=ROLE==="coach"?"c":"s";
   document.getElementById("who").textContent=NAME+" · ";document.getElementById("out").hidden=false;document.getElementById("reset").hidden=ROLE==="coach";document.body.classList.toggle("stu",ROLE==="student");
-  if(ROLE==="coach"){await pullCoach();["daily","goals","notes","exam_results","weekly_tasks","exam_calendar"].reduce((ch,t)=>ch.on("postgres_changes",{event:"*",schema:"public",table:t},refresh),sb.channel("koc")).subscribe();setInterval(refresh,60000)}
+  if(ROLE==="coach"){await pullCoach();["daily","goals","notes","exam_results","weekly_tasks"].reduce((ch,t)=>ch.on("postgres_changes",{event:"*",schema:"public",table:t},refresh),sb.channel("koc")).subscribe();setInterval(refresh,60000)}
   else{await loadStudent();setInterval(refresh,45000);pushState().then(()=>{if(tab==='h')render()})}
   render();
 }
