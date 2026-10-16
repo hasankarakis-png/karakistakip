@@ -33,3 +33,11 @@ Deneme görseli okuma, gelişim analizi ve konu önceliklendirme için `README-A
 - Push bildirimi yok (ör. "sabah uyanmadı" uyarısı). Sonraki aşama: Supabase Edge Function + web push.
 - Uyarı eşikleri koçun cihazında saklanır.
 - Gün, cihazın yerel saatine göre ayrılır (gece 00:00).
+
+## Yeni özellikler (v3)
+
+**Öğrenci:** alt menülü sekmeler (Bugün, Görevler, Denemeler, Hedefim, Koçum); koçun atadığı haftalık görevleri işaretleme; yanlış kaydedilen denemeyi silme veya düzeltme; seri ve rozetler; odak zamanlayıcı (25/5 dk); yapay zekâ sohbet koçu (günlük sınırlı).
+
+**Koç:** panelden öğrenci ekleme (kullanıcı adı ve 6 haneli PIN otomatik, bir kez gösterilir), PIN sıfırlama, öğrenci silme; haftalık görev ekleme ve tamamlanma yüzdesi; yapay zekâyla haftalık plan taslağı (öğrenciye ancak sen onaylayınca görünür); sınıf geneli ortak zayıf konular; elle deneme ekleme (öğrencinin yüklediği denemelerle aynı listede).
+
+**Sunucu işlevleri** (`supabase/functions`): `exam-extract`, `exam-insights` (analiz, `action: "plan"`, `action: "chat"`), `admin-students` (öğrenci hesabı yönetimi, yalnızca koç). Yeni tablolar ve kurallar `supabase/schema-ai.sql` dosyasında.
