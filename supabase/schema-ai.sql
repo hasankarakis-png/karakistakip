@@ -131,3 +131,21 @@ create policy exam_coach_delete on public.exam_results for delete using (public.
 
 -- Gerçek zamanlı güncelleme
 alter publication supabase_realtime add table public.exam_results, public.weekly_tasks;
+
+-- ===== Hatırlatma bildirimleri (web push) =====
+-- Sunucu anahtarları yalnızca servis rolünün okuyabildiği tabloda tutulur (değerleri buraya yazma).
+create table if not exists public.app_secrets(name text primary key, value text not null);
+alter table public.app_secrets enable row level security;
+revoke all on public.app_secrets from anon, authenticated;
+-- app_secrets içine VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT, CRON_SECRET satırlarını ekle.
+create extension if not exists pg_net with schema extensions;
+create extension if not exists pg_cron;
+create or replace function public.call_reminders(k text) returns void language plpgsql security definer set search_path=public,extensions as $$
+begin
+  perform net.http_post(url:='https://PROJE-KODU.supabase.co/functions/v1/send-reminders',
+    headers:=jsonb_build_object('Content-Type','application/json','x-cron-secret',(select value from public.app_secrets where name='CRON_SECRET')),
+    body:=jsonb_build_object('kind',k));
+end $$;
+revoke all on function public.call_reminders(text) from public, anon, authenticated;
+select cron.schedule('reminders-afternoon','0 12 * * *',$$select public.call_reminders('afternoon')$$); -- 15:00 TSİ
+select cron.schedule('reminders-evening','0 17 * * *',$$select public.call_reminders('evening')$$);   -- 20:00 TSİ

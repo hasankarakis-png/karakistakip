@@ -396,6 +396,33 @@ function focusCard(){
 }
 setInterval(()=>{if(!FZ)return;if(Date.now()>=FZ.end){const w=FZ.mode==="w";FZ=null;if(w){try{localStorage.setItem("karakis-odak-"+day(),FZP()+1)}catch(x){}}try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(x){}render();return}const e=document.getElementById("fz");if(e)e.textContent=fzTxt()},1000);
 
+/* bildirim (web push) */
+const VAPID_PUB="BLxGZLx6y3dW1FClX4OxwHrj1c15zQ5kTn_uWWxSkDOKRKheCIR1M_oCtyvIvryHC6hmnDRsKj1lrACBTmdnK90";let PUSHON=null,PUSHMSG="";
+const b64u=t=>{const b=atob((t+"=".repeat((4-t.length%4)%4)).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from(b,c=>c.charCodeAt(0))};
+async function pushState(){try{if(!("serviceWorker" in navigator)||!("PushManager" in window)||!("Notification" in window)){PUSHON="no";return}const reg=await navigator.serviceWorker.ready;PUSHON=!!(await reg.pushManager.getSubscription())}catch(e){PUSHON="no"}}
+async function pushEnable(){
+  try{
+    const p=await Notification.requestPermission();if(p!=="granted"){PUSHMSG="Bildirim izni verilmedi. Tarayıcı ayarlarından açabilirsin.";render();return}
+    const reg=await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();
+    if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID_PUB)});
+    const j=sub.toJSON();
+    await sb.from("push_subs").delete().eq("endpoint",j.endpoint);
+    const r=await sb.from("push_subs").insert({student_id:ME,endpoint:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth});
+    if(r.error)throw new Error(r.error.message);
+    PUSHON=true;PUSHMSG="Hatırlatmalar açık ✓";
+  }catch(e){PUSHMSG="Açılamadı: "+(e&&e.message||e)}
+  render();
+}
+async function pushDisable(){
+  try{const reg=await navigator.serviceWorker.ready,sub=await reg.pushManager.getSubscription();if(sub){await sb.from("push_subs").delete().eq("endpoint",sub.endpoint);await sub.unsubscribe()}PUSHON=false;PUSHMSG="Hatırlatmalar kapatıldı."}catch(e){PUSHMSG="Kapatılamadı."}
+  render();
+}
+function pushCard(){
+  const body=PUSHON==="no"?`<p class="empty" style="margin:0">Bu cihazda bildirim desteklenmiyor. iPhone'da önce siteyi “Ana Ekrana Ekle” ile uygulama olarak kur, sonra buradan aç.</p>`
+   :PUSHON===null?`<p class="empty" style="margin:0">Kontrol ediliyor…</p>`
+   :`<p class="empty" style="margin:0 0 10px">Çalışmaya başlamadığın veya görevin kaldığı günlerde sana hatırlatma gelir.</p><div class="row" style="margin-top:0">${PUSHON?`<button class="chip" id="pushoff">🔕 Hatırlatmaları kapat</button>`:`<button class="btn" style="padding:11px 16px" id="pushon">🔔 Hatırlatmaları aç</button>`}</div>`;
+  return `<div class="card"><h2>Hatırlatmalar</h2>${body}${PUSHMSG?`<p class="empty" style="margin:8px 0 0;font-size:14px">${esc(PUSHMSG)}</p>`:""}</div>`;
+}
 /* sekmeler */
 function todayTasks(){
   const L=(TK[ME]||[]).filter(t=>t.task_date===day());if(!L.length)return"";
@@ -418,7 +445,7 @@ async function chatSend(){
   CHATBUSY=false;if(r.reply)CHAT.push({role:"model",text:r.reply});else CHATERR=r.error||"Cevap alınamadı.";CHAT=CHAT.slice(-8);render();
 }
 function studentView(){
-  const body=tab==="g"?tasksTab():tab==="d"?examCard()+netChartsCard(ME):tab==="h"?targetForm(ME,true)+badgeCard():tab==="k"?chatTab():todayTab();
+  const body=tab==="g"?tasksTab():tab==="d"?examCard()+netChartsCard(ME):tab==="h"?targetForm(ME,true)+badgeCard()+pushCard():tab==="k"?chatTab():todayTab();
   return body+`<nav class="bnav" aria-label="Sekmeler">${TABS.map(([k,i,l])=>`<button data-tab="${k}" aria-current="${tab===k}"><span aria-hidden="true">${i}</span>${l}</button>`).join("")}</nav>`;
 }
 
@@ -474,7 +501,7 @@ function ui(t){
   if(D.exdel){exDel(D.exdel);return true}
   if(D.exedit){exEdit(D.exedit);return true}
   if(D.fz){FZ=D.fz==="stop"?null:{mode:D.fz,end:Date.now()+(D.fz==="w"?25:5)*60000};render();return true}
-  const m={csend:chatSend,tkadd:addTask,planrun:planRun,planok:planOk,plandel:planDel,adddn:addExam};
+  const m={pushon:pushEnable,pushoff:pushDisable,csend:chatSend,tkadd:addTask,planrun:planRun,planok:planOk,plandel:planDel,adddn:addExam};
   if(m[id]){m[id]();return true}
   if(id==="admadd"){admRun("add");return true}
   if(id==="admreset"){admRun("reset");return true}
@@ -734,7 +761,7 @@ async function start(){
   NAME=p.name;ROLE=p.role;view=ROLE==="coach"?"c":"s";
   document.getElementById("who").textContent=NAME+" · ";document.getElementById("out").hidden=false;document.getElementById("reset").hidden=ROLE==="coach";document.body.classList.toggle("stu",ROLE==="student");
   if(ROLE==="coach"){await pullCoach();["daily","goals","notes","exam_results","weekly_tasks"].reduce((ch,t)=>ch.on("postgres_changes",{event:"*",schema:"public",table:t},refresh),sb.channel("koc")).subscribe();setInterval(refresh,60000)}
-  else{await loadStudent();setInterval(refresh,45000)}
+  else{await loadStudent();setInterval(refresh,45000);pushState().then(()=>{if(tab==='h')render()})}
   render();
 }
 document.addEventListener("input",e=>{if(e.target.dataset&&e.target.dataset.rx!=null||e.target.id==="ext")recalcExam()});
