@@ -685,9 +685,11 @@ function reportHTML(R,title,sid){
   const pr=(r.oncelikler||[]).map(o=>`<div class="card" style="margin:10px 0 0;padding:12px"><b>${esc(o.ders)}${o.konu?" · "+esc(o.konu):""}</b> <span class="empty">· öncelik: ${esc(lv[o.seviye]||"Orta")}${o.kanit_turu==="DERS_NETI"?" · ders neti temelli":""}</span><div class="empty" style="margin-top:6px">${esc(o.gerekce)}</div><div style="margin-top:6px;font-size:15px"><b>Yöntem:</b> ${esc(o.calisma_yontemi)}<br><b>Miktar:</b> ${esc(o.miktar)}<br><b>Mini test:</b> ${esc(o.mini_test)}</div></div>`).join("");
   const h2=t=>`<h2 style="font-size:15px;margin-top:14px">${t}</h2>`;
   const tek=(s.tekrar_eden_konular||[]).slice(0,8).map(o=>`<div class="subj"><span>${esc(o.ders)} · ${esc(o.konu)}</span><span>${num(o.yanlis_sinav)} denemede yanlış</span></div>`).join("");
+  const zay=(s.konular||[]).slice(0,12).map(o=>`<div class="subj"><span>${esc(o.ders)} · ${esc(o.konu)}</span><span>${num(o.yanlis)} yanlış${num(o.bos)?" · "+num(o.bos)+" boş":""}${o.sinav>1?" · "+num(o.sinav)+" denemede":""}</span></div>`).join("");
   const alt=(s.dersler||[]).filter(d=>d.kurumun_altinda===true).map(d=>`<div class="subj"><span>${esc(d.ders)}</span><span>%${num(d.son_ogrenci_yuzde)} (kurum %${num(d.son_kurum_yuzde)})</span></div>`).join("");
   return `<div class="card"><h2>${title||"Yapay zekâ gelişim analizi"}</h2><p style="margin:0 0 6px">${esc(r.ozet)}</p><p class="empty" style="margin:0">${esc(r.egilim)}</p>
   ${ders?h2("Ders bazlı değişim (kayıtlı denemelerden hesaplandı)")+ders+yor:""}
+  ${zay?h2(tek?"Yanlış ve boş bırakılan diğer konular":"Yanlış ve boş bırakılan konular (kayıtlı denemelerden hesaplandı)")+zay+((s.deneme_sayisi||0)<2?`<p class="empty" style="font-size:13px;margin:6px 0 0">Tek denemede görülen eksikler “olası eksik”tir; ikinci denemeyle kesinleşir.</p>`:""):""}
   ${tek?h2("Tekrar eden konu eksikleri (birden çok denemede yanlış)")+tek:""}${alt?h2("Kurum ortalamasının altındaki dersler")+alt:""}
   ${(r.guclu_yonler||[]).length?h2("Güçlü yönler")+`<ul class="tl">${li(r.guclu_yonler)}</ul>`:""}
   ${(r.gelistirilecek_alanlar||[]).length?h2("Geliştirilecek alanlar")+`<ul class="tl">${li(r.gelistirilecek_alanlar)}</ul>`:""}
