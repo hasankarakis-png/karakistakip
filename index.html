@@ -146,7 +146,7 @@ function studentView(){
   <button class="chip" data-a="prog" aria-pressed="${S.prog}">✅ Programımı bitirdim</button>
   ${st!=="closed"?`<button class="chip" data-a="close">🌙 Günü kapat</button>`:""}</div>
   ${st==="closed"?`<div class="row"><label>Bugün nasıldı?</label><div class="mood">${[1,2,3,4,5].map(i=>`<button class="chip" data-m="${i}" aria-pressed="${S.mood===i}">${i}</button>`).join("")}</div></div>`:""}</div>`:""}
-  ${examCard()}<div class="card"><h2>Bugünün akışı</h2>${S.log.length?`<ul class="tl">${S.log.slice().reverse().map(l=>`<li><time>${hm(l.t)}</time>${esc(l.m)}</li>`).join("")}</ul>`:`<p class="empty">Güne “Uyandım” butonuyla başla.</p>`}</div>`;
+  ${examCard()}${targetForm(ME,true)}${netChartsCard(ME)}<div class="card"><h2>Bugünün akışı</h2>${S.log.length?`<ul class="tl">${S.log.slice().reverse().map(l=>`<li><time>${hm(l.t)}</time>${esc(l.m)}</li>`).join("")}</ul>`:`<p class="empty">Güne “Uyandım” butonuyla başla.</p>`}</div>`;
 }
 const clk=m=>String(Math.floor(m/60)%24).padStart(2,"0")+":"+String(m%60).padStart(2,"0");
 const num=v=>Number(v)||0;
@@ -295,7 +295,7 @@ function detailView(){
   <div class="big" style="font-size:34px">${x.n}</div>
   <div class="sub">Net çalışma: ${Math.floor(x.m/60)} sa ${x.m%60} dk</div></section>
   <div class="stats"><div class="stat"><b>${sn}</b><span>çözülen soru</span></div><div class="stat"><b>${sn?"%"+acc:"–"}</b><span>doğruluk</span></div><div class="stat"><b>${x.p>=1?"✓":"–"}</b><span>program</span></div></div>
-  ${past?"":histCard(x.id,x)+aiCard(x.id)}<div class="card"><h2>Derslere göre sorular</h2>${Object.keys(by).length?Object.entries(by).map(([k,v])=>`<div class="subj"><span>${esc(k)}${v.k.length?" ("+esc(v.k.join(", "))+")":""}</span><span>${v.n} soru · ${v.c} doğru${v.b?" · "+v.b+" boş":""}</span></div>`).join(""):`<p class="empty">Henüz soru girişi yok.</p>`}</div>
+  ${past?"":histCard(x.id,x)+aiCard(x.id)+netChartsCard(x.id)+targetForm(x.id,false)}<div class="card"><h2>Derslere göre sorular</h2>${Object.keys(by).length?Object.entries(by).map(([k,v])=>`<div class="subj"><span>${esc(k)}${v.k.length?" ("+esc(v.k.join(", "))+")":""}</span><span>${v.n} soru · ${v.c} doğru${v.b?" · "+v.b+" boş":""}</span></div>`).join(""):`<p class="empty">Henüz soru girişi yok.</p>`}</div>
   ${x.mood?`<div class="card"><h2>Gün puanı</h2><p class="empty" style="margin:0">${x.mood} / 5</p></div>`:""}
   ${past?"":trendCard(x)+coachCards(x,sn)+denemeCard(x)+parentCard(x)}<div class="card"><h2>Günün akışı</h2>${x.L.length?`<ul class="tl">${x.L.slice().reverse().map(l=>`<li><time>${l.t}</time>${l.m}</li>`).join("")}</ul>`:`<p class="empty">${past?"Bu güne ait hareket kaydı yok.":"Bugün henüz bir hareket yok."}</p>`}</div>`;
 }
@@ -314,6 +314,7 @@ document.addEventListener("click",e=>{
   else if(t.id==="setgoal"){const q=+document.getElementById("gq").value||0,m=+document.getElementById("gm").value||0;if(!q&&!m)return;const gs=document.getElementById("gs").value;C.goals[sel]={day:day(),s:gs,q,m};render();dbw(sb.from("goals").upsert({student_id:sel,day:day(),subj:gs,q,m}))}
   else if(t.id==="delgoal"){delete C.goals[sel];render();dbw(sb.from("goals").delete().eq("student_id",sel).eq("day",day()))}
   else if(t.id==="addnote"){const v=document.getElementById("note").value.trim();if(!v)return;(C.notes[sel]=C.notes[sel]||[]).push({t:Date.now(),x:v});render();dbw(sb.from("notes").insert({student_id:sel,body:v.slice(0,1000)}))}
+  else if(t.id==="tgsave")targetSave(t.dataset.sid||ME);
   else if(t.id==="exgo")examExtract();
   else if(t.id==="exsave")examSave();
   else if(t.id==="excancel"){PX=null;setEx("");render()}
@@ -325,7 +326,7 @@ document.addEventListener("click",e=>{
   else if(t.id==="backhist"){selDay=null;render()}
   else if(t.dataset.per){per=t.dataset.per;render()}
   else if(t.dataset.d){selDay=t.dataset.d===day()?null:t.dataset.d;render();if(selDay&&!DSTATE[sel+"|"+selDay]){const id=sel,d=selDay;loadDay(id,d).then(()=>{if(sel===id&&selDay===d)render()})}}
-  else if(t.dataset.i){sel=t.dataset.i;selDay=null;render();const id=sel;Promise.all([loadHist(id),loadExams(id),loadReport(id)]).then(()=>{if(sel===id)render()})}
+  else if(t.dataset.i){sel=t.dataset.i;selDay=null;render();const id=sel;Promise.all([loadHist(id),loadExams(id),loadReport(id),loadTarget(id)]).then(()=>{if(sel===id)render()})}
   else if(t.id==="addq")addQ();
   else if(t.id==="reset"){if(confirm("Bugünün verisi silinsin mi?")){S=fresh();save();render()}}
   else if(t.dataset.s){subj=t.dataset.s;render()}
@@ -334,7 +335,7 @@ document.addEventListener("click",e=>{
 });
 setInterval(()=>{const c=document.getElementById("clock");if(c&&S.status==="study")c.textContent=dur(total())},1000);
 let ME=null,ROLE=null,NAME="",STU=[],ROWS=[];
-let EXMSG="",PX=null,AIBUSY=null;const EX={},AIR={};
+let EXMSG="",PX=null,AIBUSY=null;const EX={},AIR={},TG={};
 const setEx=m=>{EXMSG=m;const e=document.getElementById("exmsg");if(e)e.textContent=m};
 async function callFn(n,body){
   try{
@@ -345,6 +346,56 @@ async function callFn(n,body){
   }catch(e){return {error:"Bağlantı kurulamadı."}}
 }
 async function loadExams(id){try{const {data}=await sb.from("exam_results").select("*").eq("student_id",id).order("exam_date",{ascending:true}).order("created_at",{ascending:true});EX[id]=data||[]}catch(e){EX[id]=[]}}
+async function loadTarget(id){try{const {data}=await sb.from("exam_targets").select("*").eq("student_id",id).maybeSingle();TG[id]=data||null}catch(e){TG[id]=null}}
+const tgKey=t=>JSON.stringify(t?[t.exam_type,Number(t.target_net),t.target_score==null?null:Number(t.target_score)]:null);
+function targetForm(sid,mine){
+  const t=TG[sid]||{},tur=t.exam_type||"TYT";
+  return `<div class="card"><h2>${mine?"Hedefim":"Öğrencinin hedefi"}</h2>
+  <p class="empty" style="margin:0 0 8px">${mine?"Ulaşmak istediğin toplam neti yaz. Yapay zekâ, analizinde hedefe uzaklığını da yorumlar.":"Hedefi sen de belirleyebilirsin; öğrenci de kendi ekranında görür ve değiştirebilir."}</p>
+  <div class="row" style="margin-top:0"><label>Tür<select id="tgt">${["TYT","AYT","LGS","BRANS"].map(x=>`<option value="${x}"${x===tur?" selected":""}>${x}</option>`).join("")}</select></label>
+  <label>Hedef net<input id="tgn" type="number" min="1" max="500" step="0.25" inputmode="decimal" style="width:90px" value="${t.target_net==null?"":esc(t.target_net)}"></label>
+  <label>Hedef puan (isteğe bağlı)<input id="tgp" type="number" min="0" max="600" step="0.1" inputmode="decimal" style="width:90px" value="${t.target_score==null?"":esc(t.target_score)}"></label></div>
+  <div class="row"><label>Not (isteğe bağlı)<input id="tgs" type="text" maxlength="120" style="width:100%;min-width:220px" value="${esc(t.note||"")}"></label></div>
+  <p id="tgerr" class="empty" style="margin:6px 0;color:var(--warn)">${esc(TGMSG)}</p>
+  <div class="row"><button class="btn" id="tgsave" data-sid="${sid}" style="padding:10px 16px">Hedefi kaydet</button></div></div>`;
+}
+let TGMSG="";
+async function targetSave(sid){
+  const err=m=>{TGMSG=m;const e=document.getElementById("tgerr");if(e)e.textContent=m};
+  const tur=document.getElementById("tgt").value,net=parseFloat(document.getElementById("tgn").value),ps=document.getElementById("tgp").value.trim(),puan=ps===""?null:parseFloat(ps),note=document.getElementById("tgs").value.trim().slice(0,120);
+  if(!["TYT","AYT","LGS","BRANS"].includes(tur)){err("Tür seç.");return}
+  if(!(net>0&&net<=500)){err("Hedef net 1 ile 500 arasında olmalı.");return}
+  if(puan!==null&&!(puan>=0&&puan<=600)){err("Hedef puan 0 ile 600 arasında olmalı.");return}
+  const row={student_id:sid,exam_type:tur,target_net:net,target_score:puan,note:note||null,updated_at:new Date().toISOString()};
+  const {error}=await sb.from("exam_targets").upsert(row);
+  if(error){err("Kaydedilemedi: "+error.message);return}
+  TG[sid]=row;TGMSG="Hedef kaydedildi. Analizi yenilersen yapay zekâ hedef farkını da yorumlar.";render();
+}
+function lineSVG(pts,target){
+  const W=320,H=130,pl=30,pr=10,pt=12,pb=22;
+  const ys=pts.map(q=>q.y).concat(target==null?[]:[target]),lo=Math.floor(Math.min(...ys)-2),hi=Math.ceil(Math.max(...ys)+2),rg=Math.max(1,hi-lo);
+  const X=i=>pl+(pts.length>1?i*(W-pl-pr)/(pts.length-1):0),Y=v=>pt+(hi-v)*(H-pt-pb)/rg;
+  const path=pts.map((q,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(q.y).toFixed(1)).join(" ");
+  const dots=pts.map((q,i)=>`<circle cx="${X(i).toFixed(1)}" cy="${Y(q.y).toFixed(1)}" r="3.5" fill="var(--gold)"/><text x="${X(i).toFixed(1)}" y="${(Y(q.y)-7).toFixed(1)}" text-anchor="middle" font-size="10" fill="var(--ink)">${num(q.y)}</text>`).join("");
+  const tl=target==null?"":`<line x1="${pl}" x2="${W-pr}" y1="${Y(target).toFixed(1)}" y2="${Y(target).toFixed(1)}" stroke="var(--ok)" stroke-width="1.5" stroke-dasharray="5 4"/><text x="${W-pr}" y="${(Y(target)-4).toFixed(1)}" text-anchor="end" font-size="10" fill="var(--ok)">hedef ${num(target)}</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Net grafiği" style="display:block"><line x1="${pl}" x2="${pl}" y1="${pt}" y2="${H-pb}" stroke="var(--line)"/><line x1="${pl}" x2="${W-pr}" y1="${H-pb}" y2="${H-pb}" stroke="var(--line)"/><text x="${pl-4}" y="${pt+4}" text-anchor="end" font-size="10" fill="var(--mute)">${hi}</text><text x="${pl-4}" y="${H-pb}" text-anchor="end" font-size="10" fill="var(--mute)">${lo}</text>${tl}<path d="${path}" fill="none" stroke="var(--navy2)" stroke-width="2"/>${dots}</svg>`;
+}
+function netChartsCard(sid){
+  const L=EX[sid]||[],t=TG[sid],all=L.filter(e=>e.total_net!=null);
+  const tur=t&&t.exam_type||(all.length?all[all.length-1].exam_type:null);
+  const E=all.filter(e=>e.exam_type===tur);
+  if(E.length<2)return `<div class="card"><h2>Net grafiği</h2><p class="empty">Grafik için aynı türden en az 2 deneme sonucu gerekli.</p></div>`;
+  const hedef=t&&t.exam_type===tur?Number(t.target_net):null;
+  const son=num(E[E.length-1].total_net),fark=hedef==null?"":` · hedefe ${Math.round((hedef-son)*100)/100>0?Math.round((hedef-son)*100)/100+" net kaldı":"ulaşıldı 🎯"}`;
+  const by={};
+  E.forEach((e,i)=>(e.subjects||[]).forEach(d=>{if(typeof d.net==="number")(by[d.ders]=by[d.ders]||[]).push(d.net)}));
+  const spark=Object.entries(by).filter(([,a])=>a.length>=2).map(([k,a])=>{
+    const dl=Math.round((a[a.length-1]-a[a.length-2])*100)/100,c=dl>0?"var(--ok)":dl<0?"var(--warn)":"var(--mute)";
+    return `<div class="subj"><span>${esc(k)}</span><span>${a.map(num).join(" → ")} <b style="color:${c}">${dl>0?"▲ +":dl<0?"▼ ":"= "}${dl}</b></span></div>`}).join("");
+  return `<div class="card"><h2>${esc(tur)} toplam net grafiği</h2><p class="empty" style="margin:0 0 6px">Son deneme: ${son} net${fark}</p>
+  ${lineSVG(E.map(e=>({y:num(e.total_net)})),hedef)}
+  ${spark?`<h2 style="font-size:15px;margin-top:12px">Derslere göre son değişim</h2>${spark}`:""}</div>`;
+}
 async function loadReport(id){try{const {data}=await sb.from("ai_reports").select("content").eq("student_id",id).maybeSingle();AIR[id]=data&&data.content&&data.content.report?data.content:null}catch(e){AIR[id]=null}}
 async function prepImage(file){
   try{
@@ -419,8 +470,8 @@ async function aiPing(){
   const r=await callFn("exam-insights",{ping:true});
   el.textContent=r.error?("Hata: "+r.error):r.ok?(r.model_kullanilabilir?"✓ Bağlantı çalışıyor, model: "+r.model:"Anahtar çalışıyor ama model ("+r.model+") bulunamadı. Kullanılabilir: "+(r.flash_modeller||[]).join(", ")):("Gemini anahtarı kabul edilmedi (kod "+r.status+")");
 }
-function reportHTML(R,title){
-  const r=R.report||{},s=R.stats||{},lv={YUKSEK:"Yüksek",ORTA:"Orta",DUSUK:"Düşük"};
+function reportHTML(R,title,sid){
+  const r=R.report||{},s=R.stats||{},hd=s.hedef||null,stale=sid!=null&&tgKey(TG[sid])!==tgKey(hd&&{exam_type:hd.tur,target_net:hd.hedef_net,target_score:hd.hedef_puan}),lv={YUKSEK:"Yüksek",ORTA:"Orta",DUSUK:"Düşük"};
   const li=a=>(a||[]).map(x=>`<li>${esc(x)}</li>`).join("");
   const ders=(s.dersler||[]).map(d=>`<div class="subj"><span>${esc(d.ders)}</span><span>${d.onceki_net==null?num(d.son_net)+" net":num(d.onceki_net)+" → "+num(d.son_net)+" ("+(num(d.fark)>0?"+":"")+num(d.fark)+")"}${d.egilim?" · "+esc(d.egilim):""}</span></div>`).join("");
   const yor=(r.ders_yorumlari||[]).map(d=>`<div class="empty" style="font-size:14px;margin-top:4px"><b>${esc(d.ders)}:</b> ${esc(d.yorum)}</div>`).join("");
@@ -434,13 +485,15 @@ function reportHTML(R,title){
   ${(r.guclu_yonler||[]).length?h2("Güçlü yönler")+`<ul class="tl">${li(r.guclu_yonler)}</ul>`:""}
   ${(r.gelistirilecek_alanlar||[]).length?h2("Geliştirilecek alanlar")+`<ul class="tl">${li(r.gelistirilecek_alanlar)}</ul>`:""}
   ${pr?h2("Öncelikli konular ve çalışma önerisi")+pr:""}
+  ${hd?h2("Hedef durumu")+`<div class="subj"><span>${esc(hd.tur)} hedefi: ${num(hd.hedef_net)} net${hd.hedef_puan==null?"":" · "+num(hd.hedef_puan)+" puan"}</span><span>${hd.son_net==null?"Henüz deneme yok":"Son: "+num(hd.son_net)+" · "+(num(hd.kalan_net)>0?num(hd.kalan_net)+" net kaldı":"hedefe ulaşıldı")}</span></div>${hd.son_3_ortalama==null?"":`<div class="subj"><span>Son 3 deneme ortalaması</span><span>${num(hd.son_3_ortalama)} net</span></div>`}${hd.not?`<div class="empty" style="font-size:13px;margin-top:4px">Not: ${esc(hd.not)}</div>`:""}${r.hedef_yorumu?`<p class="empty" style="font-size:14px;margin:8px 0 0">${esc(r.hedef_yorumu)}</p>`:""}`:""}
+  ${stale?`<p class="empty" style="color:var(--warn);font-size:13px">Hedef değişti. Analizi yenilersen yapay zekâ yeni hedefe göre yorumlar.</p>`:""}
   ${(r.koc_basliklari||[]).length?h2("Görüşme başlıkları (koç)")+`<ul class="tl">${li(r.koc_basliklari)}</ul>`:""}
   ${r.veri_notu?`<p class="empty" style="font-size:13px;margin:12px 0 0">${esc(r.veri_notu)}</p>`:""}
   <p class="empty" style="font-size:12px;margin:8px 0 0">Bu analiz yapay zekâ ile üretilmiştir, kesin bir sonuç değil bir rehberdir.</p></div>`;
 }
 function aiReportCard(sid,title){
   if(AIBUSY===sid)return `<div class="card"><h2>Yapay zekâ analizi</h2><p class="empty">Analiz hazırlanıyor…</p></div>`;
-  return AIR[sid]?reportHTML(AIR[sid],title):"";
+  return AIR[sid]?reportHTML(AIR[sid],title,sid):"";
 }
 function examRows(L){return L.slice().reverse().slice(0,8).map(e=>`<div class="subj"><span>${esc(e.exam_name)} · ${esc(e.exam_type)}</span><span>${e.total_net==null?"–":num(e.total_net)+" net"}${e.exam_date?" · "+fd(String(e.exam_date)):""}</span></div>`).join("")}
 function examCard(){
@@ -475,7 +528,7 @@ async function doLogin(){
 async function loadStudent(){
   const {data}=await sb.from("daily").select("state").eq("student_id",ME).eq("day",day()).maybeSingle();
   S=data?Object.assign(fresh(),data.state):fresh();S.day=day();
-  await pullStudent();await loadExams(ME);await loadReport(ME);
+  await pullStudent();await loadExams(ME);await loadReport(ME);await loadTarget(ME);
 }
 async function pullStudent(){
   const [g,n]=await Promise.all([sb.from("goals").select("*").eq("student_id",ME).eq("day",day()).maybeSingle(),sb.from("notes").select("body,created_at").eq("student_id",ME).order("created_at")]);
