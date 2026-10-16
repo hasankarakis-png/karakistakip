@@ -43,3 +43,5 @@ Deneme görseli okuma, gelişim analizi ve konu önceliklendirme için `README-A
 **Sunucu işlevleri** (`supabase/functions`): `exam-extract`, `exam-insights` (analiz, `action: "plan"`, `action: "chat"`), `admin-students` (öğrenci hesabı yönetimi, yalnızca koç). Yeni tablolar ve kurallar `supabase/schema-ai.sql` dosyasında.
 
 **Hatırlatma bildirimi:** öğrenci "Hedefim" sekmesinden bildirimi açar. Her gün 15:00 ve 20:00'de (TSİ) çalışmaya başlamayan veya bekleyen görevi olan öğrencilere bildirim gider (`send-reminders` işlevi + pg_cron). iPhone'da bildirim için siteyi önce "Ana Ekrana Ekle" ile kurmak gerekir.
+
+**Deneme takvimi:** koç ana ekrandan ayın denemelerini ekler; öğrenci Denemeler sekmesinde aylık takvimi görür ve sonuç yüklerken listeden deneme seçerek ad, tarih ve türü otomatik doldurur. Takvimin altında denemetakvimim.com bağlantısı vardır.
