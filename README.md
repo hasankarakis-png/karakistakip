@@ -44,6 +44,8 @@ Deneme görseli okuma, gelişim analizi ve konu önceliklendirme için `README-A
 
 **Hatırlatma bildirimi:** öğrenci "Hedefim" sekmesinden bildirimi açar. Her gün 15:00 ve 20:00'de (TSİ) çalışmaya başlamayan veya bekleyen görevi olan öğrencilere bildirim gider (`send-reminders` işlevi + pg_cron). iPhone'da bildirim için siteyi önce "Ana Ekrana Ekle" ile kurmak gerekir.
 
+Cloudflare (Turnstile, Pages, alan adı, AI Gateway) kurulumu için README-CLOUDFLARE.md dosyasına bak.
+
 ## Denetim turu (v3.1)
 - Veri güvenliği: okuma/yazma hatasında günün verisi silinmez, kayıt hatası üstte uyarı şeridiyle görünür ve otomatik yeniden denenir; gece yarısı geçişi dünün oturumunu kapatıp yeni güne devam eder.
 - Yapay zekâ kotası yalnızca sunucuda artırılır; öğrenci sayaç veya rapor önbelleği yazamaz.

@@ -136,11 +136,18 @@ function clean(r: any, coach: boolean) {
 }
 
 let RESOLVED: string | null = null;
-const GURL = (m: string) => `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`;
+// Gemini taban adresi: varsayılan Google; istenirse Cloudflare AI Gateway adresi GEMINI_BASE ile verilir.
+// Güvenlik: anahtar yalnızca bilinen iki sunucudan birine gönderilir, başka adres yok sayılır.
+const GBASE = (() => {
+  const d = "https://generativelanguage.googleapis.com/v1beta", v = (Deno.env.get("GEMINI_BASE") ?? "").trim().replace(/\/+$/, "");
+  return /^https:\/\/(generativelanguage\.googleapis\.com|gateway\.ai\.cloudflare\.com)\//.test(v + "/") ? v : d;
+})();
+const GURL = (m: string) => `${GBASE}/models/${m}:generateContent`;
+const GLIST = `${GBASE}/models?pageSize=200`;
 
 // Ayarlı model bulunamazsa (404), anahtarın erişebildiği en yeni kararlı "flash" modelini seçer.
 async function pickModel(key: string): Promise<string | null> {
-  const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { headers: { "x-goog-api-key": key } });
+  const r = await fetch(GLIST, { headers: { "x-goog-api-key": key } });
   if (!r.ok) return null;
   const j = await r.json();
   const names: string[] = (j?.models ?? []).filter((m: any) => (m?.supportedGenerationMethods ?? []).includes("generateContent")).map((m: any) => String(m.name).replace("models/", ""));
@@ -285,10 +292,10 @@ export async function handler(req: Request): Promise<Response> {
   if (body?.ping) {
     if (role !== "coach") return J({ error: "Yetkisiz." }, 403);
     try {
-      let r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { headers: { "x-goog-api-key": gk } });
+      let r = await fetch(GLIST, { headers: { "x-goog-api-key": gk } });
       for (let i = 0; i < 2 && (r.status === 503 || r.status === 500); i++) {
         await new Promise((res) => setTimeout(res, 1500));
-        r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { headers: { "x-goog-api-key": gk } });
+        r = await fetch(GLIST, { headers: { "x-goog-api-key": gk } });
       }
       if (!r.ok) return J({ ok: false, status: r.status, model: MODEL, anahtar_uzunlugu: gk.length, hata: "Gemini anahtarı kabul edilmedi veya servis erişilemiyor." + (await errDetail(r)) });
       const j = await r.json();

@@ -824,12 +824,25 @@ function aiCard(sid){
 const setSync=m=>{const e=document.getElementById("sync");if(e)e.textContent=m};
 const dbw=p=>Promise.resolve(p).then(r=>{if(r&&r.error)setSync("⚠️ "+r.error.message);return r},()=>setSync("⚠️ Bağlantı yok"));
 const busy=()=>/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||"");
-const loginView=msg=>`<div class="card" style="max-width:380px;margin:30px auto"><h2>Giriş</h2><div class="row" style="flex-direction:column;align-items:stretch"><label>Kullanıcı adı<input id="lu" autocomplete="username" autocapitalize="none" style="width:100%"></label><label>PIN / şifre<input id="lp" type="password" autocomplete="current-password" style="width:100%"></label><button class="btn" id="login">Giriş yap</button></div>${msg?`<p class="empty" style="color:var(--warn)">${esc(msg)}</p>`:""}</div>`;
+const loginView=msg=>`<div class="card" style="max-width:380px;margin:30px auto"><h2>Giriş</h2><div class="row" style="flex-direction:column;align-items:stretch"><label>Kullanıcı adı<input id="lu" autocomplete="username" autocapitalize="none" style="width:100%"></label><label>PIN / şifre<input id="lp" type="password" autocomplete="current-password" style="width:100%"></label><div id="ts"></div><button class="btn" id="login">Giriş yap</button></div>${msg?`<p class="empty" style="color:var(--warn)">${esc(msg)}</p>`:""}</div>`;
+/* Cloudflare Turnstile (robot doğrulaması). TS_KEY boşsa kapalıdır; Supabase'de Captcha açılmadan önce anahtar buraya yazılmalıdır. */
+const TS_KEY="";let TSTOKEN="",TSID=null,TSLOAD=null;
+function tsScript(){return TSLOAD||(TSLOAD=new Promise((ok,no)=>{const s=document.createElement("script");s.src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";s.async=true;s.onload=ok;s.onerror=no;document.head.appendChild(s)}))}
+async function tsMount(){
+  TSTOKEN="";TSID=null;if(!TS_KEY)return;
+  const el=document.getElementById("ts");if(!el)return;
+  try{await tsScript();if(window.turnstile&&document.getElementById("ts"))TSID=window.turnstile.render("#ts",{sitekey:TS_KEY,callback:t=>{TSTOKEN=t},"expired-callback":()=>{TSTOKEN=""},"error-callback":()=>{TSTOKEN=""},theme:"auto",language:"tr"})}catch(e){el.textContent="Robot doğrulaması yüklenemedi. İnternetini kontrol edip sayfayı yenile."}
+}
+const setLoginMsg=m=>{let e=document.getElementById("lmsg");if(!e){e=document.createElement("p");e.id="lmsg";e.className="empty";e.style.color="var(--warn)";const t=document.getElementById("ts");(t?t.parentNode:document.getElementById("app")).appendChild(e)}e.textContent=m};
+const showLogin=msg=>{document.getElementById("app").innerHTML=loginView(msg);tsMount()};
 async function doLogin(){
   const u=document.getElementById("lu").value.trim().toLowerCase().replace(/[^a-z0-9._-]/g,""),p=document.getElementById("lp").value;
   if(!u||!p)return;
-  const r=await sb.auth.signInWithPassword({email:u+"@takip.karakis.app",password:p});
-  if(r.error){document.getElementById("app").innerHTML=loginView("Kullanıcı adı veya PIN hatalı.");return}
+  if(TS_KEY&&!TSTOKEN)return setLoginMsg("Önce robot doğrulamasını tamamla.");
+  const r=await sb.auth.signInWithPassword({email:u+"@takip.karakis.app",password:p,options:TS_KEY?{captchaToken:TSTOKEN}:undefined});
+  if(r.error){
+    const m=String(r.error.message||""),st=r.error.status;
+    showLogin(/captcha/i.test(m)?"Robot doğrulaması başarısız, tekrar dene.":st===429||/rate|too many/i.test(m)?"Çok fazla deneme yapıldı, biraz bekleyip tekrar dene.":(st===400||/invalid/i.test(m))?"Kullanıcı adı veya PIN hatalı.":"Giriş yapılamadı. İnternet bağlantını kontrol et.");return}
   start();
 }
 async function loadStudent(){
@@ -865,11 +878,11 @@ const refresh=()=>{clearTimeout(rt);rt=setTimeout(async()=>{if(!ME||busy()||PX||
 async function start(){
   const app=document.getElementById("app");
   const {data:{session}}=await sb.auth.getSession();
-  if(!session){app.innerHTML=loginView();return}
+  if(!session){showLogin();return}
   ME=session.user.id;
   const {data:p,error:pe}=await sb.from("profiles").select("name,role").eq("id",ME).maybeSingle();
-  if(pe){ME=null;app.innerHTML=loginView("Sunucuya ulaşılamadı. İnternetini kontrol edip sayfayı yenile.");return}
-  if(!p){await sb.auth.signOut();ME=null;app.innerHTML=loginView("Profil bulunamadı, koçuna haber ver.");return}
+  if(pe){ME=null;showLogin("Sunucuya ulaşılamadı. İnternetini kontrol edip sayfayı yenile.");return}
+  if(!p){await sb.auth.signOut();ME=null;showLogin("Profil bulunamadı, koçuna haber ver.");return}
   NAME=p.name;ROLE=p.role;view=ROLE==="coach"?"c":"s";
   document.getElementById("who").textContent=NAME+" · ";document.getElementById("out").hidden=false;document.getElementById("reset").hidden=ROLE==="coach";document.body.classList.toggle("stu",ROLE==="student");
   if(ROLE==="coach"){await pullCoach();["daily","goals","notes","exam_results","weekly_tasks"].reduce((ch,t)=>ch.on("postgres_changes",{event:"*",schema:"public",table:t},refresh),sb.channel("koc")).subscribe();setInterval(refresh,60000)}
@@ -886,7 +899,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="lp")d
 })();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 if(SUPABASE_URL.includes("PROJE-KODU"))document.getElementById("app").innerHTML=`<div class="card"><h2>Kurulum gerekli</h2><p>index.html içindeki SUPABASE_URL ve SUPABASE_KEY değerlerini kendi projenle değiştir (README.md, 4. adım).</p></div>`;
-else start().catch(e=>{document.getElementById("app").innerHTML=loginView("Bağlantı hatası: "+e.message)});
+else start().catch(e=>{showLogin("Bağlantı hatası: "+e.message)});
 </script>
 </body>
 </html>
