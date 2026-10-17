@@ -159,6 +159,11 @@ async function geminiRaw(key: string, system: string, schema: unknown, contents:
   const payload = JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents, generationConfig });
   const send = (m: string) => fetch(GURL(m), { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: payload });
   let r = await send(RESOLVED ?? MODEL);
+  // Google geçici olarak yoğunsa (500/503) kısa beklemeyle en fazla 2 kez yeniden dener.
+  for (let i = 0; i < 2 && (r.status === 503 || r.status === 500); i++) {
+    await new Promise((res) => setTimeout(res, 1500 * (i + 1)));
+    r = await send(RESOLVED ?? MODEL);
+  }
   if (r.status === 404 && !RESOLVED) {
     const alt = await pickModel(key);
     if (alt && alt !== MODEL) { RESOLVED = alt; r = await send(alt); }
@@ -260,7 +265,7 @@ async function aiAction(sb: any, gk: string, user: any, role: string, sid: strin
 export async function handler(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return J({ error: "Yalnızca POST kabul edilir." }, 405);
-  const url = Deno.env.get("SUPABASE_URL"), pk = Deno.env.get("APP_PUBLISHABLE_KEY"), gk = Deno.env.get("GEMINI_API_KEY");
+  const url = Deno.env.get("SUPABASE_URL"), pk = Deno.env.get("APP_PUBLISHABLE_KEY"), gk = (Deno.env.get("GEMINI_API_KEY") ?? "").replace(/[\s"']/g, "");
   if (!url || !pk || !gk) return J({ error: "Sunucu yapılandırması eksik." }, 500);
   const auth = req.headers.get("Authorization") ?? "";
   const sb = createClient(url, pk, { global: { headers: { Authorization: auth } }, auth: { persistSession: false } });
@@ -276,11 +281,19 @@ export async function handler(req: Request): Promise<Response> {
   // Bağlantı testi (yalnızca koç): anahtarı ve model adını doğrular, anahtarı asla döndürmez.
   if (body?.ping) {
     if (role !== "coach") return J({ error: "Yetkisiz." }, 403);
-    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { headers: { "x-goog-api-key": gk } });
-    if (!r.ok) return J({ ok: false, status: r.status, model: MODEL, hata: "Gemini anahtarı kabul edilmedi veya servis erişilemiyor." });
-    const j = await r.json();
-    const names: string[] = (j?.models ?? []).filter((m: any) => (m?.supportedGenerationMethods ?? []).includes("generateContent")).map((m: any) => String(m.name).replace("models/", ""));
-    return J({ ok: true, model: MODEL, model_kullanilabilir: names.includes(MODEL), flash_modeller: names.filter((n) => /flash/.test(n)).slice(0, 15) });
+    try {
+      let r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { headers: { "x-goog-api-key": gk } });
+      for (let i = 0; i < 2 && (r.status === 503 || r.status === 500); i++) {
+        await new Promise((res) => setTimeout(res, 1500));
+        r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { headers: { "x-goog-api-key": gk } });
+      }
+      if (!r.ok) return J({ ok: false, status: r.status, model: MODEL, anahtar_uzunlugu: gk.length, hata: "Gemini anahtarı kabul edilmedi veya servis erişilemiyor." + (await errDetail(r)) });
+      const j = await r.json();
+      const names: string[] = (j?.models ?? []).filter((m: any) => (m?.supportedGenerationMethods ?? []).includes("generateContent")).map((m: any) => String(m.name).replace("models/", ""));
+      return J({ ok: true, model: MODEL, model_kullanilabilir: names.includes(MODEL), flash_modeller: names.filter((n) => /flash/.test(n)).slice(0, 15) });
+    } catch (e: any) {
+      return J({ error: "Gemini bağlantı testi başarısız: " + String(e?.message ?? e).replace(/[\u0000-\u001f<>]/g, " ").slice(0, 160) }, 502);
+    }
   }
 
   // Öğrenci yalnızca kendini; koç student_id ile istediği öğrenciyi (RLS koçun erişimini zaten sınırlar).
