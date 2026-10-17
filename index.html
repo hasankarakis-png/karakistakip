@@ -96,6 +96,43 @@ body.stu .wrap{padding-bottom:100px}
 .chat{display:flex;flex-direction:column;gap:8px;max-height:46vh;overflow:auto;margin-bottom:10px}
 .cm{padding:9px 12px;border-radius:14px;max-width:88%;white-space:pre-wrap;font-size:15px;line-height:1.4}.cm.me{align-self:flex-end;background:var(--acc);color:var(--acc-ink)}.cm.ai{align-self:flex-start;background:var(--cream);border:1px solid var(--line)}
 .bdg{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}.bd{border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center;font-size:13px;opacity:.4}.bd.on{opacity:1;border-color:var(--acc)}.bd b{display:block;font-size:26px}
+/* HUD buton teması: kesik köşe, köşe noktaları, parlama, kayan ışık */
+.btn{--cut:12px;--bf:var(--acc);--bi:var(--acc-ink);--bb:color-mix(in srgb,var(--acc) 55%,#fff);--bd:var(--bi);
+  position:relative;isolation:isolate;background:none;border:0;border-radius:0;color:var(--bi);box-shadow:none;
+  filter:drop-shadow(0 0 0 transparent);transition:transform .15s ease,filter .25s ease;-webkit-tap-highlight-color:transparent}
+.btn::before,.btn::after{content:"";position:absolute;z-index:-1;pointer-events:none}
+.btn::before{inset:0;background:var(--bb);clip-path:polygon(var(--cut) 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%,0 var(--cut))}
+.btn::after{inset:1.5px;
+  clip-path:polygon(calc(var(--cut) - 1px) 0,100% 0,100% calc(100% - var(--cut) + 1px),calc(100% - var(--cut) + 1px) 100%,0 100%,0 calc(var(--cut) - 1px));
+  background:
+   radial-gradient(circle at calc(100% - 7px) 5px,var(--bd) 1.1px,transparent 1.6px),
+   radial-gradient(circle at calc(100% - 13px) 5px,var(--bd) 1.1px,transparent 1.6px),
+   linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,0) 55%),
+   var(--bf);background-repeat:no-repeat}
+.btn:hover{transform:translateY(-2px);filter:drop-shadow(0 0 10px color-mix(in srgb,var(--bb) 70%,transparent))}
+.btn:active{transform:scale(.96)}
+.btn:focus-visible{outline:2px solid var(--bb);outline-offset:3px}
+.hero .btn{--bf:var(--hbtn);--bi:var(--hbtn-ink);--bb:color-mix(in srgb,var(--hbtn) 60%,var(--hero-ink));box-shadow:none;--cut:16px}
+.hero .btn.alt{--bf:transparent;--bi:var(--hero-ink);--bb:var(--hero-sub);border:0;color:var(--bi)}
+.hero .btn.alt::after{background:
+   radial-gradient(circle at calc(100% - 7px) 5px,var(--bd) 1.1px,transparent 1.6px),
+   radial-gradient(circle at calc(100% - 13px) 5px,var(--bd) 1.1px,transparent 1.6px),
+   var(--hero-bg)}
+.hero .btn.alt::after{background-blend-mode:normal;opacity:1}
+.hero .btn.full{animation:hglow 2.8s ease-in-out infinite}
+@keyframes hglow{0%,100%{filter:drop-shadow(0 0 12px color-mix(in srgb,var(--hbtn) 65%,transparent))}50%{filter:drop-shadow(0 0 2px transparent)}}
+.hero .btn.full::after{
+  background:
+   radial-gradient(circle at calc(100% - 7px) 5px,var(--bd) 1.1px,transparent 1.6px),
+   radial-gradient(circle at calc(100% - 13px) 5px,var(--bd) 1.1px,transparent 1.6px),
+   linear-gradient(100deg,transparent 42%,rgba(255,255,255,.42) 50%,transparent 58%),
+   linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,0) 55%),
+   var(--bf);
+  background-size:100% 100%,100% 100%,300% 100%,100% 100%,100% 100%;
+  background-repeat:no-repeat;
+  animation:shim 5s ease-in-out infinite}
+@keyframes shim{0%,55%{background-position:0 0,0 0,100% 0,0 0,0 0}100%{background-position:0 0,0 0,0% 0,0 0,0 0}}
+.btn:disabled{opacity:.55;cursor:not-allowed}
 </style>
 </head>
 <body class="intro">
@@ -896,6 +933,24 @@ document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="lp")d
   const paint=()=>{const d=root.getAttribute("data-theme")!=="light";btn.textContent=d?"☀ Sabah":"☾ Gece";tc.setAttribute("content",d?"#0B1020":"#C93A20")};
   btn.addEventListener("click",()=>{const n=root.getAttribute("data-theme")==="light"?"dark":"light";root.setAttribute("data-theme",n);try{localStorage.setItem("karakis-tema",n)}catch(e){}paint()});
   paint();setTimeout(()=>document.body.classList.remove("intro"),3200);
+})();
+// HUD butonu: fare üstünde harfler karışıp çözülür (yalnızca düz yazılı butonlarda, hareket azaltma açıksa kapalı)
+(function(){
+  if(window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches)return;
+  const L="ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ",busy=new WeakSet();
+  document.addEventListener("pointerover",e=>{
+    if(e.pointerType==="touch")return;
+    const b=e.target.closest&&e.target.closest(".btn");
+    if(!b||busy.has(b)||b.childNodes.length!==1||b.firstChild.nodeType!==3)return;
+    const n=b.firstChild,o=n.nodeValue;if(o.length<2||o.length>40)return;
+    busy.add(b);let k=0;
+    const t=setInterval(()=>{
+      if(!n.parentNode){clearInterval(t);busy.delete(b);return}
+      k+=1.2;
+      n.nodeValue=[...o].map((c,i)=>c===" "||i<k||!/[A-Za-zÇĞİÖŞÜçğıöşü]/.test(c)?c:L[Math.floor(Math.random()*L.length)]).join("");
+      if(k>=o.length){n.nodeValue=o;clearInterval(t);busy.delete(b)}
+    },35);
+  });
 })();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 if(SUPABASE_URL.includes("PROJE-KODU"))document.getElementById("app").innerHTML=`<div class="card"><h2>Kurulum gerekli</h2><p>index.html içindeki SUPABASE_URL ve SUPABASE_KEY değerlerini kendi projenle değiştir (README.md, 4. adım).</p></div>`;
