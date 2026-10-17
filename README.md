@@ -30,7 +30,7 @@ Deneme görseli okuma, gelişim analizi ve konu önceliklendirme için `README-A
 - Ücretsiz planda uzun süre hareketsiz kalan proje duraklatılabilir. Güncel koşulları Supabase sayfasından kontrol edin.
 
 ## Sınırlar
-- Push bildirimi yok (ör. "sabah uyanmadı" uyarısı). Sonraki aşama: Supabase Edge Function + web push.
+- Hatırlatma bildirimleri öğrencilere gider (aşağıya bak). Koça özet bildirimi henüz yok.
 - Uyarı eşikleri koçun cihazında saklanır.
 - Gün, cihazın yerel saatine göre ayrılır (gece 00:00).
 
@@ -43,3 +43,9 @@ Deneme görseli okuma, gelişim analizi ve konu önceliklendirme için `README-A
 **Sunucu işlevleri** (`supabase/functions`): `exam-extract`, `exam-insights` (analiz, `action: "plan"`, `action: "chat"`), `admin-students` (öğrenci hesabı yönetimi, yalnızca koç). Yeni tablolar ve kurallar `supabase/schema-ai.sql` dosyasında.
 
 **Hatırlatma bildirimi:** öğrenci "Hedefim" sekmesinden bildirimi açar. Her gün 15:00 ve 20:00'de (TSİ) çalışmaya başlamayan veya bekleyen görevi olan öğrencilere bildirim gider (`send-reminders` işlevi + pg_cron). iPhone'da bildirim için siteyi önce "Ana Ekrana Ekle" ile kurmak gerekir.
+
+## Denetim turu (v3.1)
+- Veri güvenliği: okuma/yazma hatasında günün verisi silinmez, kayıt hatası üstte uyarı şeridiyle görünür ve otomatik yeniden denenir; gece yarısı geçişi dünün oturumunu kapatıp yeni güne devam eder.
+- Yapay zekâ kotası yalnızca sunucuda artırılır; öğrenci sayaç veya rapor önbelleği yazamaz.
+- Öğrenci: ilk giriş rehberi (veri/yapay zekâ bilgilendirmesi dahil), yanlış girilen soru kaydını silme, 4 saati aşan sayaç uyarısı, "Asistan" sekmesi, çıkışta cihazdaki verinin temizlenmesi.
+- Koç: tüm öğrencilere toplu görev ata, CSV yedek (günlük çalışma, denemeler, görevler), veli özetine son deneme/hedef/görev bilgisi ve WhatsApp/paylaş düğmesi.
