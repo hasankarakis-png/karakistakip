@@ -43,22 +43,26 @@ export async function handler(req: Request): Promise<Response> {
   const list = subs ?? [];
   if (!list.length) return J({ ok: true, sent: 0, subs: 0 });
   const ids = [...new Set(list.map((s: any) => s.student_id))];
-  const { data: daily } = await sb.from("daily").select("student_id,snap").eq("day", day).in("student_id", ids);
+  const { data: daily } = await sb.from("daily").select("student_id,snap,status:state->>status").eq("day", day).in("student_id", ids);
   const { data: tasks } = await sb.from("weekly_tasks").select("student_id,done").eq("task_date", day).eq("done", false).in("student_id", ids);
-  const studied = new Set((daily ?? []).filter((d: any) => Number(d.snap?.m) > 0).map((d: any) => d.student_id));
+  // Çalışıyor sayılır: kayıtlı süre/soru var VEYA oturum açık/molada/noktalanmış/kapatılmış (snap.m yalnızca kayıt anında hesaplandığından).
+  const ACTIVE = ["study", "break", "stopped", "closed"];
+  const studied = new Set((daily ?? []).filter((d: any) => Number(d.snap?.m) > 0 || Number(d.snap?.q) > 0 || ACTIVE.includes(d.status)).map((d: any) => d.student_id));
   const pend: Record<string, number> = {};
   (tasks ?? []).forEach((t: any) => { pend[t.student_id] = (pend[t.student_id] ?? 0) + 1; });
   let sent = 0, gone = 0, failed = 0;
-  for (const s of list as any[]) {
+  const one = async (s: any) => {
     const m = messageFor(kind, studied.has(s.student_id), pend[s.student_id] ?? 0);
-    if (!m) continue;
+    if (!m || !/^https:\/\//.test(String(s.endpoint))) return;
     try {
-      await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(m), { TTL: 6 * 3600 });
+      await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(m), { TTL: 6 * 3600, timeout: 8000 });
       sent++;
     } catch (e: any) {
       if (e?.statusCode === 404 || e?.statusCode === 410) { gone++; await sb.from("push_subs").delete().eq("id", s.id); } else failed++;
     }
-  }
+  };
+  // Gönderimi 10'arlı gruplar halinde paralel yap (tek tek beklemek süre sınırını zorlar).
+  for (let i = 0; i < list.length; i += 10) await Promise.allSettled((list as any[]).slice(i, i + 10).map(one));
   return J({ ok: true, sent, gone, failed, subs: list.length });
 }
 

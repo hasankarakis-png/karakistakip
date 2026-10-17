@@ -67,6 +67,7 @@ select{width:auto}
 .s .n{display:flex;justify-content:space-between;margin-top:8px;font-size:14px;font-weight:600}
 .bar{height:6px;background:var(--line);border-radius:6px;margin-top:8px;overflow:hidden}.bar i{display:block;height:100%;background:var(--gold)}
 .note{font-size:13px;color:var(--mute);margin-top:18px}
+body.offl::before{content:"⚠️ Kaydedilemedi — bağlantını kontrol et. Verilerin cihazında duruyor, bağlantı gelince otomatik gönderilecek.";position:fixed;left:0;right:0;top:0;z-index:60;padding:8px 14px;background:#C93A20;color:#fff;font-size:13px;text-align:center}
 .link{background:none;border:0;color:var(--mute);text-decoration:underline;font:inherit;font-size:13px;cursor:pointer;padding:0}
 .gl{display:flex;justify-content:space-between;font-size:14px;margin-top:10px}textarea{width:100%;font:16px var(--fb),sans-serif;padding:10px;border-radius:10px;border:1.5px solid var(--line);background:var(--cream);color:var(--ink);min-height:70px;resize:vertical}.nt{padding:8px 0;border-bottom:1px dashed var(--line);font-size:15px}.nt time{display:block;color:var(--mute);font-size:12px}
 .rb{display:flex;justify-content:space-between;gap:10px;width:100%;background:none;border:0;border-bottom:1px dashed var(--line);padding:9px 0;font:inherit;font-size:15px;color:inherit;cursor:pointer;text-align:left}.rb span:last-child{color:var(--mute);text-align:right}
@@ -119,7 +120,31 @@ let S=fresh();
 let view="s",subj=SUBJ[0],meth=METH[0];
 const snap=()=>({m:Math.round(total()/60000),q:solved(),prog:S.prog?1:0,mood:S.mood,sleep:S.sleep,dist:S.dist,en:S.en,str:S.str,act:actPct(),c:correct(),b:S.qs.reduce((a,q)=>a+(q.b||0),0)});
 let pend;
-const save=()=>{try{localStorage.setItem(KEY+ME,JSON.stringify(S))}catch(e){}if(!ME||ROLE!=="student")return;clearTimeout(pend);setSync("Kaydediliyor…");pend=setTimeout(()=>dbw(sb.from("daily").upsert({student_id:ME,day:S.day,state:S,snap:snap(),updated_at:new Date().toISOString()})).then(()=>setSync("✓ Kaydedildi")),300)};
+let DIRTY=false,rtry;
+const dayRow=s=>({student_id:ME,day:s.day,state:s,snap:snap(),updated_at:new Date().toISOString()});
+// Gece yarısı geçildiyse dünün oturumunu 00:00'da kapatır, yeni gün için temiz durum kurar (açık ders sürüyorsa devam ettirir).
+function rollover(){
+  if(!ME||ROLE!=="student"||S.day===day())return false;
+  const old=S,m=new Date();m.setHours(0,0,0,0);const mid=m.getTime(),oc=old.cur,was=oc&&(old.status==="study"||old.status==="break");
+  if(oc){const v=Math.max(0,mid-oc.start-oc.brk-(old.status==="break"?mid-oc.bs:0));old.done+=v;old.meth[oc.meth]=(old.meth[oc.meth]||0)+v;old.cur=null;old.status="stopped";old.log.push({t:mid-1,m:"Gece yarısı: oturum otomatik bölündü"})}
+  const sn=snap();try{localStorage.setItem(KEY+ME+"-"+old.day,JSON.stringify(old))}catch(e){}
+  Promise.resolve(sb.from("daily").upsert({student_id:ME,day:old.day,state:old,snap:sn,updated_at:new Date().toISOString()})).then(r=>{if(r&&r.error)setSync("⚠️ "+r.error.message)},()=>setSync("⚠️ Bağlantı yok"));
+  S=fresh();
+  if(was){S.cur={start:mid,brk:0,bs:0,subj:oc.subj,meth:oc.meth};S.status="study";S.log.push({t:mid,m:"Yeni gün: derse devam ettim ("+oc.subj+")"})}
+  return true;
+}
+async function flush(){
+  if(!ME||ROLE!=="student")return;
+  let ok=false;
+  try{const r=await sb.from("daily").upsert(dayRow(S));ok=!r.error;if(r.error)setSync("⚠️ "+r.error.message)}catch(e){setSync("⚠️ Bağlantı yok")}
+  DIRTY=!ok;document.body.classList.toggle("offl",!ok);
+  if(ok)setSync("✓ Kaydedildi");else{clearTimeout(rtry);rtry=setTimeout(flush,8000)}
+}
+const save=()=>{rollover();try{localStorage.setItem(KEY+ME,JSON.stringify(S))}catch(e){}if(!ME||ROLE!=="student")return;clearTimeout(pend);DIRTY=true;setSync("Kaydediliyor…");pend=setTimeout(flush,300)};
+// Uygulama arka plana alınırken bekleyen kaydı hemen gönder; öne dönünce gün değiştiyse yenile.
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"){if(DIRTY){clearTimeout(pend);flush()}}else if(ROLE==="student"&&rollover()){save();render()}});
+window.addEventListener("pagehide",()=>{if(DIRTY)flush()});
+window.addEventListener("online",()=>{if(DIRTY)flush()});
 const actPct=()=>{const m={...S.meth};if(S.cur)m[S.cur.meth]=(m[S.cur.meth]||0)+curNet();const t=Object.values(m).reduce((a,b)=>a+b,0);return t?Math.round(ACT.reduce((a,k)=>a+(m[k]||0),0)/t*100):0};
 const hm=t=>new Date(t).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
 const dur=ms=>{ms=Math.max(0,ms);const s=Math.floor(ms/1000);return String(Math.floor(s/3600)).padStart(2,"0")+":"+String(Math.floor(s%3600/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")};
@@ -191,7 +216,7 @@ function roster(){
 
 let C={goals:{},notes:{},den:{},th:{sleep:6,drop:60,gap:2,mood:2}};try{Object.assign(C.th,JSON.parse(localStorage.getItem("karakis-th-v1")||"{}"))}catch(e){}
 const saveC=()=>{try{localStorage.setItem("karakis-th-v1",JSON.stringify(C.th))}catch(e){}};
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const goalOf=id=>{const g=C.goals[id];return g&&g.day===day()?g:null};
 const pct=(a,b)=>b?Math.min(100,Math.round(a/b*100)):0;
 const ntime=t=>new Date(t).toLocaleString("tr-TR",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
@@ -247,7 +272,7 @@ function thCard(){
 }
 function parentCard(x){
   const h=x.hist,n=h.length,sum=k=>h.reduce((a,d)=>a+(d[k]||0),0),am=Math.round(sum("m")/n),sl=h.filter(d=>d.sleep>0),note=(C.notes[x.id]||[]).slice(-1)[0];
-  const tx=`Sayın veli,\n${x.n} için son ${n} günün özeti:\n• Günlük ortalama net çalışma: ${Math.floor(am/60)} sa ${am%60} dk\n• Çalışılan gün: ${h.filter(d=>d.m>0).length}/${n}\n• Çözülen soru: ${sum("q")}\n• Programı tamamlanan gün: ${sum("prog")}/${n}\n`+(sl.length?`• Ortalama uyku: yaklaşık ${(sl.reduce((a,d)=>a+d.sleep,0)/sl.length).toFixed(1)} saat\n`:"")+(note?`• Koç notu: ${note.x}\n`:"")+`Saygılarımla,\nHasan Karakış · Karakış Eğitim & Danışmanlık`;
+  const tx=`Sayın veli,\n${(STU.find(p=>p.id===x.id)||{}).name||x.n} için son ${n} günün özeti:\n• Günlük ortalama net çalışma: ${Math.floor(am/60)} sa ${am%60} dk\n• Çalışılan gün: ${h.filter(d=>d.m>0).length}/${n}\n• Çözülen soru: ${sum("q")}\n• Programı tamamlanan gün: ${sum("prog")}/${n}\n`+(sl.length?`• Ortalama uyku: yaklaşık ${(sl.reduce((a,d)=>a+d.sleep,0)/sl.length).toFixed(1)} saat\n`:"")+(note?`• Koç notu: ${note.x}\n`:"")+`Saygılarımla,\nHasan Karakış · Karakış Eğitim & Danışmanlık`;
   return `<div class="card"><h2>Veli özeti</h2><textarea id="pt" readonly style="min-height:150px">${esc(tx)}</textarea><div class="row"><button class="btn" style="padding:11px 16px" id="cp">Metni kopyala</button></div></div>`;
 }
 let sel=null;
@@ -257,11 +282,11 @@ function coachView(){
   const c=k=>all.filter(x=>k.includes(x.st)).length;
   const order={study:0,break:1,awake:2,stopped:3,closed:4,idle:5};
   all.sort((a,b)=>order[a.st]-order[b.st]);
-  const avg=Math.round(all.reduce((a,x)=>a+x.m,0)/all.length);
+  const avg=all.length?Math.round(all.reduce((a,x)=>a+x.m,0)/all.length):0;
   return `<div class="sum">
   <div class="stat"><b>${c(["study"])}</b><span>çalışıyor</span></div><div class="stat"><b>${c(["break"])}</b><span>molada</span></div>
   <div class="stat"><b>${c(["idle"])}</b><span>başlamadı</span></div><div class="stat"><b>${c(["closed"])}</b><span>günü kapattı</span></div></div>
-  <div class="card"><h2>Grup ortalaması</h2><p class="empty" style="margin:0">${Math.floor(avg/60)} sa ${avg%60} dk net çalışma · ${all.reduce((a,x)=>a+x.q,0)} soru (20 öğrenci) · ${all.filter(x=>flags(x.hist).length).length} öğrencide uyarı</p></div>
+  <div class="card"><h2>Grup ortalaması</h2><p class="empty" style="margin:0">${Math.floor(avg/60)} sa ${avg%60} dk net çalışma · ${all.reduce((a,x)=>a+x.q,0)} soru (${all.length} öğrenci) · ${all.filter(x=>flags(x.hist).length).length} öğrencide uyarı</p></div>
   ${classCard()}${addStudentCard()}${thCard()}<div class="grid">${all.map(x=>`<button class="s${x.live?" live":""}" data-i="${x.id}"><div class="h"><span class="dot ${DOT[x.st]}"></span>${x.n}${flags(x.hist).length?" 🚩":""}</div><div class="sp">${LBL[x.st]}</div>
   <div class="n"><span>${Math.floor(x.m/60)} sa ${x.m%60} dk</span><span>${x.q} soru</span></div><div class="bar"><i style="width:${Math.round(x.p*100)}%"></i></div></button>`).join("")}</div>`;
 }
@@ -269,7 +294,7 @@ let selDay=null,per="hw";const HIST={},DSTATE={};
 const PER=[["hw","Bu hafta"],["lw","Geçen hafta"],["tm","Bu ay"],["lm","Geçen ay"]];
 const fd=s=>{const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString("tr-TR",{weekday:"short",day:"numeric",month:"short"})};
 const hmin=m=>Math.floor(m/60)+" sa "+(m%60)+" dk";
-async function loadHist(id){try{const {data}=await sb.from("daily").select("day,snap").eq("student_id",id).gte("day",dayN(-70)).order("day");HIST[id]=Object.fromEntries((data||[]).map(r=>[r.day,r.snap||{}]))}catch(e){HIST[id]={}}}
+async function loadHist(id){try{const {data,error}=await sb.from("daily").select("day,snap").eq("student_id",id).gte("day",dayN(-70)).order("day");if(error)throw error;HIST[id]=Object.fromEntries((data||[]).map(r=>[r.day,r.snap||{}]))}catch(e){HIST[id]=HIST[id]||{}}}
 async function loadDay(id,d){try{const {data}=await sb.from("daily").select("state,snap").eq("student_id",id).eq("day",d).maybeSingle();DSTATE[id+"|"+d]=data||{state:{},snap:{}}}catch(e){DSTATE[id+"|"+d]={state:{},snap:{}}}}
 function range(p){
   const t=new Date();t.setHours(0,0,0,0);
@@ -333,7 +358,7 @@ let tab="b",FZ=null,CHAT=[],CHATBUSY=false,CHATERR="",PLANBUSY=null,PLANMSG="",A
 const TK={},PD={};
 const TABS=[["b","🏠","Bugün"],["g","✅","Görevler"],["d","📝","Denemeler"],["h","🎯","Hedefim"],["k","💬","Koçum"]];
 const shift=(s,k)=>{const[y,m,d]=s.split("-").map(Number);return ymd(new Date(y,m-1,d+k))};
-async function loadTasks(id){try{const {data}=await sb.from("weekly_tasks").select("*").eq("student_id",id).gte("task_date",dayN(-7)).lte("task_date",dayN(14)).order("task_date").order("id");TK[id]=data||[]}catch(e){TK[id]=[]}}
+async function loadTasks(id){try{const {data,error}=await sb.from("weekly_tasks").select("*").eq("student_id",id).gte("task_date",dayN(-7)).lte("task_date",dayN(14)).order("task_date").order("id");if(error)throw error;TK[id]=data||[]}catch(e){TK[id]=TK[id]||[]}}
 async function loadPlan(id){try{const {data}=await sb.from("plan_drafts").select("*").eq("student_id",id).maybeSingle();PD[id]=data||null}catch(e){PD[id]=null}}
 function taskRow(t,coach){
   const sub=[t.subject,t.amount].filter(Boolean).map(esc).join(" · ")+(t.source==="ai"?" · 🤖 plan":"");
@@ -476,7 +501,11 @@ function addStudentCard(){
 function adminCard(x){
   return `<div class="card"><h2>Hesap</h2>${admMsg()}<div class="row"><button class="chip" id="admreset">🔑 PIN sıfırla</button><button class="chip" id="admdel" style="border-color:var(--warn)">🗑 Öğrenciyi sil</button></div></div>`;
 }
+let ADMBUSY=false;
 async function admRun(a){
+  if(ADMBUSY)return;ADMBUSY=true;try{await admRun0(a)}finally{ADMBUSY=false}
+}
+async function admRun0(a){
   const p=STU.find(s=>s.id===sel);
   if(a==="add"){const n=document.getElementById("sname").value.trim();if(n.length<2)return;ADMMSG={t:"Hesap hazır"};const r=await callFn("admin-students",{action:"create",name:n});ADMMSG=r.error?{err:r.error}:{t:r.name+" · kullanıcı adı: "+r.username+" · PIN: "+r.pin}}
   if(a==="reset"){if(!p||!confirm(p.name+" için yeni PIN üretilsin mi? Eski PIN çalışmaz."))return;const r=await callFn("admin-students",{action:"reset",student_id:sel});ADMMSG=r.error?{err:r.error}:{t:r.name+" · kullanıcı adı: "+r.username+" · yeni PIN: "+r.pin}}
@@ -511,6 +540,7 @@ function ui(t){
 }
 document.addEventListener("click",e=>{
   const t=e.target.closest("button");if(!t)return;
+  rollover();
   if(ui(t))return;
   if(t.id==="t1"){view="s";render()}else if(t.id==="t2"){view="c";sel=null;render()}
   else if(t.dataset.me){meth=t.dataset.me;render()}
@@ -551,8 +581,8 @@ async function callFn(n,body){
     return r.ok?j:{error:j.error||("Sunucu hatası ("+r.status+")")};
   }catch(e){return {error:"Bağlantı kurulamadı."}}
 }
-async function loadExams(id){try{const {data}=await sb.from("exam_results").select("*").eq("student_id",id).order("exam_date",{ascending:true}).order("created_at",{ascending:true});EX[id]=data||[]}catch(e){EX[id]=[]}}
-async function loadTarget(id){try{const {data}=await sb.from("exam_targets").select("*").eq("student_id",id).maybeSingle();TG[id]=data||null}catch(e){TG[id]=null}}
+async function loadExams(id){try{const {data,error}=await sb.from("exam_results").select("*").eq("student_id",id).order("exam_date",{ascending:true,nullsFirst:true}).order("created_at",{ascending:true});if(error)throw error;EX[id]=data||[]}catch(e){EX[id]=EX[id]||[]}}
+async function loadTarget(id){try{const {data,error}=await sb.from("exam_targets").select("*").eq("student_id",id).maybeSingle();if(error)throw error;TG[id]=data||null}catch(e){if(!(id in TG))TG[id]=null}}
 const tgKey=t=>JSON.stringify(t?[t.exam_type,Number(t.target_net),t.target_score==null?null:Number(t.target_score)]:null);
 function targetForm(sid,mine){
   const t=TG[sid]||{},tur=t.exam_type||"TYT";
@@ -602,7 +632,7 @@ function netChartsCard(sid){
   ${lineSVG(E.map(e=>({y:num(e.total_net)})),hedef)}
   ${spark?`<h2 style="font-size:15px;margin-top:12px">Derslere göre son değişim</h2>${spark}`:""}</div>`;
 }
-async function loadReport(id){try{const {data}=await sb.from("ai_reports").select("content").eq("student_id",id).maybeSingle();AIR[id]=data&&data.content&&data.content.report?data.content:null}catch(e){AIR[id]=null}}
+async function loadReport(id){try{const {data,error}=await sb.from("ai_reports").select("content").eq("student_id",id).maybeSingle();if(error)throw error;AIR[id]=data&&data.content&&data.content.report?data.content:null}catch(e){if(!(id in AIR))AIR[id]=null}}
 async function prepImage(file){
   try{
     const bmp=await createImageBitmap(file),sc=Math.min(1,2400/Math.max(bmp.width,bmp.height)),c=document.createElement("canvas");
@@ -735,8 +765,19 @@ async function doLogin(){
   start();
 }
 async function loadStudent(){
-  const {data}=await sb.from("daily").select("state").eq("student_id",ME).eq("day",day()).maybeSingle();
-  S=data?Object.assign(fresh(),data.state):fresh();S.day=day();
+  const r=await sb.from("daily").select("state").eq("student_id",ME).eq("day",day()).maybeSingle();
+  let loc=null;try{const j=JSON.parse(localStorage.getItem(KEY+ME)||"null");if(j&&j.day===day()&&Array.isArray(j.log))loc=Object.assign(fresh(),j)}catch(e){}
+  if(r.error){
+    // Okuma başarısızsa boş gün kurup sunucudaki kaydın üstüne yazma: cihazdaki yedeği kullan, yoksa durma.
+    if(!loc)throw new Error("Verilerin yüklenemedi. İnternetini kontrol edip sayfayı yenile.");
+    S=loc;setSync("⚠️ Sunucuya ulaşılamadı, cihazdaki kayıt gösteriliyor");
+  }else{
+    const srv=r.data?Object.assign(fresh(),r.data.state):null;
+    // Sunucuya henüz gitmemiş yerel kayıt daha ilerideyse onu koru.
+    S=srv&&loc?(loc.log.length>srv.log.length?loc:srv):(srv||loc||fresh());
+    if(S===loc&&loc.log.length&&(!srv||loc.log.length>srv.log.length))DIRTY=true;
+  }
+  S.day=day();if(DIRTY)save();
   await pullStudent();await Promise.all([loadExams(ME),loadReport(ME),loadTarget(ME),loadTasks(ME),loadHist(ME)]);
 }
 async function pullStudent(){
@@ -758,12 +799,13 @@ async function start(){
   const {data:{session}}=await sb.auth.getSession();
   if(!session){app.innerHTML=loginView();return}
   ME=session.user.id;
-  const {data:p}=await sb.from("profiles").select("name,role").eq("id",ME).maybeSingle();
+  const {data:p,error:pe}=await sb.from("profiles").select("name,role").eq("id",ME).maybeSingle();
+  if(pe){ME=null;app.innerHTML=loginView("Sunucuya ulaşılamadı. İnternetini kontrol edip sayfayı yenile.");return}
   if(!p){await sb.auth.signOut();ME=null;app.innerHTML=loginView("Profil bulunamadı, koçuna haber ver.");return}
   NAME=p.name;ROLE=p.role;view=ROLE==="coach"?"c":"s";
   document.getElementById("who").textContent=NAME+" · ";document.getElementById("out").hidden=false;document.getElementById("reset").hidden=ROLE==="coach";document.body.classList.toggle("stu",ROLE==="student");
   if(ROLE==="coach"){await pullCoach();["daily","goals","notes","exam_results","weekly_tasks"].reduce((ch,t)=>ch.on("postgres_changes",{event:"*",schema:"public",table:t},refresh),sb.channel("koc")).subscribe();setInterval(refresh,60000)}
-  else{await loadStudent();setInterval(refresh,45000);pushState().then(()=>{if(tab==='h')render()})}
+  else{await loadStudent();setInterval(refresh,45000);setInterval(()=>{if(rollover()){save();render()}},30000);pushState().then(()=>{if(tab==='h')render()})}
   render();
 }
 document.addEventListener("input",e=>{if(e.target.dataset&&e.target.dataset.rx!=null||e.target.id==="ext")recalcExam()});

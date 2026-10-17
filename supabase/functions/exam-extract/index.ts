@@ -209,6 +209,7 @@ async function gemini(key: string, b64: string, mime: string, schema: unknown, p
     const alt = await pickModel(key);
     if (alt && alt !== MODEL) { RESOLVED = alt; r = await send(alt); }
   }
+  for (let i = 0; i < 2 && (r.status === 503 || r.status === 500); i++) { await new Promise((res) => setTimeout(res, 1500 * (i + 1))); r = await send(RESOLVED ?? MODEL); }
   if (r.status === 429) throw { code: 429, msg: "Yapay zekâ kotası doldu, biraz sonra tekrar dene." };
   if (!r.ok) throw { code: 502, msg: `Yapay zekâ hizmeti hata verdi (${r.status}).` + await errDetail(r) };
   const j = await r.json();
@@ -223,10 +224,11 @@ async function gemini(key: string, b64: string, mime: string, schema: unknown, p
 export async function handler(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return J({ error: "Yalnızca POST kabul edilir." }, 405);
-  const url = Deno.env.get("SUPABASE_URL"), pk = Deno.env.get("APP_PUBLISHABLE_KEY"), gk = Deno.env.get("GEMINI_API_KEY");
-  if (!url || !pk || !gk) return J({ error: "Sunucu yapılandırması eksik." }, 500);
+  const url = Deno.env.get("SUPABASE_URL"), pk = Deno.env.get("APP_PUBLISHABLE_KEY"), sk = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"), gk = (Deno.env.get("GEMINI_API_KEY") ?? "").replace(/[\s"']/g, "");
+  if (!url || !pk || !sk || !gk) return J({ error: "Sunucu yapılandırması eksik." }, 500);
   const auth = req.headers.get("Authorization") ?? "";
   const sb = createClient(url, pk, { global: { headers: { Authorization: auth } }, auth: { persistSession: false } });
+  const adm = createClient(url, sk, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: u } = await sb.auth.getUser(auth.replace(/^Bearer /i, ""));
   const user = u?.user;
   if (!user) return J({ error: "Giriş gerekli." }, 401);
@@ -239,22 +241,22 @@ export async function handler(req: Request): Promise<Response> {
   if (!MIMES.includes(mime)) return J({ error: "Yalnızca JPG, PNG veya WEBP görsel yüklenebilir." }, 400);
   if (!image || image.length > MAX_B64 || !/^[A-Za-z0-9+/=]+$/.test(image)) return J({ error: "Görsel geçersiz veya çok büyük." }, 400);
 
-  const day = new Date().toISOString().slice(0, 10);
-  const { data: us } = await sb.from("ai_usage").select("n").eq("student_id", user.id).eq("day", day).eq("kind", "extract").maybeSingle();
-  const n = us?.n ?? 0;
-  if (n >= LIMIT) return J({ error: `Günlük görsel okuma sınırına ulaştın (${LIMIT}). Yarın tekrar dene.` }, 429);
+  // Kota atomik ve yalnızca sunucuda artırılır; Gemini hata verirse hak iade edilir.
+  const { data: okQ, error: qErr } = await adm.rpc("bump_usage", { p_student: user.id, p_kind: "extract", p_limit: LIMIT });
+  if (qErr || okQ !== true) return J({ error: `Günlük görsel okuma sınırına ulaştın (${LIMIT}). Yarın tekrar dene.` }, 429);
+  const refund = () => adm.rpc("refund_usage", { p_student: user.id, p_kind: "extract" }).then(() => {}, () => {});
 
   try {
     const [head, q] = await Promise.all([
       gemini(gk, image, mime, SCHEMA, "Bu deneme sonuç görselinden yalnızca üst bilgileri ve DERSLER özet tablosunu çıkar. Soru bazlı kazanım satırlarını bu çağrıda çıkarma.", 6000),
       gemini(gk, image, mime, Q_SCHEMA, "SADECE_SORULAR: Bu deneme sonuç görselindeki tüm ders tablolarında yer alan soru bazlı kazanım satırlarını sorular listesine çıkar. Başka alan üretme.", 20000, true).catch((e: any) => ({ __hata: e })),
     ]);
-    if (head?.sinav_gorseli_mi === false) return J({ error: "Bu görsel bir deneme sonuç belgesine benzemiyor." }, 422);
-    await sb.from("ai_usage").upsert({ student_id: user.id, day, kind: "extract", n: n + 1 });
+    if (head?.sinav_gorseli_mi === false) { await refund(); return J({ error: "Bu görsel bir deneme sonuç belgesine benzemiyor." }, 422); }
     const out = validate({ ...head, sorular: Array.isArray(q?.sorular) ? q.sorular : [] });
     if (q?.__hata) out.uyarilar.push("Soru bazlı konu detayı okunamadı, yalnızca ders tablosu kaydedilecek. Konu analizi için görseli tekrar yüklemeyi deneyebilirsin.");
     return J({ ...out, model: RESOLVED ?? MODEL });
   } catch (e: any) {
+    await refund();
     return J({ error: e?.msg ?? "Beklenmeyen hata." }, e?.code ?? 500);
   }
 }

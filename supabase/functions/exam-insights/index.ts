@@ -73,7 +73,7 @@ export function buildStats(exams: any[]) {
     }
     for (const t of (e.topics ?? [])) {
       const k = e.exam_type + "|" + t.ders + "|" + t.konu;
-      const o = (top[k] ??= { ders: e.exam_type + " " + t.ders, konu: t.konu, dogru: 0, yanlis: 0, bos: 0, sinav: 0, yanlis_sinav: 0, bos_sinav: 0 });
+      const o = (top[k] ??= { ders: cut(e.exam_type + " " + t.ders, 80), konu: cut(t.konu, 100), dogru: 0, yanlis: 0, bos: 0, sinav: 0, yanlis_sinav: 0, bos_sinav: 0 });
       o.dogru += t.dogru ?? 0; o.yanlis += t.yanlis ?? 0; o.bos += t.bos ?? 0; o.sinav++;
       if ((t.yanlis ?? 0) > 0) o.yanlis_sinav++;
       if ((t.bos ?? 0) > 0) o.bos_sinav++;
@@ -103,7 +103,7 @@ export function buildStats(exams: any[]) {
     return { ...o, soru: t, dogruluk: t ? r2(o.dogru / t) : null, tekrar_eden: o.yanlis_sinav >= 2 };
   }).filter((o) => o.soru > 0 && (o.yanlis + o.bos) > 0)
     .sort((a, b) => b.yanlis_sinav - a.yanlis_sinav || (b.yanlis + b.bos) - (a.yanlis + a.bos) || (a.dogruluk ?? 1) - (b.dogruluk ?? 1)).slice(0, 40);
-  const denemeler = exams.map((e) => ({ ad: e.exam_name, tarih: e.exam_date, tur: e.exam_type, toplam_net: e.total_net, puan: e.score, siralama: e.rank }));
+  const denemeler = exams.map((e) => ({ ad: cut(e.exam_name, 80), tarih: e.exam_date, tur: e.exam_type, toplam_net: e.total_net, puan: e.score, siralama: e.rank }));
   return { deneme_sayisi: exams.length, denemeler: denemeler.slice(-12), dersler, konu_verisi_var: Object.keys(top).length > 0, konular, tekrar_eden_konular: konular.filter((o) => o.tekrar_eden).slice(0, 15) };
 }
 
@@ -224,22 +224,22 @@ async function loadFacts(sb: any, sid: string) {
   return { list, stats: { ...buildStats(list), hedef: hedefOzet(list, tg) } };
 }
 
-async function useQuota(sb: any, uid: string, kind: string, limit: number) {
-  const day = new Date().toISOString().slice(0, 10);
-  const { data: us } = await sb.from("ai_usage").select("n").eq("student_id", uid).eq("day", day).eq("kind", kind).maybeSingle();
-  const n = us?.n ?? 0;
-  if (n >= limit) return false;
-  await sb.from("ai_usage").upsert({ student_id: uid, day, kind, n: n + 1 });
-  return true;
+// Kota sayacı yalnızca service role ile, atomik bir SQL fonksiyonuyla artırılır (öğrenci kendi sayacını değiştiremez).
+async function useQuota(adm: any, uid: string, kind: string, limit: number) {
+  const { data, error } = await adm.rpc("bump_usage", { p_student: uid, p_kind: kind, p_limit: limit });
+  return !error && data === true;
 }
+const refundQuota = (adm: any, uid: string, kind: string) => adm.rpc("refund_usage", { p_student: uid, p_kind: kind }).then(() => {}, () => {});
 
-async function aiAction(sb: any, gk: string, user: any, role: string, sid: string, body: any): Promise<Response> {
+async function aiAction(sb: any, adm: any, gk: string, user: any, role: string, sid: string, body: any): Promise<Response> {
+  let used: string | null = null;
   try {
     if (body.action === "plan") {
       if (role !== "coach") return J({ error: "Yalnızca koç plan taslağı üretebilir." }, 403);
       const { list, stats } = await loadFacts(sb, sid);
       if (!list.length) return J({ error: "Plan için önce öğrencinin deneme sonucu gerekli." }, 404);
-      if (!(await useQuota(sb, user.id, "plan", Number(Deno.env.get("PLAN_DAILY_LIMIT") ?? "20")))) return J({ error: "Günlük plan sınırına ulaşıldı. Yarın tekrar dene." }, 429);
+      if (!(await useQuota(adm, user.id, "plan", Number(Deno.env.get("PLAN_DAILY_LIMIT") ?? "20")))) return J({ error: "Günlük plan sınırına ulaşıldı. Yarın tekrar dene." }, 429);
+      used = "plan";
       const start = /^\d{4}-\d{2}-\d{2}$/.test(String(body.start_date ?? "")) ? String(body.start_date) : istToday();
       const raw = await geminiRaw(gk, PLAN_SYSTEM, PLAN_SCHEMA, [{ role: "user", parts: [{ text: JSON.stringify({ baslangic_tarihi: start, veriler: stats }) }] }], 0.4, true);
       const plan = cleanPlan(raw, start);
@@ -251,13 +251,15 @@ async function aiAction(sb: any, gk: string, user: any, role: string, sid: strin
     if (role !== "student") return J({ error: "Sohbet koçu öğrenci hesabı içindir." }, 403);
     const msgs = (Array.isArray(body.messages) ? body.messages : []).slice(-8).map((m: any) => ({ role: m?.role === "model" ? "model" : "user", text: cut(m?.text, 600) })).filter((m: any) => m.text);
     if (!msgs.length || msgs[msgs.length - 1].role !== "user") return J({ error: "Mesaj boş." }, 400);
-    if (!(await useQuota(sb, user.id, "chat", Number(Deno.env.get("CHAT_DAILY_LIMIT") ?? "25")))) return J({ error: "Bugünkü sohbet hakkın doldu, yarın devam edebiliriz." }, 429);
+    if (!(await useQuota(adm, user.id, "chat", Number(Deno.env.get("CHAT_DAILY_LIMIT") ?? "25")))) return J({ error: "Bugünkü sohbet hakkın doldu, yarın devam edebiliriz." }, 429);
+    used = "chat";
     const { stats } = await loadFacts(sb, sid);
     const first = { role: "user", parts: [{ text: "veriler: " + JSON.stringify(stats) }] };
     const contents = [first, { role: "model", parts: [{ text: "Verileri aldım." }] }, ...msgs.map((m: any) => ({ role: m.role, parts: [{ text: m.text }] }))];
     const text = await geminiRaw(gk, CHAT_SYSTEM, null, contents, 0.5, false, 2500);
     return J({ reply: String(text).replace(/[\u0000-\u0009\u000b-\u001f<>]/g, " ").trim().slice(0, 1500) });
   } catch (e: any) {
+    if (used) await refundQuota(adm, user.id, used); // yapay zekâ hata verdiyse hak harcanmasın
     return J({ error: e?.msg ?? "Beklenmeyen hata." }, e?.code ?? 500);
   }
 }
@@ -265,10 +267,11 @@ async function aiAction(sb: any, gk: string, user: any, role: string, sid: strin
 export async function handler(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return J({ error: "Yalnızca POST kabul edilir." }, 405);
-  const url = Deno.env.get("SUPABASE_URL"), pk = Deno.env.get("APP_PUBLISHABLE_KEY"), gk = (Deno.env.get("GEMINI_API_KEY") ?? "").replace(/[\s"']/g, "");
-  if (!url || !pk || !gk) return J({ error: "Sunucu yapılandırması eksik." }, 500);
+  const url = Deno.env.get("SUPABASE_URL"), pk = Deno.env.get("APP_PUBLISHABLE_KEY"), sk = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"), gk = (Deno.env.get("GEMINI_API_KEY") ?? "").replace(/[\s"']/g, "");
+  if (!url || !pk || !sk || !gk) return J({ error: "Sunucu yapılandırması eksik." }, 500);
   const auth = req.headers.get("Authorization") ?? "";
   const sb = createClient(url, pk, { global: { headers: { Authorization: auth } }, auth: { persistSession: false } });
+  const adm = createClient(url, sk, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: u } = await sb.auth.getUser(auth.replace(/^Bearer /i, ""));
   const user = u?.user;
   if (!user) return J({ error: "Giriş gerekli." }, 401);
@@ -300,7 +303,7 @@ export async function handler(req: Request): Promise<Response> {
   const sid = role === "student" ? user.id : String(body?.student_id ?? "");
   if (!UUID.test(sid)) return J({ error: "Öğrenci belirtilmedi." }, 400);
 
-  if (body?.action === "plan" || body?.action === "chat") return await aiAction(sb, gk, user, role, sid, body);
+  if (body?.action === "plan" || body?.action === "chat") return await aiAction(sb, adm, gk, user, role, sid, body);
 
   const { data: exams, error } = await sb.from("exam_results")
     .select("exam_name,exam_date,exam_type,total_net,score,rank,subjects,topics,created_at")
@@ -318,19 +321,17 @@ export async function handler(req: Request): Promise<Response> {
     if (c && c.exam_count === list.length && c.content?.report && c.content?.hedef_key === hedefKey) return J({ ...c.content, stats, cached: true, updated_at: c.updated_at });
   }
 
-  const day = new Date().toISOString().slice(0, 10), limit = role === "coach" ? LIMIT_COACH : LIMIT_STUDENT;
-  const { data: us } = await sb.from("ai_usage").select("n").eq("student_id", user.id).eq("day", day).eq("kind", "insights").maybeSingle();
-  const n = us?.n ?? 0;
-  if (n >= limit) return J({ error: `Günlük analiz sınırına ulaşıldı (${limit}). Yarın tekrar dene.` }, 429);
+  const limit = role === "coach" ? LIMIT_COACH : LIMIT_STUDENT;
+  if (!(await useQuota(adm, user.id, "insights", limit))) return J({ error: `Günlük analiz sınırına ulaşıldı (${limit}). Yarın tekrar dene.` }, 429);
 
   try {
     const raw = await gemini(gk, stats, role === "coach" ? "KOC" : "OGRENCI");
     const report = clean(raw, role === "coach");
-    await sb.from("ai_usage").upsert({ student_id: user.id, day, kind: "insights", n: n + 1 });
-    // Önbelleğe koç başlıkları yazılmaz: öğrenci de bu satırı okuyabilir.
-    await sb.from("ai_reports").upsert({ student_id: sid, exam_count: list.length, content: { report: { ...report, koc_basliklari: [] }, stats, hedef_key: hedefKey }, updated_at: new Date().toISOString() });
+    // Önbelleğe koç başlıkları yazılmaz: öğrenci de bu satırı okuyabilir. Yazma yalnızca sunucudan (service role) yapılır.
+    await adm.from("ai_reports").upsert({ student_id: sid, exam_count: list.length, content: { report: { ...report, koc_basliklari: [] }, stats, hedef_key: hedefKey }, updated_at: new Date().toISOString() });
     return J({ report, stats, cached: false, model: RESOLVED ?? MODEL });
   } catch (e: any) {
+    await refundQuota(adm, user.id, "insights");
     return J({ error: e?.msg ?? "Beklenmeyen hata." }, e?.code ?? 500);
   }
 }
