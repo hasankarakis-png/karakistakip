@@ -1,5 +1,5 @@
 // Edge Function: exam-extract
-// Öğrencinin yüklediği deneme sonuç görselini Gemini ile okur, yapılandırılmış JSON döndürür.
+// Öğrencinin yüklediği deneme sonuç görselini veya PDF'ini Gemini ile okur, yapılandırılmış JSON döndürür.
 // Hiçbir şey kaydetmez ve görseli saklamaz; kayıt, öğrenci onayından sonra istemciden yapılır.
 import { createClient } from "npm:@supabase/supabase-js@2.117.1";
 
@@ -13,10 +13,12 @@ const J = (b: unknown, s = 200) =>
 
 const MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
 const LIMIT = Number(Deno.env.get("EXTRACT_DAILY_LIMIT") ?? "10");
-const MIMES = ["image/jpeg", "image/png", "image/webp"];
+const MIMES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 const MAX_B64 = 6_000_000;
+const MAX_PDF_B64 = 9_000_000; // ≈6,5 MB PDF
+const PDF_MAGIC = "JVBERi"; // base64("%PDF")
 
-const SYSTEM = `Sen bir deneme sınavı sonuç belgesi okuyucususun. Görseldeki sınav sonuç tablosundan verileri çıkarırsın.
+const SYSTEM = `Sen bir deneme sınavı sonuç belgesi okuyucususun. Görseldeki veya PDF'teki sınav sonuç tablosundan verileri çıkarırsın. Belge birden çok sayfa olabilir; tüm sayfaları birleştirerek oku, aynı sınavı tekrar sayma.
 Kurallar:
 - Yalnızca görselde açıkça yazan değerleri oku. Okunamayan, silik veya belirsiz bir değeri ASLA tahmin etme: null yap ve "belirsiz" listesine kısaca yaz.
 - Ad, soyad, T.C. kimlik numarası, okul, sınıf, telefon gibi kişisel bilgileri çıkarma.
@@ -245,20 +247,22 @@ export async function handler(req: Request): Promise<Response> {
   let body: any;
   try { body = await req.json(); } catch { return J({ error: "Geçersiz istek." }, 400); }
   const mime = String(body?.mime ?? ""), image = String(body?.image ?? "");
-  if (!MIMES.includes(mime)) return J({ error: "Yalnızca JPG, PNG veya WEBP görsel yüklenebilir." }, 400);
-  if (!image || image.length > MAX_B64 || !/^[A-Za-z0-9+/=]+$/.test(image)) return J({ error: "Görsel geçersiz veya çok büyük." }, 400);
+  if (!MIMES.includes(mime)) return J({ error: "Yalnızca JPG, PNG, WEBP görsel veya PDF yüklenebilir." }, 400);
+  const isPdf = mime === "application/pdf";
+  if (!image || image.length > (isPdf ? MAX_PDF_B64 : MAX_B64) || !/^[A-Za-z0-9+/=]+$/.test(image)) return J({ error: isPdf ? "PDF geçersiz veya çok büyük (en fazla yaklaşık 6 MB)." : "Görsel geçersiz veya çok büyük." }, 400);
+  if (isPdf && !image.startsWith(PDF_MAGIC)) return J({ error: "Bu dosya geçerli bir PDF değil." }, 400);
 
   // Kota atomik ve yalnızca sunucuda artırılır; Gemini hata verirse hak iade edilir.
   const { data: okQ, error: qErr } = await adm.rpc("bump_usage", { p_student: user.id, p_kind: "extract", p_limit: LIMIT });
-  if (qErr || okQ !== true) return J({ error: `Günlük görsel okuma sınırına ulaştın (${LIMIT}). Yarın tekrar dene.` }, 429);
+  if (qErr || okQ !== true) return J({ error: `Günlük okuma sınırına ulaştın (${LIMIT}). Yarın tekrar dene.` }, 429);
   const refund = () => adm.rpc("refund_usage", { p_student: user.id, p_kind: "extract" }).then(() => {}, () => {});
 
   try {
     const [head, q] = await Promise.all([
-      gemini(gk, image, mime, SCHEMA, "Bu deneme sonuç görselinden yalnızca üst bilgileri ve DERSLER özet tablosunu çıkar. Soru bazlı kazanım satırlarını bu çağrıda çıkarma.", 6000),
-      gemini(gk, image, mime, Q_SCHEMA, "SADECE_SORULAR: Bu deneme sonuç görselindeki tüm ders tablolarında yer alan soru bazlı kazanım satırlarını sorular listesine çıkar. Başka alan üretme.", 20000, true).catch((e: any) => ({ __hata: e })),
+      gemini(gk, image, mime, SCHEMA, "Bu deneme sonuç belgesinden yalnızca üst bilgileri ve DERSLER özet tablosunu çıkar. Soru bazlı kazanım satırlarını bu çağrıda çıkarma.", 6000),
+      gemini(gk, image, mime, Q_SCHEMA, "SADECE_SORULAR: Bu deneme sonuç belgesindeki tüm ders tablolarında yer alan soru bazlı kazanım satırlarını sorular listesine çıkar. Başka alan üretme.", 20000, true).catch((e: any) => ({ __hata: e })),
     ]);
-    if (head?.sinav_gorseli_mi === false) { await refund(); return J({ error: "Bu görsel bir deneme sonuç belgesine benzemiyor." }, 422); }
+    if (head?.sinav_gorseli_mi === false) { await refund(); return J({ error: "Bu dosya bir deneme sonuç belgesine benzemiyor." }, 422); }
     const out = validate({ ...head, sorular: Array.isArray(q?.sorular) ? q.sorular : [] });
     if (q?.__hata) out.uyarilar.push("Soru bazlı konu detayı okunamadı, yalnızca ders tablosu kaydedilecek. Konu analizi için görseli tekrar yüklemeyi deneyebilirsin.");
     return J({ ...out, model: RESOLVED ?? MODEL });

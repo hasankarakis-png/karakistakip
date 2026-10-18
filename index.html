@@ -94,6 +94,25 @@ body.stu .wrap{padding-bottom:100px}
 .chat{display:flex;flex-direction:column;gap:8px;max-height:46vh;overflow:auto;margin-bottom:10px}
 .cm{padding:9px 12px;border-radius:14px;max-width:88%;white-space:pre-wrap;font-size:15px;line-height:1.4}.cm.me{align-self:flex-end;background:var(--acc);color:var(--acc-ink)}.cm.ai{align-self:flex-start;background:var(--cream);border:1px solid var(--line)}
 .bdg{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}.bd{border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center;font-size:13px;opacity:.4}.bd.on{opacity:1;border-color:var(--acc)}.bd b{display:block;font-size:26px}
+
+/* Hedef yolculuğu */
+.road .rdh{font-size:15px;margin:2px 0 4px}.road .rdn{float:right;color:var(--mute);font-size:13px}
+.rd{position:relative;margin:26px 10px 4px}
+.rdt{position:relative;height:12px;border-radius:99px;background:var(--line)}
+.rdt u{position:absolute;top:50%;width:2px;height:12px;background:var(--cream);transform:translate(-50%,-50%);opacity:.6;z-index:2}
+.rdf{position:absolute;left:0;top:0;bottom:0;border-radius:99px;width:calc(var(--p)*1%);background:linear-gradient(90deg,var(--navy2),var(--acc));animation:rdg 1.6s cubic-bezier(.2,.8,.2,1) both}
+.rda{position:absolute;top:50%;left:calc(var(--p)*1%);transform:translate(-50%,-62%);font-size:26px;line-height:1;animation:rda 1.6s cubic-bezier(.2,.8,.2,1) both;z-index:3}
+.rdi{display:inline-block}.rdi.bump{animation:hop .8s ease}
+.rda .fl{position:absolute;right:100%;top:50%;width:26px;height:6px;border-radius:99px;background:linear-gradient(270deg,rgba(255,160,60,.9),transparent);transform:translateY(-50%);opacity:.0}
+.road.live .rda .fl{opacity:1;animation:flame .5s ease-in-out infinite alternate}
+.rda .plus{position:absolute;left:50%;bottom:100%;white-space:nowrap;font-size:13px;color:var(--ok);animation:flt 1.8s ease-out forwards}
+.road.still .rdf,.road.still .rda{animation:none}
+.rdm{display:flex;justify-content:space-between;margin-top:12px;font-size:13px;color:var(--mute)}
+.rdc{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:14px}
+@keyframes rdg{from{width:0}}@keyframes rda{from{left:0}}
+@keyframes hop{0%,100%{transform:translateY(0) scale(1)}40%{transform:translateY(-14px) scale(1.25)}}
+@keyframes flame{from{transform:translateY(-50%) scaleX(.55)}to{transform:translateY(-50%) scaleX(1)}}
+@keyframes flt{0%{opacity:0;transform:translate(-50%,6px)}20%{opacity:1}100%{opacity:0;transform:translate(-50%,-22px)}}
 </style>
 </head>
 <body class="intro">
@@ -162,14 +181,14 @@ function act(a){
   if(a==="start"){S.cur={start:n,brk:0,bs:0,subj,meth};S.status="study";log("Derse başladım: "+subj+" ("+meth+")")}
   if(a==="break"){S.cur.bs=n;S.status="break";log("Mola verdim")}
   if(a==="back"){S.cur.brk+=n-S.cur.bs;S.status="study";log("Moladan döndüm")}
-  if(a==="stop"){const v=curNet();S.done+=v;S.meth[S.cur.meth]=(S.meth[S.cur.meth]||0)+v;log("Çalışmayı noktaladım ("+short(v)+", "+S.cur.subj+")");S.cur=null;S.status="stopped"}
+  if(a==="stop"){const v=curNet();S.done+=v;S.meth[S.cur.meth]=(S.meth[S.cur.meth]||0)+v;log("Çalışmayı noktaladım ("+short(v)+", "+S.cur.subj+")");BUMP={m:Math.max(1,Math.round(v/60000))};S.cur=null;S.status="stopped"}
   if(a==="prog"){S.prog=!S.prog;log(S.prog?"Programımı bitirdim":"Program işaretini kaldırdım")}
   if(a==="close"){if(S.cur){const v=curNet();S.done+=v;S.meth[S.cur.meth]=(S.meth[S.cur.meth]||0)+v;S.cur=null}S.status="closed";log("Günü kapattım")}
   save();render();
 }
 function addQ(){
   const n=+document.getElementById("qn").value,c=+document.getElementById("qc").value||0,s=document.getElementById("qs").value;
-  if(!n||n<1)return;const b=+document.getElementById("qb").value||0,k=document.getElementById("qk").value.trim().slice(0,40);S.qs.push({s,n,c:Math.min(c,n),b,k});log(n+" soru çözdüm ("+s+(k?", "+k:"")+")");save();render();
+  if(!n||n<1)return;const b=+document.getElementById("qb").value||0,k=document.getElementById("qk").value.trim().slice(0,40);S.qs.push({s,n,c:Math.min(c,n),b,k});BUMP={q:n};log(n+" soru çözdüm ("+s+(k?", "+k:"")+")");save();render();
 }
 function todayTab(){
   const st=S.status,live=st==="study"||st==="break";
@@ -187,7 +206,7 @@ function todayTab(){
   ${st!=="closed"?`<div class="acts">${b}</div>`:""}</section>
   ${picker}
   <div class="stats"><div class="stat"><b>${solvedT}</b><span>çözülen soru</span></div><div class="stat"><b>${solvedT?"%"+acc:"–"}</b><span>doğruluk</span></div><div class="stat"><b>${S.prog?"✓":"–"}</b><span>program</span></div></div>
-  ${coachForMe()}${streakCard()}${todayTasks()}
+  ${goalRoad(ME)}${coachForMe()}${streakCard()}${todayTasks()}
   ${qa?`<div class="card"><h2>Soru girişi</h2><div class="row">
   <label>Ders<select id="qs">${SUBJ.map(x=>`<option${x===subj?" selected":""}>${x}</option>`).join("")}</select></label>
   <label>Çözülen<input id="qn" type="number" min="1" inputmode="numeric"></label>
@@ -273,8 +292,8 @@ function thCard(){
 }
 function parentCard(x){
   const h=x.hist,n=h.length,sum=k=>h.reduce((a,d)=>a+(d[k]||0),0),am=Math.round(sum("m")/n),sl=h.filter(d=>d.sleep>0),note=(C.notes[x.id]||[]).slice(-1)[0];
-  const E=(EX[x.id]||[]).slice(-1)[0],tg=TG[x.id],tk=(TK[x.id]||[]).filter(t=>t.task_date>=dayN(-6)&&t.task_date<=day()),tkd=tk.filter(t=>t.done).length;
-  const extra=(E?`• Son deneme: ${E.exam_name||E.exam_type}${E.total_net!=null?" — "+E.total_net+" net":""}\n`:"")+(tg&&tg.target_net!=null?`• Hedef net: ${tg.target_net}\n`:"")+(tk.length?`• Haftalık görev tamamlama: ${tkd}/${tk.length}\n`:"");
+  const E=(EX[x.id]||[]).slice(-1)[0],tg=tgPick(x.id),tk=(TK[x.id]||[]).filter(t=>t.task_date>=dayN(-6)&&t.task_date<=day()),tkd=tk.filter(t=>t.done).length;
+  const extra=(E?`• Son deneme: ${E.exam_name||E.exam_type}${E.total_net!=null?" — "+E.total_net+" net":""}\n`:"")+(tg&&tg.target_net!=null?`• Hedef net: ${tg.target_net}${tg.university?" ("+[tg.university,tg.department].filter(Boolean).join(" – ")+")":""}\n`:"")+(tk.length?`• Haftalık görev tamamlama: ${tkd}/${tk.length}\n`:"");
   const tx=`Sayın veli,\n${(STU.find(p=>p.id===x.id)||{}).name||x.n} için son ${n} günün özeti:\n• Günlük ortalama net çalışma: ${Math.floor(am/60)} sa ${am%60} dk\n• Çalışılan gün: ${h.filter(d=>d.m>0).length}/${n}\n• Çözülen soru: ${sum("q")}\n• Programı tamamlanan gün: ${sum("prog")}/${n}\n`+(sl.length?`• Ortalama uyku: yaklaşık ${(sl.reduce((a,d)=>a+d.sleep,0)/sl.length).toFixed(1)} saat\n`:"")+extra+(note?`• Koç notu: ${note.x}\n`:"")+`Saygılarımla,\nHasan Karakış · Karakış Eğitim & Danışmanlık`;
   return `<div class="card"><h2>Veli özeti</h2><textarea id="pt" readonly style="min-height:150px">${esc(tx)}</textarea><div class="row"><button class="btn" style="padding:11px 16px" id="cp">Metni kopyala</button><button class="chip" id="pwa">WhatsApp'ta gönder</button><button class="chip" id="psh">Paylaş…</button></div></div>`;
 }
@@ -385,7 +404,7 @@ function detailView(){
   <div class="big" style="font-size:34px">${x.n}</div>
   <div class="sub">Net çalışma: ${Math.floor(x.m/60)} sa ${x.m%60} dk</div></section>
   <div class="stats"><div class="stat"><b>${sn}</b><span>çözülen soru</span></div><div class="stat"><b>${sn?"%"+acc:"–"}</b><span>doğruluk</span></div><div class="stat"><b>${x.p>=1?"✓":"–"}</b><span>program</span></div></div>
-  ${past?"":histCard(x.id,x)+aiCard(x.id)+netChartsCard(x.id)+targetForm(x.id,false)}<div class="card"><h2>Derslere göre sorular</h2>${Object.keys(by).length?Object.entries(by).map(([k,v])=>`<div class="subj"><span>${esc(k)}${v.k.length?" ("+esc(v.k.join(", "))+")":""}</span><span>${v.n} soru · ${v.c} doğru${v.b?" · "+v.b+" boş":""}</span></div>`).join(""):`<p class="empty">Henüz soru girişi yok.</p>`}</div>
+  ${past?"":histCard(x.id,x)+aiCard(x.id)+goalRoad(x.id)+netChartsCard(x.id)+targetForm(x.id,false)}<div class="card"><h2>Derslere göre sorular</h2>${Object.keys(by).length?Object.entries(by).map(([k,v])=>`<div class="subj"><span>${esc(k)}${v.k.length?" ("+esc(v.k.join(", "))+")":""}</span><span>${v.n} soru · ${v.c} doğru${v.b?" · "+v.b+" boş":""}</span></div>`).join(""):`<p class="empty">Henüz soru girişi yok.</p>`}</div>
   ${x.mood?`<div class="card"><h2>Gün puanı</h2><p class="empty" style="margin:0">${x.mood} / 5</p></div>`:""}
   ${past?"":trendCard(x)+coachCards(x,sn)+taskCard(x)+denemeCard(x)+parentCard(x)+adminCard(x)}<div class="card"><h2>Günün akışı</h2>${x.L.length?`<ul class="tl">${x.L.slice().reverse().map(l=>`<li><time>${l.t}</time>${l.m}</li>`).join("")}</ul>`:`<p class="empty">${past?"Bu güne ait hareket kaydı yok.":"Bugün henüz bir hareket yok."}</p>`}</div>`;
 }
@@ -530,7 +549,7 @@ async function chatSend(){
   CHATBUSY=false;if(r.reply)CHAT.push({role:"model",text:r.reply});else CHATERR=r.error||"Cevap alınamadı.";CHAT=CHAT.slice(-8);render();
 }
 function studentView(){
-  const body=tab==="g"?tasksTab():tab==="d"?examCard()+netChartsCard(ME):tab==="h"?targetForm(ME,true)+badgeCard()+pushCard():tab==="k"?chatTab():todayTab();
+  const body=tab==="g"?tasksTab():tab==="d"?examCard()+netChartsCard(ME):tab==="h"?goalRoad(ME)+targetForm(ME,true)+badgeCard()+pushCard():tab==="k"?chatTab():todayTab();
   return body+`<nav class="bnav" aria-label="Sekmeler">${TABS.map(([k,i,l])=>`<button data-tab="${k}" aria-current="${tab===k}"><span aria-hidden="true">${i}</span>${l}</button>`).join("")}</nav>`;
 }
 
@@ -587,6 +606,9 @@ function ui(t){
   if(D.tab){tab=D.tab;render();window.scrollTo(0,0);return true}
   if(id==="guideok"){try{localStorage.setItem(GK(),"1")}catch(e){}render();return true}
   if(D.qdel!=null){const i=+D.qdel;if(S.qs[i]){const q=S.qs.splice(i,1)[0];log("Soru kaydı silindi ("+q.s+", "+q.n+")");save();render()}return true}
+  if(D.tgsel){TGSEL[D.sid||ME]=D.tgsel;TGMSG="";render();return true}
+  if(D.tgdel){targetDel(D.sid||ME,D.tgdel);return true}
+  if(D.rd){ROADSEL[D.sid||ME]=D.rd;render();return true}
   if(D.csv){csvExport(D.csv);return true}
   if(id==="bkadd"){bulkAdd();return true}
   if(id==="pwa"){const p=document.getElementById("pt");window.open("https://wa.me/?text="+encodeURIComponent(p.value),"_blank","noopener");return true}
@@ -637,7 +659,7 @@ document.addEventListener("click",e=>{
 });
 setInterval(()=>{const c=document.getElementById("clock");if(c&&S.status==="study")c.textContent=dur(total())},1000);
 let ME=null,ROLE=null,NAME="",STU=[],ROWS=[];
-let EXMSG="",PX=null,AIBUSY=null;const EX={},AIR={},TG={};
+let EXMSG="",PX=null,AIBUSY=null;const EX={},AIR={},TG={},TGSEL={},ROADSEL={},ROADSEEN={};let BUMP=null;const GT=["TYT","AYT","LGS"];
 const setEx=m=>{EXMSG=m;const e=document.getElementById("exmsg");if(e)e.textContent=m};
 async function callFn(n,body){
   try{
@@ -648,30 +670,77 @@ async function callFn(n,body){
   }catch(e){return {error:"Bağlantı kurulamadı."}}
 }
 async function loadExams(id){try{const {data,error}=await sb.from("exam_results").select("*").eq("student_id",id).order("exam_date",{ascending:true,nullsFirst:true}).order("created_at",{ascending:true});if(error)throw error;EX[id]=data||[]}catch(e){EX[id]=EX[id]||[]}}
-async function loadTarget(id){try{const {data,error}=await sb.from("exam_targets").select("*").eq("student_id",id).maybeSingle();if(error)throw error;TG[id]=data||null}catch(e){if(!(id in TG))TG[id]=null}}
+async function loadTarget(id){try{const {data,error}=await sb.from("exam_targets").select("*").eq("student_id",id).order("exam_type");if(error)throw error;TG[id]=data||[]}catch(e){if(!(id in TG))TG[id]=[]}}
+const tgOf=(sid,tur)=>(TG[sid]||[]).find(g=>g.exam_type===tur)||null;
+// Yapay zekâ ile aynı seçim: son denemenin türüne uyan hedef, yoksa ilk hedef.
+const tgPick=sid=>{const g=TG[sid]||[],L=EX[sid]||[],l=L[L.length-1];return g.find(x=>l&&x.exam_type===l.exam_type)||g[0]||null};
 const tgKey=t=>JSON.stringify(t?[t.exam_type,Number(t.target_net),t.target_score==null?null:Number(t.target_score)]:null);
+const goalTxt=g=>g?`${esc(g.exam_type)} · ${num(g.target_net)} net${g.university||g.department?" · "+esc([g.university,g.department].filter(Boolean).join(" – ")):""}`:"";
 function targetForm(sid,mine){
-  const t=TG[sid]||{},tur=t.exam_type||"TYT";
-  return `<div class="card"><h2>${mine?"Hedefim":"Öğrencinin hedefi"}</h2>
-  <p class="empty" style="margin:0 0 8px">${mine?"Ulaşmak istediğin toplam neti yaz. Yapay zekâ, analizinde hedefe uzaklığını da yorumlar.":"Hedefi sen de belirleyebilirsin; öğrenci de kendi ekranında görür ve değiştirebilir."}</p>
-  <div class="row" style="margin-top:0"><label>Tür<select id="tgt">${["TYT","AYT","LGS","BRANS"].map(x=>`<option value="${x}"${x===tur?" selected":""}>${x}</option>`).join("")}</select></label>
-  <label>Hedef net<input id="tgn" type="number" min="1" max="500" step="0.25" inputmode="decimal" style="width:90px" value="${t.target_net==null?"":esc(t.target_net)}"></label>
-  <label>Hedef puan (isteğe bağlı)<input id="tgp" type="number" min="0" max="600" step="0.1" inputmode="decimal" style="width:90px" value="${t.target_score==null?"":esc(t.target_score)}"></label></div>
+  const gl=TG[sid]||[];
+  const tur=GT.includes(TGSEL[sid])?TGSEL[sid]:(gl.find(g=>GT.includes(g.exam_type))||{exam_type:"TYT"}).exam_type;
+  const t=tgOf(sid,tur)||{};
+  const chips=GT.map(x=>`<button class="chip" data-tgsel="${x}" data-sid="${sid}" aria-pressed="${x===tur}">${x}${tgOf(sid,x)?" ✓":""}</button>`).join("");
+  const list=gl.length?`<div style="margin:6px 0 10px">${gl.map(g=>`<div class="subj"><span>🎯 ${goalTxt(g)}</span></div>`).join("")}</div>`:"";
+  return `<div class="card"><h2>${mine?"Hedeflerim":"Öğrencinin hedefleri"}</h2>
+  <p class="empty" style="margin:0 0 8px">${mine?"TYT, AYT ve LGS için hedeflerini ayrı ayrı gir. İstediğin üniversite ve bölümü de yazabilirsin. Çalıştıkça hedefe yaklaşmanı ana ekranda göreceksin.":"Her tür için ayrı hedef girebilirsin; öğrenci de kendi ekranında görür ve değiştirebilir."}</p>
+  ${list}
+  <div class="chips" role="group" aria-label="Hedef türü">${chips}</div>
+  <div class="row"><label>${esc(tur)} hedef net<input id="tgn" type="number" min="1" max="500" step="0.25" inputmode="decimal" style="width:100px" value="${t.target_net==null?"":esc(t.target_net)}"></label>
+  <label>Hedef puan (isteğe bağlı)<input id="tgp" type="number" min="0" max="600" step="0.1" inputmode="decimal" style="width:100px" value="${t.target_score==null?"":esc(t.target_score)}"></label></div>
+  <div class="row"><label>İstediğim üniversite<input id="tgu" type="text" maxlength="80" style="width:100%;min-width:220px" value="${esc(t.university||"")}"></label></div>
+  <div class="row"><label>İstediğim bölüm<input id="tgb" type="text" maxlength="80" style="width:100%;min-width:220px" value="${esc(t.department||"")}"></label></div>
   <div class="row"><label>Not (isteğe bağlı)<input id="tgs" type="text" maxlength="120" style="width:100%;min-width:220px" value="${esc(t.note||"")}"></label></div>
   <p id="tgerr" class="empty" style="margin:6px 0;color:var(--warn)">${esc(TGMSG)}</p>
-  <div class="row"><button class="btn" id="tgsave" data-sid="${sid}" style="padding:10px 16px">Hedefi kaydet</button></div></div>`;
+  <div class="row"><button class="btn" id="tgsave" data-sid="${sid}" style="padding:10px 16px">${esc(tur)} hedefini kaydet</button>${tgOf(sid,tur)?`<button class="chip" data-tgdel="${tur}" data-sid="${sid}">Bu hedefi sil</button>`:""}</div></div>`;
 }
 let TGMSG="";
 async function targetSave(sid){
   const err=m=>{TGMSG=m;const e=document.getElementById("tgerr");if(e)e.textContent=m};
-  const tur=document.getElementById("tgt").value,net=parseFloat(document.getElementById("tgn").value),ps=document.getElementById("tgp").value.trim(),puan=ps===""?null:parseFloat(ps),note=document.getElementById("tgs").value.trim().slice(0,120);
-  if(!["TYT","AYT","LGS","BRANS"].includes(tur)){err("Tür seç.");return}
+  const tur=GT.includes(TGSEL[sid])?TGSEL[sid]:((TG[sid]||[]).find(g=>GT.includes(g.exam_type))||{exam_type:"TYT"}).exam_type,net=parseFloat(document.getElementById("tgn").value),ps=document.getElementById("tgp").value.trim(),puan=ps===""?null:parseFloat(ps),note=document.getElementById("tgs").value.trim().slice(0,120),uni=document.getElementById("tgu").value.trim().slice(0,80),bol=document.getElementById("tgb").value.trim().slice(0,80);
+  if(!GT.includes(tur)){err("Tür seç.");return}
   if(!(net>0&&net<=500)){err("Hedef net 1 ile 500 arasında olmalı.");return}
   if(puan!==null&&!(puan>=0&&puan<=600)){err("Hedef puan 0 ile 600 arasında olmalı.");return}
-  const row={student_id:sid,exam_type:tur,target_net:net,target_score:puan,note:note||null,updated_at:new Date().toISOString()};
+  const row={student_id:sid,exam_type:tur,target_net:net,target_score:puan,note:note||null,university:uni||null,department:bol||null,updated_at:new Date().toISOString()};
   const {error}=await sb.from("exam_targets").upsert(row);
   if(error){err("Kaydedilemedi: "+error.message);return}
-  TG[sid]=row;TGMSG="Hedef kaydedildi. Analizi yenilersen yapay zekâ hedef farkını da yorumlar.";render();
+  TG[sid]=(TG[sid]||[]).filter(g=>g.exam_type!==tur).concat([row]);TGSEL[sid]=tur;ROADSEL[sid]=tur;delete ROADSEEN[sid+"|"+tur];
+  TGMSG=tur+" hedefi kaydedildi. Analizi yenilersen yapay zekâ hedef farkını da yorumlar.";render();
+}
+async function targetDel(sid,tur){
+  if(!confirm(tur+" hedefi silinsin mi?"))return;
+  const {error}=await sb.from("exam_targets").delete().eq("student_id",sid).eq("exam_type",tur);
+  if(error){TGMSG="Silinemedi: "+error.message;render();return}
+  TG[sid]=(TG[sid]||[]).filter(g=>g.exam_type!==tur);TGMSG=tur+" hedefi silindi.";render();
+}
+// ---- Hedef yolculuğu: son deneme neti / hedef net oranı yolda ilerler; çalışma ve soru bu kartta görünür.
+function weekEff(sid){
+  const H=Object.assign({},HIST[sid]||{});if(sid===ME)H[day()]=snap();
+  const sum=(a,b)=>{let m=0,q=0;for(let i=a;i<=b;i++){const r=H[dayN(-i)];if(r){m+=num(r.m);q+=num(r.q)}}return {m,q}};
+  return {w:sum(0,6),p:sum(7,13)};
+}
+const hm2=m=>m>=60?Math.floor(m/60)+" sa "+(m%60)+" dk":m+" dk";
+function goalRoad(sid){
+  const gl=TG[sid]||[],mine=sid===ME;
+  if(!gl.length)return mine?`<div class="card"><h2>🎯 Hedef yolculuğum</h2><p class="empty" style="margin:0">Henüz hedefin yok. <b>Hedefim</b> sekmesinden TYT, AYT veya LGS için net, üniversite ve bölüm ekle; her çalıştığında hedefe nasıl yaklaştığını burada göreceksin.</p></div>`:"";
+  const sel=ROADSEL[sid],g=(sel&&tgOf(sid,sel))||tgPick(sid)||gl[0],tur=g.exam_type,hn=num(g.target_net);
+  const nets=(EX[sid]||[]).filter(e=>e.exam_type===tur&&e.total_net!=null).map(e=>num(e.total_net)),son=nets.length?nets[nets.length-1]:null;
+  const p=son==null||hn<=0?0:Math.max(0,Math.min(1,son/hn)),pc=Math.round(p*100),kalan=son==null?null:Math.max(0,Math.round((hn-son)*100)/100);
+  const key=sid+"|"+tur,seen=ROADSEEN[key]===pc;ROADSEEN[key]=pc;
+  const b=mine&&BUMP?BUMP:null;if(mine)BUMP=null;
+  const live=mine&&S&&S.status==="study";
+  const {w,p:pv}=weekEff(sid),tr=pv.q+pv.m>0?Math.round(((w.q+w.m)/(pv.q+pv.m)-1)*100):null;
+  const today=mine?{q:solved(),m:Math.round(total()/60000)}:null;
+  const chips=gl.length>1?`<div class="chips" style="margin-bottom:8px">${gl.map(x=>`<button class="chip" data-rd="${x.exam_type}" data-sid="${sid}" aria-pressed="${x.exam_type===tur}">${esc(x.exam_type)}</button>`).join("")}</div>`:"";
+  const msg=son==null?`Bu tür için henüz deneme sonucu yok. Bir ${esc(tur)} denemesi ekle, yolculuk başlasın.`:p>=1?`🎯 Hedefe ulaştın! Yeni bir hedef koymayı düşünebilirsin.`:`Hedefe <b>%${pc}</b> yakınsın · <b>${kalan}</b> net kaldı`;
+  return `<div class="card road${seen?" still":""}${live?" live":""}"><h2>🎯 ${mine?"Hedef yolculuğum":"Hedef yolculuğu"}</h2>${chips}
+  <div class="rdh">${g.university?`🎓 <b>${esc(g.university)}</b>`:`<b>${esc(tur)} hedefi</b>`}${g.department?` · ${esc(g.department)}`:""}</div>
+  <div class="rd" style="--p:${pc}"><div class="rdt"><u style="left:25%"></u><u style="left:50%"></u><u style="left:75%"></u><span class="rdf"></span>
+  <span class="rda"><span class="rdi${b?" bump":""}">🚀</span><i class="fl"></i>${b?`<b class="plus">${b.q?"+"+b.q+" soru":"+"+b.m+" dk"}</b>`:""}</span></div>
+  <div class="rdm"><span>🏁 ${son==null?"Başlangıç":"Son net: "+son}</span><span>🎓 ${hn} net</span></div></div>
+  <p style="margin:10px 0 4px">${msg}</p>
+  <p class="empty" style="margin:0;font-size:13px">Yol, son ${esc(tur)} netinin hedef netine oranını gösterir. Çalışmaların bu neti yükseltir.</p>
+  <div class="rdc"><span>${mine?"Bugün":"Bu hafta"}: <b>${mine?today.q+" soru · "+hm2(today.m):w.q+" soru · "+hm2(w.m)}</b></span>${mine?`<span>Bu hafta: <b>${w.q} soru · ${hm2(w.m)}</b>${tr==null?"":` <em style="color:${tr>=0?"var(--ok)":"var(--warn)"}">${tr>=0?"▲":"▼"} %${Math.abs(tr)}</em>`}</span>`:""}</div></div>`;
 }
 function lineSVG(pts,target){
   const W=320,H=130,pl=30,pr=10,pt=12,pb=22;
@@ -683,11 +752,12 @@ function lineSVG(pts,target){
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Net grafiği" style="display:block"><line x1="${pl}" x2="${pl}" y1="${pt}" y2="${H-pb}" stroke="var(--line)"/><line x1="${pl}" x2="${W-pr}" y1="${H-pb}" y2="${H-pb}" stroke="var(--line)"/><text x="${pl-4}" y="${pt+4}" text-anchor="end" font-size="10" fill="var(--mute)">${hi}</text><text x="${pl-4}" y="${H-pb}" text-anchor="end" font-size="10" fill="var(--mute)">${lo}</text>${tl}<path d="${path}" fill="none" stroke="var(--navy2)" stroke-width="2"/>${dots}</svg>`;
 }
 function netChartsCard(sid){
-  const L=EX[sid]||[],t=TG[sid],all=L.filter(e=>e.total_net!=null);
-  const tur=t&&t.exam_type||(all.length?all[all.length-1].exam_type:null);
-  const E=all.filter(e=>e.exam_type===tur);
-  if(E.length<2)return `<div class="card"><h2>Net grafiği</h2><p class="empty">Grafik için aynı türden en az 2 deneme sonucu gerekli.</p></div>`;
-  const hedef=t&&t.exam_type===tur?Number(t.target_net):null;
+  const L=EX[sid]||[],all=L.filter(e=>e.total_net!=null);
+  const turs=[...new Set(all.map(e=>e.exam_type))].filter(t=>all.filter(e=>e.exam_type===t).length>=2);
+  if(!turs.length)return `<div class="card"><h2>Net grafiği</h2><p class="empty">Grafik için aynı türden en az 2 deneme sonucu gerekli.</p></div>`;
+  return turs.map(tur=>{
+  const E=all.filter(e=>e.exam_type===tur),t=tgOf(sid,tur);
+  const hedef=t?Number(t.target_net):null;
   const son=num(E[E.length-1].total_net),fark=hedef==null?"":` · hedefe ${Math.round((hedef-son)*100)/100>0?Math.round((hedef-son)*100)/100+" net kaldı":"ulaşıldı 🎯"}`;
   const by={};
   E.forEach((e,i)=>(e.subjects||[]).forEach(d=>{if(typeof d.net==="number")(by[d.ders]=by[d.ders]||[]).push(d.net)}));
@@ -696,7 +766,7 @@ function netChartsCard(sid){
     return `<div class="subj"><span>${esc(k)}</span><span>${a.map(num).join(" → ")} <b style="color:${c}">${dl>0?"▲ +":dl<0?"▼ ":"= "}${dl}</b></span></div>`}).join("");
   return `<div class="card"><h2>${esc(tur)} toplam net grafiği</h2><p class="empty" style="margin:0 0 6px">Son deneme: ${son} net${fark}</p>
   ${lineSVG(E.map(e=>({y:num(e.total_net)})),hedef)}
-  ${spark?`<h2 style="font-size:15px;margin-top:12px">Derslere göre son değişim</h2>${spark}`:""}</div>`;
+  ${spark?`<h2 style="font-size:15px;margin-top:12px">Derslere göre son değişim</h2>${spark}`:""}</div>`}).join("");
 }
 async function loadReport(id){try{const {data,error}=await sb.from("ai_reports").select("content").eq("student_id",id).maybeSingle();if(error)throw error;AIR[id]=data&&data.content&&data.content.report?data.content:null}catch(e){if(!(id in AIR))AIR[id]=null}}
 async function prepImage(file){
@@ -708,9 +778,19 @@ async function prepImage(file){
     return await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res({mime:file.type||"image/jpeg",b64:String(r.result).split(",")[1]});r.onerror=rej;r.readAsDataURL(file)});
   }
 }
+const readB64=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(",")[1]||"");r.onerror=rej;r.readAsDataURL(f)});
 async function examExtract(){
   const f=document.getElementById("exf").files[0];
-  if(!f){setEx("Önce bir görsel seç.");return}
+  if(!f){setEx("Önce bir görsel veya PDF seç.");return}
+  const pdf=f.type==="application/pdf"||/\.pdf$/i.test(f.name||"");
+  if(pdf){
+    if(f.size>6.5e6){setEx("PDF çok büyük (en fazla yaklaşık 6 MB). Sayfa sayısını azaltıp tekrar dene.");return}
+    setEx("PDF okunuyor, 15-30 saniye sürebilir…");
+    let b64;try{b64=await readB64(f)}catch(e){setEx("PDF açılamadı.");return}
+    const r=await callFn("exam-extract",{image:b64,mime:"application/pdf"});
+    if(r.error){setEx(r.error);return}
+    PX={exam:r.exam,uyarilar:r.uyarilar||[]};setEx("");render();return;
+  }
   if(f.size>15e6){setEx("Görsel çok büyük (en fazla 15 MB).");return}
   setEx("Görsel okunuyor, 10-20 saniye sürebilir…");
   let im;try{im=await prepImage(f)}catch(e){setEx("Görsel açılamadı.");return}
@@ -774,7 +854,7 @@ async function aiPing(){
   el.textContent=r.error?("Hata: "+r.error):r.ok?(r.model_kullanilabilir?"✓ Bağlantı çalışıyor, model: "+r.model:"Anahtar çalışıyor ama model ("+r.model+") bulunamadı. Kullanılabilir: "+(r.flash_modeller||[]).join(", ")):("Gemini anahtarı kabul edilmedi (kod "+r.status+")");
 }
 function reportHTML(R,title,sid){
-  const r=R.report||{},s=R.stats||{},hd=s.hedef||null,stale=sid!=null&&tgKey(TG[sid])!==tgKey(hd&&{exam_type:hd.tur,target_net:hd.hedef_net,target_score:hd.hedef_puan}),lv={YUKSEK:"Yüksek",ORTA:"Orta",DUSUK:"Düşük"};
+  const r=R.report||{},s=R.stats||{},hd=s.hedef||null,stale=sid!=null&&tgKey(tgPick(sid))!==tgKey(hd&&{exam_type:hd.tur,target_net:hd.hedef_net,target_score:hd.hedef_puan}),lv={YUKSEK:"Yüksek",ORTA:"Orta",DUSUK:"Düşük"};
   const li=a=>(a||[]).map(x=>`<li>${esc(x)}</li>`).join("");
   const ders=(s.dersler||[]).map(d=>`<div class="subj"><span>${esc(d.ders)}</span><span>${d.onceki_net==null?num(d.son_net)+" net":num(d.onceki_net)+" → "+num(d.son_net)+" ("+(num(d.fark)>0?"+":"")+num(d.fark)+")"}${d.egilim?" · "+esc(d.egilim):""}</span></div>`).join("");
   const yor=(r.ders_yorumlari||[]).map(d=>`<div class="empty" style="font-size:14px;margin-top:4px"><b>${esc(d.ders)}:</b> ${esc(d.yorum)}</div>`).join("");
@@ -805,8 +885,8 @@ function examCard(){
   if(PX)return examForm();
   const L=EX[ME]||[];
   return `<div class="card"><h2>Deneme sonuçlarım</h2>
-  <p class="empty" style="margin:0 0 10px">Deneme sonuç görselini yükle, yapay zekâ okusun. Sen kontrol edip onaylarsın.</p>
-  <div class="row" style="margin-top:0"><input id="exf" type="file" accept="image/*" style="width:100%"><button class="btn" style="padding:11px 16px" id="exgo">Görseli oku</button></div>
+  <p class="empty" style="margin:0 0 10px">Deneme sonuç görselini ya da PDF'ini yükle, yapay zekâ okusun. Sen kontrol edip onaylarsın. PDF genelde daha hızlı ve net okunur.</p>
+  <div class="row" style="margin-top:0"><input id="exf" type="file" accept="image/*,application/pdf,.pdf" style="width:100%"><button class="btn" style="padding:11px 16px" id="exgo">Dosyayı oku</button></div>
   <p class="empty" id="exmsg" style="margin:8px 0 0;font-size:14px">${esc(EXMSG)}</p>
   ${L.length?`<div style="margin-top:10px">${examRows(L,"own")}</div><div class="row"><button class="chip" id="airun" data-sid="${ME}">📈 Gelişim analizimi yenile</button></div>`:""}</div>${aiReportCard(ME)}`;
 }
