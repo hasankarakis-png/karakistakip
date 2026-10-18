@@ -226,3 +226,5 @@ header h1{font-size:19px;letter-spacing:-.04em}header small{letter-spacing:.01em
 .time-insight b{color:var(--ink)}
 .method-chart .time-track i{background:linear-gradient(90deg,#55a7ff,#3ee6b0)}
 @media(max-width:560px){.time-chart{padding:12px}.time-chart h3{font-size:14px}.time-row-head{font-size:12px}.time-total{padding:7px 9px;font-size:13px}.subject-time-card .section-heading{gap:7px}}
+
+.exam-progress .time-row-head{margin-top:4px}.exam-progress .time-insight{line-height:1.5}
