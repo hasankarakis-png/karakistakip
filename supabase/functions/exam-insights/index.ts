@@ -260,8 +260,17 @@ async function aiAction(sb: any, adm: any, gk: string, user: any, role: string, 
       const start = /^\d{4}-\d{2}-\d{2}$/.test(String(body.start_date ?? "")) ? String(body.start_date) : istToday();
       const raw = await geminiRaw(gk, PLAN_SYSTEM, PLAN_SCHEMA, [{ role: "user", parts: [{ text: JSON.stringify({ baslangic_tarihi: start, veriler: stats }) }] }], 0.4, true);
       const plan = cleanPlan(raw, start);
-      if (!plan.gorevler.length) return J({ error: "Yapay zekâ kullanılabilir bir plan üretemedi, tekrar dene." }, 502);
-      await sb.from("plan_drafts").upsert({ student_id: sid, content: plan, created_at: new Date().toISOString() });
+      if (!plan.gorevler.length) {
+        await refundQuota(adm, user.id, used);
+        used = null;
+        return J({ error: "Yapay zekâ kullanılabilir bir plan üretemedi, tekrar dene." }, 502);
+      }
+      const { error: saveError } = await sb.from("plan_drafts").upsert({ student_id: sid, content: plan, created_at: new Date().toISOString() });
+      if (saveError) {
+        await refundQuota(adm, user.id, used);
+        used = null;
+        return J({ error: "Plan taslağı kaydedilemedi. Bağlantını kontrol edip tekrar dene." }, 500);
+      }
       return J({ plan });
     }
     // chat
