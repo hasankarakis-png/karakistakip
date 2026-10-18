@@ -79,7 +79,8 @@ grant execute on function public.refund_usage(uuid, text) to service_role;
 create or replace function public.push_subs_guard() returns trigger
 language plpgsql set search_path = public as $$
 begin
-  if new.endpoint !~ '^https://[A-Za-z0-9.-]+/' or length(new.endpoint) > 600 or length(new.p256dh) > 200 or length(new.auth) > 100 then
+  if new.endpoint !~ '^https://(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|[A-Za-z0-9-]+\.push\.services\.mozilla\.com|[A-Za-z0-9.-]+\.notify\.windows\.com|web\.push\.apple\.com|[A-Za-z0-9-]+\.push\.apple\.com)/'
+     or length(new.endpoint) > 600 or length(new.p256dh) > 200 or length(new.auth) > 100 then
     raise exception 'Gecersiz bildirim aboneligi';
   end if;
   if (select count(*) from public.push_subs where student_id = new.student_id) >= 3 then
@@ -87,6 +88,21 @@ begin
   end if;
   return new;
 end $$;
+revoke all on function public.push_subs_guard() from public, anon, authenticated;
+
+-- Güvenlik sıkılaştırması (anon hiçbir tabloya erişemez; JSON boyut sınırları)
+revoke all on all tables in schema public from anon;
+revoke all on all sequences in schema public from anon;
+revoke all on all functions in schema public from anon;
+revoke truncate, references, trigger on all tables in schema public from authenticated;
+alter default privileges in schema public revoke all on tables from anon;
+alter default privileges in schema public revoke all on sequences from anon;
+alter default privileges in schema public revoke all on functions from anon;
+alter default privileges in schema public revoke truncate, references, trigger on tables from authenticated;
+alter table public.daily add constraint daily_size_chk check (octet_length(state::text) <= 60000 and octet_length(snap::text) <= 5000);
+alter table public.exam_results add constraint exam_results_size_chk check (octet_length(subjects::text) <= 40000 and octet_length(topics::text) <= 150000 and octet_length(extraction_meta::text) <= 5000);
+alter table public.profiles add constraint profiles_name_len_chk check (char_length(name) <= 80);
+alter table public.push_subs add constraint push_subs_len_chk check (char_length(endpoint) <= 600 and char_length(p256dh) <= 200 and char_length(auth) <= 100);
 
 -- Hedef (öğrenci başına tek satır): hem öğrenci hem koç girer/düzenler
 create table if not exists public.exam_targets (
