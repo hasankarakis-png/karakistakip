@@ -72,20 +72,38 @@ function dailyActivityCard(){
 }
 
 function subjectTimeCard(){
-  const by={...(S.subjectTime||{})};
-  if(!Object.values(by).some(v=>num(v)>0)){
+  const today={...(S.subjectTime||{})};
+  if(!Object.values(today).some(v=>num(v)>0)){
     (S.log||[]).forEach(e=>{
       const m=String(e.m||"").match(/Çalışmayı noktaladım \((\d+) sa (\d+) dk, ([^)]+)\)/);
-      if(m){const k=m[3].trim();by[k]=(by[k]||0)+(Number(m[1])*60+Number(m[2]))*60000}
+      if(m){const k=m[3].trim();today[k]=(today[k]||0)+(Number(m[1])*60+Number(m[2]))*60000}
     });
   }
-  if(S.cur&&(S.status==="study"||S.status==="break"))by[S.cur.subj]=(by[S.cur.subj]||0)+curNet();
-  const rows=Object.entries(by).map(([name,ms])=>({name,ms:Math.max(0,num(ms))})).filter(x=>x.ms>=60000).sort((a,b)=>b.ms-a.ms);
-  const max=Math.max(1,...rows.map(x=>x.ms));
+  if(S.cur&&(S.status==="study"||S.status==="break"))today[S.cur.subj]=(today[S.cur.subj]||0)+curNet();
+  const asRows=by=>Object.entries(by||{}).map(([name,ms])=>({name,ms:Math.max(0,num(ms))})).filter(x=>x.ms>=60000).sort((a,b)=>b.ms-a.ms);
+  const hist=HIST[ME]||{};
+  const dailySubjects=offset=>{
+    const out={};
+    for(let n=offset-1;n>=0;n--){
+      const d=dayN(-n);
+      const record=d===day()?today:(hist[d]||{}).subjectTime||{};
+      Object.entries(record).forEach(([name,ms])=>{out[name]=(out[name]||0)+Math.max(0,num(ms))});
+      if(d!==day()&&!Object.values(record).some(v=>num(v)>0)){
+        const state=(hist[d]||{}).state||{};
+        (state.log||[]).forEach(e=>{const m=String(e.m||"").match(/Çalışmayı noktaladım \((\d+) sa (\d+) dk, ([^)]+)\)/);if(m){const k=m[3].trim();out[k]=(out[k]||0)+(Number(m[1])*60+Number(m[2]))*60000}});
+      }
+    }
+    return asRows(out);
+  };
+  const rows=asRows(today),week=dailySubjects(7),month=dailySubjects(30);
   const meth={...(S.meth||{})};if(S.cur&&(S.status==="study"||S.status==="break"))meth[S.cur.meth]=(meth[S.cur.meth]||0)+curNet();
-  const methods=Object.entries(meth).map(([name,ms])=>({name,ms:Math.max(0,num(ms))})).filter(x=>x.ms>=60000).sort((a,b)=>b.ms-a.ms);
-  const bars=(items,peak)=>items.length?items.map(x=>'<div class="time-row"><div class="time-row-head"><span>'+esc(x.name)+'</span><b>'+hmin(Math.round(x.ms/60000))+'</b></div><div class="time-track"><i style="width:'+Math.max(3,Math.round(x.ms/peak*100))+'%"></i></div></div>').join(''):'<p class="empty">Süre grafiği için en az 1 dakikalık bir çalışma oturumu tamamla.</p>';
-  return '<section class="card subject-time-card"><div class="section-heading"><div><div class="eyebrow">KENDİ GELİŞİMİN</div><h2>Bugün zamanını nasıl kullandın?</h2><p class="empty">Çalışma oturumlarını bitirdikçe ders sürelerin burada birikir.</p></div><span class="time-total">'+hmin(Math.round(total()/60000))+'</span></div><div class="time-chart"><h3>📚 Derslere göre çalışma süresi</h3>'+bars(rows,max)+(rows.length?'<p class="time-insight">En çok zaman ayırdığın ders: <b>'+esc(rows[0].name)+'</b></p>':'')+'</div><div class="time-chart method-chart"><h3>🧠 Çalışma yöntemlerine göre</h3>'+bars(methods,Math.max(1,...methods.map(x=>x.ms)))+'</div></section>';
+  const methods=asRows(meth);
+  const bars=(items,peak)=>items.length?items.map(x=>'<div class="time-row"><div class="time-row-head"><span>'+esc(x.name)+'</span><b>'+hmin(Math.round(x.ms/60000))+'</b></div><div class="time-track"><i style="width:'+Math.max(3,Math.round(x.ms/peak*100))+'%"></i></div></div>').join(''):'<p class="empty">Henüz yeterli çalışma süresi kaydı yok.</p>';
+  const ex=(EX[ME]||[]).filter(x=>x.total_net!=null);
+  const last=ex.length?ex[ex.length-1]:null;
+  const prev=last?ex.slice(0,-1).reverse().find(x=>x.exam_type===last.exam_type):null;
+  const examProgress=last?'<div class="time-chart exam-progress"><h3>📈 Deneme netindeki gelişim</h3><div class="time-row-head"><span>'+esc(last.exam_type||"Son deneme")+' · '+esc(last.exam_name||"")+'</span><b>'+num(last.total_net)+' net</b></div>'+(prev?'<p class="time-insight">Önceki aynı tür denemeye göre: <b>'+(num(last.total_net)-num(prev.total_net)>0?"+":"")+num(num(last.total_net)-num(prev.total_net))+' net</b> ('+esc(prev.exam_name||"önceki deneme")+' → '+esc(last.exam_name||"son deneme")+')</p>':'<p class="time-insight">Karşılaştırma için aynı türden en az iki deneme kaydı gerekir.</p>')+'</div>':'';
+  return '<section class="card subject-time-card"><div class="section-heading"><div><div class="eyebrow">KENDİ GELİŞİMİN</div><h2>Çalışma zamanın ve gelişimin</h2><p class="empty">Ders sürelerini günlük ve dönemsel olarak karşılaştır.</p></div><span class="time-total">'+hmin(Math.round(total()/60000))+'</span></div><div class="time-chart"><h3>📚 Bugün derslere göre</h3>'+bars(rows,Math.max(1,...rows.map(x=>x.ms)))+(rows.length?'<p class="time-insight">En çok zaman ayırdığın ders: <b>'+esc(rows[0].name)+'</b></p>':'')+'</div><div class="time-chart"><h3>🗓️ Son 7 gün · ders bazında</h3>'+bars(week,Math.max(1,...week.map(x=>x.ms)))+'</div><div class="time-chart"><h3>📆 Son 30 gün · ders bazında</h3>'+bars(month,Math.max(1,...month.map(x=>x.ms)))+'</div><div class="time-chart method-chart"><h3>🧠 Bugün çalışma yöntemlerine göre</h3>'+bars(methods,Math.max(1,...methods.map(x=>x.ms)))+'</div>'+examProgress+'</section>';
 }
 
 function todayTab(){
@@ -274,7 +292,7 @@ let selDay=null,per="hw";const HIST={},DSTATE={};
 const PER=[["hw","Bu hafta"],["lw","Geçen hafta"],["tm","Bu ay"],["lm","Geçen ay"]];
 const fd=s=>{const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString("tr-TR",{weekday:"short",day:"numeric",month:"short"})};
 const hmin=m=>Math.floor(m/60)+" sa "+(m%60)+" dk";
-async function loadHist(id){try{const {data,error}=await sb.from("daily").select("day,snap").eq("student_id",id).gte("day",dayN(-70)).order("day");if(error)throw error;HIST[id]=Object.fromEntries((data||[]).map(r=>[r.day,r.snap||{}]))}catch(e){HIST[id]=HIST[id]||{}}}
+async function loadHist(id){try{const {data,error}=await sb.from("daily").select("day,state,snap").eq("student_id",id).gte("day",dayN(-70)).order("day");if(error)throw error;HIST[id]=Object.fromEntries((data||[]).map(r=>[r.day,Object.assign({},r.snap||{},{subjectTime:(r.state||{}).subjectTime||{},state:r.state||{}})]))}catch(e){HIST[id]=HIST[id]||{}}}
 async function loadDay(id,d){try{const {data}=await sb.from("daily").select("state,snap").eq("student_id",id).eq("day",d).maybeSingle();DSTATE[id+"|"+d]=data||{state:{},snap:{}}}catch(e){DSTATE[id+"|"+d]={state:{},snap:{}}}}
 function range(p){
   const t=new Date();t.setHours(0,0,0,0);
