@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Günlük Takip · Karakış Eğitim</title>
-<meta name="theme-color" id="tc" content="#0B1020">
-<script>try{var t=localStorage.getItem("karakis-tema");document.documentElement.setAttribute("data-theme",t==="light"?"light":"dark")}catch(e){document.documentElement.setAttribute("data-theme","dark")}</script>
+<meta name="theme-color" id="tc" content="#14213D">
+<script>try{var t=localStorage.getItem("karakis-tema");document.documentElement.setAttribute("data-theme",t==="dark"?"dark":"light")}catch(e){document.documentElement.setAttribute("data-theme","dark")}</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -18,7 +18,7 @@
 :root{--idle:#6b738c;--gold:var(--acc);--navy:var(--press);--fb:"Space Grotesk",system-ui,sans-serif;--fd:"Space Grotesk",system-ui,sans-serif;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 :root[data-theme="dark"]{--cream:#0B1020;--card:#121A33;--line:#27325C;--ink:#EAF0FF;--mute:#9AA7CC;--acc:#3EE6B0;--acc-ink:#06231B;--navy2:#8B7CFF;--goldsoft:#1C3A3A;--hero-bg:linear-gradient(145deg,#18224A,#0F1730);--hero-ink:#EAF0FF;--hero-sub:#9AA7CC;--hbtn:#3EE6B0;--hbtn-ink:#06231B;--press:#1C2547;--press-ink:#3EE6B0;--ok:#3EE6B0;--warn:#FFB84D;--glow:0 0 26px rgba(62,230,176,.45)}
-:root[data-theme="light"]{--cream:#FFF4E2;--card:#fff;--line:#F0E4CF;--ink:#1B2A4A;--mute:#5C6785;--acc:#C93A20;--acc-ink:#fff;--navy2:#1B2A4A;--goldsoft:#FFE3D8;--hero-bg:#C93A20;--hero-ink:#fff;--hero-sub:#FFE3D8;--hbtn:#fff;--hbtn-ink:#A92D16;--press:#1B2A4A;--press-ink:#fff;--ok:#2F7D57;--warn:#B35F00;--glow:0 10px 24px rgba(201,58,32,.35);--fb:Nunito,system-ui,sans-serif;--fd:Nunito,system-ui,sans-serif}
+:root[data-theme="light"]{--cream:#F7F5F0;--card:#FFFFFF;--line:#E4E7ED;--ink:#14213D;--mute:#667085;--acc:#C9A55C;--acc-ink:#14213D;--navy2:#5D8A78;--goldsoft:#F1E7D0;--hero-bg:linear-gradient(145deg,#23385E,#14213D);--hero-ink:#FFFFFF;--hero-sub:#D7DFEC;--hbtn:#C9A55C;--hbtn-ink:#14213D;--press:#14213D;--press-ink:#FFFFFF;--ok:#34785C;--warn:#A96818;--glow:0 8px 24px rgba(201,165,92,.22);--fb:Nunito,system-ui,sans-serif;--fd:Nunito,system-ui,sans-serif}
 *{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--cream);color:var(--ink);font:16px/1.5 var(--fb),system-ui,sans-serif}
 h1,h2,.big{font-family:var(--fd);margin:0}
@@ -113,6 +113,43 @@ body.stu .wrap{padding-bottom:100px}
 @keyframes hop{0%,100%{transform:translateY(0) scale(1)}40%{transform:translateY(-14px) scale(1.25)}}
 @keyframes flame{from{transform:translateY(-50%) scaleX(.55)}to{transform:translateY(-50%) scaleX(1)}}
 @keyframes flt{0%{opacity:0;transform:translate(-50%,6px)}20%{opacity:1}100%{opacity:0;transform:translate(-50%,-22px)}}
+
+/* Karakış marka yenilemesi — mevcut uygulama davranışları korunur */
+:root[data-theme="light"]{color-scheme:light}
+body{background:var(--cream);letter-spacing:.005em}
+.wrap{max-width:1120px;padding:24px 22px 44px}
+header{padding:12px 4px 18px;border-bottom:1px solid var(--line);margin-bottom:22px}
+header h1{font-size:clamp(21px,2.4vw,29px);font-weight:900;letter-spacing:-.035em}
+header small{font-size:13px;letter-spacing:.01em}
+.hero{border:0;border-radius:26px;padding:clamp(22px,4vw,36px);box-shadow:0 16px 36px rgba(20,33,61,.12)}
+.big{font-variant-numeric:tabular-nums;letter-spacing:-.045em}
+.card,.stat,.s{box-shadow:0 5px 20px rgba(20,33,61,.035);transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+.card{border-radius:20px;padding:20px}
+.card h2{font-size:18px;font-weight:800;letter-spacing:-.02em}
+.stat{border-radius:18px;padding:16px}
+.stat b{font-size:clamp(22px,2.2vw,29px);letter-spacing:-.03em}
+.btn{border-radius:14px}
+.chip,.themebtn{border-radius:12px}
+input,select,textarea{border-radius:12px}
+.bar{height:8px;border-radius:99px}
+.bnav{box-shadow:0 -8px 28px rgba(20,33,61,.07);border-color:var(--line);backdrop-filter:blur(16px)}
+.bnav button{border-radius:12px}
+.s:hover,.card:hover{border-color:rgba(201,165,92,.65);box-shadow:0 10px 28px rgba(20,33,61,.075)}
+:root[data-theme="light"] #splash{background:var(--cream)}
+:root[data-theme="light"] #splash .nm b{color:var(--acc)}
+@media(min-width:900px){
+  .wrap{padding-top:30px}
+  .stats{gap:14px}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(245px,1fr));gap:14px}
+  .card{padding:22px}
+}
+@media(max-width:600px){
+  .wrap{padding:14px 12px 100px}
+  header{gap:8px;padding:8px 2px 14px}
+  .hero{border-radius:22px;padding:22px 18px}
+  .card{padding:16px;border-radius:18px}
+}
+
 </style>
 </head>
 <body class="intro">
