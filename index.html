@@ -128,6 +128,62 @@ body.stu .wrap{padding-bottom:100px}
 @keyframes hop{0%,100%{transform:translateY(0) scale(1)}40%{transform:translateY(-14px) scale(1.25)}}
 @keyframes flame{from{transform:translateY(-50%) scaleX(.55)}to{transform:translateY(-50%) scaleX(1)}}
 @keyframes flt{0%{opacity:0;transform:translate(-50%,6px)}20%{opacity:1}100%{opacity:0;transform:translate(-50%,-22px)}}
+
+/* Next-gen dashboard refresh */
+:root{--panel-shadow:0 16px 44px rgba(10,20,48,.07)}
+body{background:radial-gradient(ellipse at 80% 0%,rgba(139,124,255,.055),transparent 35%),var(--cream)}
+.wrap{max-width:none;width:100%;margin:0;padding:22px 28px 40px 260px}
+header{max-width:1480px;margin:0 auto 18px;padding:0 0 16px;border-bottom:1px solid var(--line)}
+header h1{font-size:19px;letter-spacing:-.04em}header small{letter-spacing:.01em}
+#app{max-width:1480px;margin:0 auto}
+.dashboard-shell{display:grid;grid-template-columns:218px minmax(0,1fr);gap:24px;align-items:start}
+.dashboard-main{min-width:0;max-width:1180px;width:100%;margin:0 auto}
+.side-nav{position:fixed;z-index:40;left:0;top:0;bottom:0;width:236px;padding:26px 14px 18px;background:var(--card);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:7px}
+.side-brand{display:flex;align-items:center;gap:11px;padding:5px 10px 25px}
+.brand-mark{width:40px;height:40px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(145deg,#243b67,#10192f);color:#e2c98e;font:800 24px var(--fd);box-shadow:0 7px 18px rgba(15,25,50,.2)}
+.side-brand b{display:block;font-size:13px;letter-spacing:.13em}.side-brand small{display:block;color:var(--mute);font-size:10px;letter-spacing:.14em;margin-top:2px}
+.side-label{padding:7px 12px;color:var(--mute);font-size:10px;font-weight:800;letter-spacing:.13em}
+.side-nav>button{display:flex;align-items:center;gap:12px;width:100%;min-height:46px;border:0;border-radius:13px;background:transparent;color:var(--mute);padding:10px 13px;text-align:left;font:600 14px var(--fb);cursor:pointer;transition:background .18s,color .18s}
+.side-nav>button>span:first-child{width:22px;text-align:center;font-size:18px}
+.side-nav>button:hover,.side-nav>button[aria-current=true]{background:var(--goldsoft);color:var(--acc)}
+.nav-label{flex:1}.nav-dot{width:6px;height:6px;border-radius:50%;background:var(--acc)}
+.side-foot{margin-top:auto;display:flex;align-items:center;gap:10px;padding:14px 8px 0;border-top:1px solid var(--line)}
+.side-avatar{width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:var(--goldsoft);color:var(--acc);font-weight:800}
+.side-foot b,.side-foot small{display:block}.side-foot b{font-size:12px;max-width:145px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.side-foot small{font-size:11px;color:var(--mute)}
+.page-intro{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:4px 0 20px}
+.page-intro h1{font-size:clamp(26px,3vw,36px);letter-spacing:-.055em;margin:3px 0 4px}.page-intro p{margin:0;color:var(--mute);font-size:14px}
+.eyebrow{color:var(--acc);font-size:10px;font-weight:800;letter-spacing:.15em;margin-bottom:5px}
+.status-pill,.count-pill{display:inline-flex;align-items:center;gap:7px;padding:8px 11px;border-radius:99px;background:var(--card);border:1px solid var(--line);font-size:11px;color:var(--mute);white-space:nowrap}
+.status-pill i{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px var(--goldsoft)}
+.card,.stat,.hero{box-shadow:var(--panel-shadow)}
+.card{border-radius:20px;padding:20px;scroll-margin-top:24px}.card h2{font-size:18px;letter-spacing:-.025em}
+.hero{border-radius:24px;padding:25px}.stats{gap:12px}.stat{border-radius:17px;padding:15px}.stat b{font-size:24px}
+.sum{gap:12px}.s{border-radius:18px;padding:16px;transition:transform .18s,border-color .18s,box-shadow .18s}.s:hover{transform:translateY(-2px);box-shadow:var(--panel-shadow)}
+.coach-section{scroll-margin-top:24px;margin-bottom:20px}.section-heading{display:flex;align-items:center;justify-content:space-between;margin:10px 0 13px}.section-heading h2{font-size:24px;letter-spacing:-.04em;margin:0}
+.activity-card{border:1px solid var(--line);border-radius:22px;background:var(--card);padding:20px;margin-bottom:16px;box-shadow:var(--panel-shadow)}
+.activity-top{display:flex;justify-content:space-between;align-items:start;gap:12px}.activity-top h2{font-size:19px;letter-spacing:-.03em}.activity-top p{font-size:13px;color:var(--mute);margin:4px 0 0}
+.activity-icon{display:grid;place-items:center;width:36px;height:36px;border-radius:12px;background:var(--goldsoft);color:var(--acc);font-size:20px}
+.activity-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:20px 0 10px}.activity-metrics>div{padding:11px 12px;background:var(--cream);border-radius:13px;min-width:0}
+.activity-metrics small{display:block;font-size:11px;color:var(--mute)}.activity-metrics b{display:block;font-size:18px;margin-top:3px;overflow-wrap:anywhere}.activity-metrics b small{display:inline;font-size:11px}
+.week-bars{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;height:112px;align-items:end;padding:8px 3px 0}
+.week-col{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:end;gap:7px;min-width:0}.week-track{height:86px;width:min(100%,28px);display:flex;align-items:end;overflow:hidden;border-radius:8px 8px 4px 4px;background:var(--cream)}
+.week-track i{display:block;width:100%;min-height:2px;border-radius:8px 8px 3px 3px;background:linear-gradient(180deg,#a99cff,#6654d9);transition:height .4s ease}
+.week-col small{font-size:10px;color:var(--mute);text-transform:capitalize}
+.activity-legend{display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--line);padding-top:12px;margin-top:8px;color:var(--mute);font-size:11px}.activity-legend span:first-child{display:flex;align-items:center;gap:7px}.activity-legend i{width:8px;height:8px;border-radius:3px;background:#8572f2}
+.goal-editor{border-color:rgba(139,124,255,.35);background:linear-gradient(145deg,var(--card),color-mix(in srgb,var(--card) 88%,#8b7cff 12%))}
+.goal-editor-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}.goal-editor-head h2{margin:0}.goal-emblem{width:45px;height:45px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(145deg,#8875f5,#5541c9);color:white;font-size:22px;box-shadow:0 7px 18px rgba(105,83,220,.25)}
+.goal-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0}
+.goal-type{display:flex;align-items:center;gap:9px;min-width:0;position:relative;text-align:left;padding:12px 10px;border-radius:15px;border:1px solid var(--line);background:var(--cream);color:var(--ink);cursor:pointer;transition:.18s;font:inherit}
+.goal-type:hover{transform:translateY(-1px);border-color:#8875f5}.goal-type.selected{border-color:#8875f5;background:var(--goldsoft);box-shadow:0 0 0 2px rgba(136,117,245,.12)}
+.goal-icon{width:30px;height:30px;flex:none;border-radius:10px;display:grid;place-items:center;background:rgba(136,117,245,.15);color:#8875f5;font-size:17px}
+.goal-type b,.goal-type small{display:block}.goal-type b{font-size:13px}.goal-type small{font-size:10px;color:var(--mute);margin-top:2px}.goal-check{margin-left:auto;font-size:16px;color:var(--acc);font-weight:800}
+.goal-editor input{width:100%;min-width:0}.goal-editor .row label{flex:1;min-width:120px}.goal-editor .row input{min-width:0}
+#coach-overview .sum .stat:first-child{border-top:2px solid #3ee6b0}#coach-overview .sum .stat:nth-child(2){border-top:2px solid #ffbd59}#coach-overview .sum .stat:nth-child(3){border-top:2px solid #8875f5}#coach-overview .sum .stat:nth-child(4){border-top:2px solid #55a7ff}
+.note{max-width:1480px;margin:20px auto 0}
+@media (max-width:900px){.wrap{padding:18px 18px 94px}.dashboard-shell{display:block}.side-nav{top:auto;bottom:0;left:0;right:0;width:auto;height:72px;padding:7px 8px calc(6px + env(safe-area-inset-bottom));border-right:0;border-top:1px solid var(--line);flex-direction:row;align-items:center;justify-content:space-around;gap:4px;background:color-mix(in srgb,var(--card) 94%,transparent);backdrop-filter:blur(16px)}.side-brand,.side-label,.side-foot{display:none}.side-nav>button{flex:1;min-width:0;min-height:52px;display:flex;flex-direction:column;justify-content:center;gap:2px;padding:4px 2px;font-size:10px;border-radius:12px}.side-nav>button>span:first-child{font-size:19px;width:auto}.nav-label{flex:none}.coach-side>button .nav-label{font-size:9px}.page-intro h1{font-size:27px}.page-intro{margin-bottom:15px}}
+@media (max-width:560px){.wrap{padding:14px 12px 94px}header{padding-bottom:12px}.page-intro{align-items:flex-start}.status-pill{display:none}.activity-card,.card{padding:15px;border-radius:18px}.activity-metrics{gap:6px}.activity-metrics>div{padding:9px}.activity-metrics b{font-size:15px}.week-bars{gap:5px}.goal-grid{gap:6px}.goal-type{padding:9px 6px;gap:5px;flex-wrap:wrap}.goal-icon{width:25px;height:25px}.goal-type small{font-size:9px}.goal-check{font-size:13px}.section-heading h2{font-size:21px}.stats{gap:7px}.stat{padding:10px}.stat b{font-size:20px}}
+@media (prefers-reduced-motion:reduce){.s,.side-nav>button,.week-track i{transition:none!important}}
+
 </style>
 </head>
 <body class="intro">
@@ -217,6 +273,13 @@ function act(a){
 function addQ(){
   const n=+document.getElementById("qn").value,c=+document.getElementById("qc").value||0,s=document.getElementById("qs").value;
   if(!n||n<1)return;const b=+document.getElementById("qb").value||0,k=document.getElementById("qk").value.trim().slice(0,40);S.qs.push({s,n,c:Math.min(c,n),b,k});BUMP={q:n};log(n+" soru çözdüm ("+s+(k?", "+k:"")+")");save();render();
+}
+function dailyActivityCard(){
+  const hist=HIST[ME]||{},today=day();
+  const days=Array.from({length:7},(_,i)=>dayN(i-6));
+  const rows=days.map(d=>{const z=d===today?{m:Math.round(total()/60000),q:solved()}:hist[d]||{};return {d,m:num(z.m),q:num(z.q)}});
+  const maxM=Math.max(30,...rows.map(r=>r.m)),sumM=rows.reduce((a,r)=>a+r.m,0),sumQ=rows.reduce((a,r)=>a+r.q,0);
+  return `<section class="activity-card"><div class="activity-top"><div><div class="eyebrow">SON 7 GÜN</div><h2>İstikrar grafiğin</h2><p>Çalışma ritmini takip et, gelişimini gör.</p></div><span class="activity-icon">↗</span></div><div class="activity-metrics"><div><small>Toplam çalışma</small><b>${hmin(sumM)}</b></div><div><small>Çözülen soru</small><b>${sumQ}</b></div><div><small>Aktif gün</small><b>${rows.filter(r=>r.m>0||r.q>0).length}<small> / 7</small></b></div></div><div class="week-bars" role="img" aria-label="Son yedi günün çalışma süresi grafiği">${rows.map(r=>`<div class="week-col" title="${fd(r.d)}: ${hmin(r.m)}, ${r.q} soru"><div class="week-track"><i style="height:${Math.max(r.m?7:2,Math.round(r.m/maxM*100))}%"></i></div><small>${new Date(r.d+"T12:00:00").toLocaleDateString("tr-TR",{weekday:"short"}).replace(".","")}</small></div>`).join("")}</div><div class="activity-legend"><span><i></i> Net çalışma süresi</span><span>Her gün bir adım daha.</span></div></section>`;
 }
 function todayTab(){
   const st=S.status,live=st==="study"||st==="break";
@@ -370,12 +433,15 @@ function coachView(){
   const order={study:0,break:1,awake:2,stopped:3,closed:4,idle:5};
   all.sort((a,b)=>order[a.st]-order[b.st]);
   const avg=all.length?Math.round(all.reduce((a,x)=>a+x.m,0)/all.length):0;
-  return `<div class="sum">
+  return `<section id="coach-overview" class="coach-section"><div class="sum">
   <div class="stat"><b>${c(["study"])}</b><span>çalışıyor</span></div><div class="stat"><b>${c(["break"])}</b><span>molada</span></div>
   <div class="stat"><b>${c(["idle"])}</b><span>başlamadı</span></div><div class="stat"><b>${c(["closed"])}</b><span>günü kapattı</span></div></div>
-  <div class="card"><h2>Grup ortalaması</h2><p class="empty" style="margin:0">${Math.floor(avg/60)} sa ${avg%60} dk net çalışma · ${all.reduce((a,x)=>a+x.q,0)} soru (${all.length} öğrenci) · ${all.filter(x=>flags(x.hist).length).length} öğrencide uyarı</p></div>
-  ${classCard()}${bulkCard()}${addStudentCard()}${backupCard()}${thCard()}<div class="grid">${all.map(x=>`<button class="s${x.live?" live":""}" data-i="${x.id}"><div class="h"><span class="dot ${DOT[x.st]}"></span>${x.n}${flags(x.hist).length?" 🚩":""}</div><div class="sp">${LBL[x.st]}</div>
-  <div class="n"><span>${Math.floor(x.m/60)} sa ${x.m%60} dk</span><span>${x.q} soru</span></div><div class="bar"><i style="width:${Math.round(x.p*100)}%"></i></div></button>`).join("")}</div>`;
+  <div class="card"><div class="eyebrow">CANLI SINIF ÖZETİ</div><h2>Grup performansı</h2><p class="empty" style="margin:0">${Math.floor(avg/60)} sa ${avg%60} dk ortalama net çalışma · ${all.reduce((a,x)=>a+x.q,0)} soru · ${all.filter(x=>flags(x.hist).length).length} öğrencide uyarı</p></div></section>
+  <section id="coach-students" class="coach-section"><div class="section-heading"><div><div class="eyebrow">ÖĞRENCİ TAKİBİ</div><h2>Öğrenciler</h2></div><span class="count-pill">${all.length} kayıt</span></div>
+  ${classCard()}<div class="grid">${all.map(x=>`<button class="s${x.live?" live":""}" data-i="${x.id}"><div class="h"><span class="dot ${DOT[x.st]}"></span>${x.n}${flags(x.hist).length?" 🚩":""}</div><div class="sp">${LBL[x.st]}</div>
+  <div class="n"><span>${Math.floor(x.m/60)} sa ${x.m%60} dk</span><span>${x.q} soru</span></div><div class="bar"><i style="width:${Math.round(x.p*100)}%"></i></div></button>`).join("")}</div></section>
+  <section id="coach-tasks" class="coach-section"><div class="section-heading"><div><div class="eyebrow">PLANLAMA</div><h2>Görev yönetimi</h2></div></div>${bulkCard()}</section>
+  <section id="coach-tools" class="coach-section"><div class="section-heading"><div><div class="eyebrow">YÖNETİM</div><h2>Koç araçları</h2></div></div>${addStudentCard()}${backupCard()}${thCard()}</section>`;
 }
 let selDay=null,per="hw";const HIST={},DSTATE={};
 const PER=[["hw","Bu hafta"],["lw","Geçen hafta"],["tm","Bu ay"],["lm","Geçen ay"]];
@@ -432,12 +498,18 @@ function detailView(){
   <div class="big" style="font-size:34px">${x.n}</div>
   <div class="sub">Net çalışma: ${Math.floor(x.m/60)} sa ${x.m%60} dk</div></section>
   <div class="stats"><div class="stat"><b>${sn}</b><span>çözülen soru</span></div><div class="stat"><b>${sn?"%"+acc:"–"}</b><span>doğruluk</span></div><div class="stat"><b>${x.p>=1?"✓":"–"}</b><span>program</span></div></div>
-  ${past?"":histCard(x.id,x)+aiCard(x.id)+goalRoad(x.id)+netChartsCard(x.id)+targetForm(x.id,false)}<div class="card"><h2>Derslere göre sorular</h2>${Object.keys(by).length?Object.entries(by).map(([k,v])=>`<div class="subj"><span>${esc(k)}${v.k.length?" ("+esc(v.k.join(", "))+")":""}</span><span>${v.n} soru · ${v.c} doğru${v.b?" · "+v.b+" boş":""}</span></div>`).join(""):`<p class="empty">Henüz soru girişi yok.</p>`}</div>
+  ${past?"":`<div id="detail-history">${histCard(x.id,x)+aiCard(x.id)+goalRoad(x.id)+netChartsCard(x.id)}</div>`+targetForm(x.id,false)}<div class="card"><h2>Derslere göre sorular</h2>${Object.keys(by).length?Object.entries(by).map(([k,v])=>`<div class="subj"><span>${esc(k)}${v.k.length?" ("+esc(v.k.join(", "))+")":""}</span><span>${v.n} soru · ${v.c} doğru${v.b?" · "+v.b+" boş":""}</span></div>`).join(""):`<p class="empty">Henüz soru girişi yok.</p>`}</div>
   ${x.mood?`<div class="card"><h2>Gün puanı</h2><p class="empty" style="margin:0">${x.mood} / 5</p></div>`:""}
-  ${past?"":trendCard(x)+coachCards(x,sn)+taskCard(x)+denemeCard(x)+parentCard(x)+adminCard(x)}<div class="card"><h2>Günün akışı</h2>${x.L.length?`<ul class="tl">${x.L.slice().reverse().map(l=>`<li><time>${l.t}</time>${l.m}</li>`).join("")}</ul>`:`<p class="empty">${past?"Bu güne ait hareket kaydı yok.":"Bugün henüz bir hareket yok."}</p>`}</div>`;
+  ${past?"":`<div id="detail-tasks">${trendCard(x)+coachCards(x,sn)+taskCard(x)}</div>`+denemeCard(x)+parentCard(x)+adminCard(x)}<div class="card"><h2>Günün akışı</h2>${x.L.length?`<ul class="tl">${x.L.slice().reverse().map(l=>`<li><time>${l.t}</time>${l.m}</li>`).join("")}</ul>`:`<p class="empty">${past?"Bu güne ait hareket kaydı yok.":"Bugün henüz bir hareket yok."}</p>`}</div>`;
 }
 function render(){
-    document.getElementById("app").innerHTML=view==="s"?studentView():coachView();{const c=document.getElementById("chat");if(c)c.scrollTop=c.scrollHeight}
+    const app=document.getElementById("app");
+    if(view==="s")app.innerHTML=studentView();
+    else{
+      const nav=sel?`<nav class="side-nav coach-side" aria-label="Koç menüsü"><div class="side-brand"><span class="brand-mark">K</span><div><b>KARAKIŞ</b><small>KOÇ PANELİ</small></div></div><div class="side-label">ÖĞRENCİ ÇALIŞMA ALANI</div><button data-backnav="1"><span>👥</span><span class="nav-label">Öğrenci listesi</span></button><button data-cnav="detail-history"><span>📈</span><span class="nav-label">Günlük performans</span></button><button data-cnav="detail-target"><span>🎯</span><span class="nav-label">Hedef analizi</span></button><button data-cnav="detail-tasks"><span>✅</span><span class="nav-label">Görev planı</span></button><div class="side-foot"><span class="side-avatar">K</span><div><b>${esc(NAME||"Koç")}</b><small>Koç paneli</small></div></div></nav>`: `<nav class="side-nav coach-side" aria-label="Koç menüsü"><div class="side-brand"><span class="brand-mark">K</span><div><b>KARAKIŞ</b><small>KOÇ PANELİ</small></div></div><div class="side-label">YÖNETİM</div><button data-cnav="coach-overview" aria-current="true"><span>⌂</span><span class="nav-label">Genel bakış</span></button><button data-cnav="coach-students"><span>👥</span><span class="nav-label">Öğrenciler</span></button><button data-cnav="coach-tasks"><span>✓</span><span class="nav-label">Görev yönetimi</span></button><button data-cnav="coach-tools"><span>⚙</span><span class="nav-label">Koç araçları</span></button><div class="side-foot"><span class="side-avatar">K</span><div><b>${esc(NAME||"Koç")}</b><small>Eğitim koçluğu</small></div></div></nav>`;
+      app.innerHTML=`<div class="dashboard-shell">${nav}<div class="dashboard-main">${coachView()}</div></div>`;
+    }
+    const c=document.getElementById("chat");if(c)c.scrollTop=c.scrollHeight;
 }
 document.addEventListener("change",e=>{if(e.target.id==="hd"){S.hard=e.target.value.slice(0,60);save()}});
 /* ===== Yeni özellikler: sekmeler, görevler, sohbet, rozetler, koç araçları ===== */
@@ -578,7 +650,7 @@ async function chatSend(){
 }
 function studentView(){
   const body=tab==="g"?tasksTab():tab==="d"?examCard()+netChartsCard(ME):tab==="h"?goalRoad(ME)+targetForm(ME,true)+badgeCard()+pushCard():tab==="k"?chatTab():todayTab();
-  return body+`<nav class="bnav" aria-label="Sekmeler">${TABS.map(([k,i,l])=>`<button data-tab="${k}" aria-current="${tab===k}"><span aria-hidden="true">${i}</span>${l}</button>`).join("")}</nav>`;
+  return `<nav class="side-nav bnav" aria-label="Öğrenci sekmeleri"><div class="side-brand"><span class="brand-mark">K</span><div><b>KARAKIŞ</b><small>ÖĞRENCİ PANELİ</small></div></div><div class="side-label">ÇALIŞMA ALANI</div>${TABS.map(([k,i,l])=>`<button data-tab="${k}" aria-current="${tab===k}"><span aria-hidden="true">${i}</span><span class="nav-label">${l}</span>${k==="b"?'<i class="nav-dot"></i>':""}</button>`).join("")}<div class="side-foot"><span class="side-avatar">${esc((NAME||"Ö").slice(0,1).toUpperCase())}</span><div><b>${esc(NAME||"Öğrenci")}</b><small>Gelişim yolculuğun</small></div></div></nav><div class="dashboard-main"><div class="page-intro"><div><div class="eyebrow">${fd(day()).toLocaleUpperCase("tr-TR")}</div><h1>${({"b":"Bugünün planı","g":"Görevlerim","d":"Deneme analizi","h":"Hedef yolculuğum","k":"Çalışma asistanım"})[tab]||"Panelim"}</h1><p>Her gün küçük bir adım, büyük bir değişim.</p></div><span class="status-pill"><i></i> Kişisel panelin</span></div>${tab==="b"?dailyActivityCard(): ""}${body}</div>`;
 }
 
 /* deneme: silme, düzeltme, elle ekleme */
@@ -659,7 +731,7 @@ document.addEventListener("click",e=>{
   rollover();
   if(ui(t))return;
   if(t.id==="t1"){view="s";render()}else if(t.id==="t2"){view="c";sel=null;render()}
-  else if(t.dataset.me){meth=t.dataset.me;render()}
+  else if(t.dataset.cnav){const el=document.getElementById(t.dataset.cnav);if(el)el.scrollIntoView({behavior:"smooth",block:"start"});document.querySelectorAll(".side-nav [data-cnav]").forEach(b=>b.setAttribute("aria-current",String(b===t)))}else if(t.dataset.backnav){sel=null;selDay=null;render()}else if(t.dataset.me){meth=t.dataset.me;render()}
   else if(t.dataset.f){S[t.dataset.f]=+t.dataset.v;save();render()}
   else if(t.id==="savth"){const g=id=>+document.getElementById(id).value,c=(v,a,b,d)=>isNaN(v)||!v?d:Math.min(b,Math.max(a,v));C.th={gap:c(g("th1"),1,5,2),drop:c(g("th2"),10,95,60),mood:c(g("th3"),1,4,2),sleep:c(g("th4"),3,9,6)};saveC();render()}
   else if(t.id==="cp"){const p=document.getElementById("pt");p.select();try{navigator.clipboard.writeText(p.value).then(()=>{t.textContent="Kopyalandı ✓"},()=>{t.textContent="Metin seçildi, kopyala"})}catch(e){t.textContent="Metin seçildi, kopyala"}}
@@ -719,12 +791,12 @@ function targetForm(sid,mine){
   const gl=TG[sid]||[];
   const tur=GT.includes(TGSEL[sid])?TGSEL[sid]:(gl.find(g=>GT.includes(g.exam_type))||{exam_type:"TYT"}).exam_type;
   const t=tgOf(sid,tur)||{};
-  const chips=GT.map(x=>`<button class="chip" data-tgsel="${x}" data-sid="${sid}" aria-pressed="${x===tur}">${x}${tgOf(sid,x)?" ✓":""}</button>`).join("");
+  const chips=GT.map((x,i)=>`<button class="goal-type${x===tur?" selected":""}" data-tgsel="${x}" data-sid="${sid}" aria-pressed="${x===tur}"><span class="goal-icon">${["✦","↗","◎"][i]}</span><span><b>${x}</b><small>${x==="TYT"?"Temel yeterlilik":x==="AYT"?"Alan yeterlilik":"Liselere geçiş"}</small></span><span class="goal-check">${tgOf(sid,x)?"✓":"+"}</span></button>`).join("");
   const list=gl.length?`<div style="margin:6px 0 10px">${gl.map(g=>`<div class="subj"><span>🎯 ${goalTxt(g)}</span></div>`).join("")}</div>`:"";
-  return `<div class="card"><h2>${mine?"Hedeflerim":"Öğrencinin hedefleri"}</h2>
+  return `<div class="card goal-editor" id="${mine?"student-goal-editor":"detail-target"}"><div class="goal-editor-head"><span class="goal-emblem">🎯</span><div><div class="eyebrow">HEDEF TASARIMI</div><h2>${mine?"Hedeflerini şekillendir":"Öğrencinin hedefleri"}</h2></div></div>
   <p class="empty" style="margin:0 0 8px">${mine?"TYT, AYT ve LGS için hedeflerini ayrı ayrı gir. İstediğin üniversite ve bölümü de yazabilirsin. Çalıştıkça hedefe yaklaşmanı ana ekranda göreceksin.":"Her tür için ayrı hedef girebilirsin; öğrenci de kendi ekranında görür ve değiştirebilir."}</p>
   ${list}
-  <div class="chips" role="group" aria-label="Hedef türü">${chips}</div>
+  <div class="goal-grid" role="group" aria-label="Hedef türü">${chips}</div>
   <div class="row"><label>${esc(tur)} hedef net<input id="tgn" type="number" min="1" max="500" step="0.25" inputmode="decimal" style="width:100px" value="${t.target_net==null?"":esc(t.target_net)}"></label>
   <label>Hedef puan (isteğe bağlı)<input id="tgp" type="number" min="0" max="600" step="0.1" inputmode="decimal" style="width:100px" value="${t.target_score==null?"":esc(t.target_score)}"></label></div>
   <div class="row"><label>İstediğim üniversite<input id="tgu" type="text" maxlength="80" style="width:100%;min-width:220px" value="${esc(t.university||"")}"></label></div>
