@@ -33,7 +33,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 .hero .st{display:flex;align-items:center;gap:8px;color:var(--hero-sub);font-weight:700}
 .dot{width:11px;height:11px;border-radius:50%;background:var(--idle);flex:none}
 .dot.study{background:#4fc08d;box-shadow:0 0 0 5px rgba(79,192,141,.25)}.dot.break{background:#f0a73a}.dot.done{background:var(--gold)}
-.big{font-weight:700;font-size:54px;line-height:1.1;margin:8px 0 2px;font-variant-numeric:tabular-nums}
+.big{font-weight:700;font-size:64px;line-height:1.1;margin:8px 0 2px;font-variant-numeric:tabular-nums}
 .sub{color:var(--hero-sub);font-size:14px}
 .acts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
 .acts .full{grid-column:1/-1}
@@ -71,7 +71,7 @@ body.offl::before{content:"⚠️ Kaydedilemedi — bağlantını kontrol et. Ve
 .link{background:none;border:0;color:var(--mute);text-decoration:underline;font:inherit;font-size:13px;cursor:pointer;padding:0}
 .gl{display:flex;justify-content:space-between;font-size:14px;margin-top:10px}textarea{width:100%;font:16px var(--fb),sans-serif;padding:10px;border-radius:10px;border:1.5px solid var(--line);background:var(--cream);color:var(--ink);min-height:70px;resize:vertical}.nt{padding:8px 0;border-bottom:1px dashed var(--line);font-size:15px}.nt time{display:block;color:var(--mute);font-size:12px}
 .rb{display:flex;justify-content:space-between;gap:10px;width:100%;background:none;border:0;border-bottom:1px dashed var(--line);padding:9px 0;font:inherit;font-size:15px;color:inherit;cursor:pointer;text-align:left}.rb span:last-child{color:var(--mute);text-align:right}
-@media (max-width:480px){.big{font-size:44px}.sum{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:480px){.big{font-size:52px}.sum{grid-template-columns:repeat(2,1fr)}}
 #splash{position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;background:var(--cream);animation:sOut .7s ease 2.2s forwards;pointer-events:none}
 #splash .nm{font:700 30px var(--fd);color:var(--ink);animation:fadeUp .8s ease 1s both}#splash .nm b{color:var(--acc)}
 #splash .ring{stroke-dasharray:314;stroke-dashoffset:314;animation:draw 1.4s ease .2s forwards}
@@ -202,7 +202,7 @@ function todayTab(){
   const solvedT=solved(),acc=solvedT?Math.round(correct()/solvedT*100):0;
   return `${guideCard()}${live&&curNet()>4*3600e3?`<div class="card" style="border-color:var(--warn)"><p style="margin:0">⏰ Sayaç 4 saatten uzun süredir açık. Çalışmayı bitirdiysen <b>Çalışmayı noktala</b>'ya bas, yoksa süren fazla görünür.</p></div>`:""}
   <section class="hero"><div class="st"><span class="dot ${DOT[st]}"></span>${LBL[st]}</div>
-  <div class="big" id="clock">${dur(total())}</div><div class="sub">Bugünkü net çalışma süresi</div>
+  <div class="big" id="clock">${dur(clockMs())}</div><div class="sub" id="clocksub">${clockSub()}</div>
   ${st!=="closed"?`<div class="acts">${b}</div>`:""}</section>
   ${picker}
   <div class="stats"><div class="stat"><b>${solvedT}</b><span>çözülen soru</span></div><div class="stat"><b>${solvedT?"%"+acc:"–"}</b><span>doğruluk</span></div><div class="stat"><b>${S.prog?"✓":"–"}</b><span>program</span></div></div>
@@ -657,7 +657,18 @@ document.addEventListener("click",e=>{
   else if(t.dataset.m){S.mood=+t.dataset.m;log("Gün puanım: "+S.mood+"/5");save();render()}
   else if(t.dataset.a)act(t.dataset.a);
 });
-setInterval(()=>{const c=document.getElementById("clock");if(c&&S.status==="study")c.textContent=dur(total())},1000);
+const liveNow=()=>S.status==="study"||S.status==="break";
+const clockMs=()=>liveNow()?curNet():total();
+const clockSub=()=>liveNow()?`${S.status==="break"?"☕ Mola · süre durdu":"⏱ Bu dersin süresi"} · Bugün toplam ${short(total())}`:"Bugünkü net çalışma süresi";
+let WL=null;
+async function wakeSync(){try{if(!("wakeLock" in navigator))return;if(S.status==="study"&&document.visibilityState==="visible"){if(!WL){WL=await navigator.wakeLock.request("screen");WL.addEventListener("release",()=>{WL=null})}}else if(WL){await WL.release();WL=null}}catch(e){WL=null}}
+function clockTick(){
+  const c=document.getElementById("clock");
+  if(c&&ROLE==="student"&&view==="s"&&tab==="b"){c.textContent=dur(clockMs());const u=document.getElementById("clocksub");if(u)u.textContent=clockSub()}
+  try{document.title=(S&&S.status==="study")?dur(curNet())+" · Karakış Takip":"Karakış Takip"}catch(e){}
+}
+setInterval(()=>{clockTick();wakeSync()},1000);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")wakeSync()});
 let ME=null,ROLE=null,NAME="",STU=[],ROWS=[];
 let EXMSG="",PX=null,AIBUSY=null;const EX={},AIR={},TG={},TGSEL={},ROADSEL={},ROADSEEN={};let BUMP=null;const GT=["TYT","AYT","LGS"];
 const setEx=m=>{EXMSG=m;const e=document.getElementById("exmsg");if(e)e.textContent=m};
