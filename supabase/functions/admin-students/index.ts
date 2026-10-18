@@ -64,9 +64,10 @@ export async function handler(req: Request): Promise<Response> {
   }
   if (body.action === "delete") {
     if (body.confirm !== true) return J({ error: "Silme onayı gerekli." }, 400);
-    await admin.from("profiles").delete().eq("id", sid);
+    // profiles.id, auth.users.id alanına ON DELETE CASCADE ile bağlıdır.
+    // Önce profili silmek, Auth silme işlemi başarısız olduğunda hesabı yetim bırakabilirdi.
     const { error } = await admin.auth.admin.deleteUser(sid);
-    if (error) return J({ error: "Hesap silinemedi." }, 500);
+    if (error) return J({ error: "Hesap silinemedi. Profil ve öğrenci verileri korunuyor; tekrar deneyebilirsin." }, 500);
     return J({ ok: true });
   }
   return J({ error: "Bilinmeyen işlem." }, 400);
