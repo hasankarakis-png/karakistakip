@@ -7,7 +7,7 @@ const METH=["Soru çözme","Konu çalışma","Tekrar","Kendini test","Video izle
 const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 const day=()=>ymd(new Date());
 const dayN=n=>{const d=new Date();d.setDate(d.getDate()+n);return ymd(d)};
-const fresh=()=>({day:day(),status:"idle",cur:null,done:0,log:[],qs:[],prog:false,mood:0,sleep:0,dist:0,en:0,str:0,hard:"",meth:{}});
+const fresh=()=>({day:day(),status:"idle",cur:null,done:0,log:[],qs:[],prog:false,mood:0,sleep:0,dist:0,en:0,str:0,hard:"",meth:{},subjectTime:{}});
 let S=fresh();
 let view="s",subj=SUBJ[0],meth=METH[0];
 const snap=()=>({m:Math.round(total()/60000),q:solved(),prog:S.prog?1:0,mood:S.mood,sleep:S.sleep,dist:S.dist,en:S.en,str:S.str,act:actPct(),c:correct(),b:S.qs.reduce((a,q)=>a+(q.b||0),0)});
@@ -18,7 +18,7 @@ const dayRow=s=>({student_id:ME,day:s.day,state:s,snap:snap(),updated_at:new Dat
 function rollover(){
   if(!ME||ROLE!=="student"||S.day===day())return false;
   const old=S,m=new Date();m.setHours(0,0,0,0);const mid=m.getTime(),oc=old.cur,was=oc&&(old.status==="study"||old.status==="break");
-  if(oc){const v=Math.max(0,mid-oc.start-oc.brk-(old.status==="break"?mid-oc.bs:0));old.done+=v;old.meth[oc.meth]=(old.meth[oc.meth]||0)+v;old.cur=null;old.status="stopped";old.log.push({t:mid-1,m:"Gece yarısı: oturum otomatik bölündü"})}
+  if(oc){const v=Math.max(0,mid-oc.start-oc.brk-(old.status==="break"?mid-oc.bs:0));old.done+=v;old.meth[oc.meth]=(old.meth[oc.meth]||0)+v;old.subjectTime=old.subjectTime||{};old.subjectTime[oc.subj]=(old.subjectTime[oc.subj]||0)+v;old.cur=null;old.status="stopped";old.log.push({t:mid-1,m:"Gece yarısı: oturum otomatik bölündü ("+oc.subj+")"})}
   const sn=snap();try{localStorage.setItem(KEY+ME+"-"+old.day,JSON.stringify(old))}catch(e){}
   Promise.resolve(sb.from("daily").upsert({student_id:ME,day:old.day,state:old,snap:sn,updated_at:new Date().toISOString()})).then(r=>{if(r&&r.error)setSync("⚠️ "+r.error.message)},()=>setSync("⚠️ Bağlantı yok"));
   S=fresh();
@@ -54,9 +54,9 @@ function act(a){
   if(a==="start"){S.cur={start:n,brk:0,bs:0,subj,meth};S.status="study";log("Derse başladım: "+subj+" ("+meth+")")}
   if(a==="break"){S.cur.bs=n;S.status="break";log("Mola verdim")}
   if(a==="back"){S.cur.brk+=n-S.cur.bs;S.status="study";log("Moladan döndüm")}
-  if(a==="stop"){const v=curNet();S.done+=v;S.meth[S.cur.meth]=(S.meth[S.cur.meth]||0)+v;log("Çalışmayı noktaladım ("+short(v)+", "+S.cur.subj+")");BUMP={m:Math.max(1,Math.round(v/60000))};S.cur=null;S.status="stopped"}
+  if(a==="stop"){const v=curNet();S.done+=v;S.meth[S.cur.meth]=(S.meth[S.cur.meth]||0)+v;S.subjectTime=S.subjectTime||{};S.subjectTime[S.cur.subj]=(S.subjectTime[S.cur.subj]||0)+v;log("Çalışmayı noktaladım ("+short(v)+", "+S.cur.subj+")");BUMP={m:Math.max(1,Math.round(v/60000))};S.cur=null;S.status="stopped"}
   if(a==="prog"){S.prog=!S.prog;log(S.prog?"Programımı bitirdim":"Program işaretini kaldırdım")}
-  if(a==="close"){if(S.cur){const v=curNet();S.done+=v;S.meth[S.cur.meth]=(S.meth[S.cur.meth]||0)+v;S.cur=null}S.status="closed";log("Günü kapattım")}
+  if(a==="close"){if(S.cur){const v=curNet();S.done+=v;S.meth[S.cur.meth]=(S.meth[S.cur.meth]||0)+v;S.subjectTime=S.subjectTime||{};S.subjectTime[S.cur.subj]=(S.subjectTime[S.cur.subj]||0)+v;S.cur=null}S.status="closed";log("Günü kapattım")}
   save();render();
 }
 function addQ(){
@@ -70,6 +70,24 @@ function dailyActivityCard(){
   const maxM=Math.max(30,...rows.map(r=>r.m)),sumM=rows.reduce((a,r)=>a+r.m,0),sumQ=rows.reduce((a,r)=>a+r.q,0);
   return `<section class="activity-card"><div class="activity-top"><div><div class="eyebrow">SON 7 GÜN</div><h2>İstikrar grafiğin</h2><p>Çalışma ritmini takip et, gelişimini gör.</p></div><span class="activity-icon">↗</span></div><div class="activity-metrics"><div><small>Toplam çalışma</small><b>${hmin(sumM)}</b></div><div><small>Çözülen soru</small><b>${sumQ}</b></div><div><small>Aktif gün</small><b>${rows.filter(r=>r.m>0||r.q>0).length}<small> / 7</small></b></div></div><div class="week-bars" role="img" aria-label="Son yedi günün çalışma süresi grafiği">${rows.map(r=>`<div class="week-col" title="${fd(r.d)}: ${hmin(r.m)}, ${r.q} soru"><div class="week-track"><i style="height:${Math.max(r.m?7:2,Math.round(r.m/maxM*100))}%"></i></div><small>${new Date(r.d+"T12:00:00").toLocaleDateString("tr-TR",{weekday:"short"}).replace(".","")}</small></div>`).join("")}</div><div class="activity-legend"><span><i></i> Net çalışma süresi</span><span>Her gün bir adım daha.</span></div></section>`;
 }
+
+function subjectTimeCard(){
+  const by={...(S.subjectTime||{})};
+  if(!Object.values(by).some(v=>num(v)>0)){
+    (S.log||[]).forEach(e=>{
+      const m=String(e.m||"").match(/Çalışmayı noktaladım \((\d+) sa (\d+) dk, ([^)]+)\)/);
+      if(m){const k=m[3].trim();by[k]=(by[k]||0)+(Number(m[1])*60+Number(m[2]))*60000}
+    });
+  }
+  if(S.cur&&(S.status==="study"||S.status==="break"))by[S.cur.subj]=(by[S.cur.subj]||0)+curNet();
+  const rows=Object.entries(by).map(([name,ms])=>({name,ms:Math.max(0,num(ms))})).filter(x=>x.ms>=60000).sort((a,b)=>b.ms-a.ms);
+  const max=Math.max(1,...rows.map(x=>x.ms));
+  const meth={...(S.meth||{})};if(S.cur&&(S.status==="study"||S.status==="break"))meth[S.cur.meth]=(meth[S.cur.meth]||0)+curNet();
+  const methods=Object.entries(meth).map(([name,ms])=>({name,ms:Math.max(0,num(ms))})).filter(x=>x.ms>=60000).sort((a,b)=>b.ms-a.ms);
+  const bars=(items,peak)=>items.length?items.map(x=>'<div class="time-row"><div class="time-row-head"><span>'+esc(x.name)+'</span><b>'+hmin(Math.round(x.ms/60000))+'</b></div><div class="time-track"><i style="width:'+Math.max(3,Math.round(x.ms/peak*100))+'%"></i></div></div>').join(''):'<p class="empty">Süre grafiği için en az 1 dakikalık bir çalışma oturumu tamamla.</p>';
+  return '<section class="card subject-time-card"><div class="section-heading"><div><div class="eyebrow">KENDİ GELİŞİMİN</div><h2>Bugün zamanını nasıl kullandın?</h2><p class="empty">Çalışma oturumlarını bitirdikçe ders sürelerin burada birikir.</p></div><span class="time-total">'+hmin(Math.round(total()/60000))+'</span></div><div class="time-chart"><h3>📚 Derslere göre çalışma süresi</h3>'+bars(rows,max)+(rows.length?'<p class="time-insight">En çok zaman ayırdığın ders: <b>'+esc(rows[0].name)+'</b></p>':'')+'</div><div class="time-chart method-chart"><h3>🧠 Çalışma yöntemlerine göre</h3>'+bars(methods,Math.max(1,...methods.map(x=>x.ms)))+'</div></section>';
+}
+
 function todayTab(){
   const st=S.status,live=st==="study"||st==="break";
   let b="";
@@ -86,7 +104,7 @@ function todayTab(){
   ${st!=="closed"?`<div class="acts">${b}</div>`:""}</section>
   ${picker}
   <div class="stats"><div class="stat"><b>${solvedT}</b><span>çözülen soru</span></div><div class="stat"><b>${solvedT?"%"+acc:"–"}</b><span>doğruluk</span></div><div class="stat"><b>${S.prog?"✓":"–"}</b><span>program</span></div></div>
-  ${goalRoad(ME)}${coachForMe()}${streakCard()}${todayTasks()}
+  ${subjectTimeCard()}${goalRoad(ME)}${coachForMe()}${streakCard()}${todayTasks()}
   ${qa?`<div class="card"><h2>Soru girişi</h2><div class="row">
   <label>Ders<select id="qs">${SUBJ.map(x=>`<option${x===subj?" selected":""}>${x}</option>`).join("")}</select></label>
   <label>Çözülen<input id="qn" type="number" min="1" inputmode="numeric"></label>
