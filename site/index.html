@@ -6,7 +6,7 @@
 <title>Hasan Karakış · Eğitim Koçluğu ve Psikolojik Danışmanlık · Diyarbakır</title>
 <meta name="description" content="YKS ve LGS öğrencileri için bireysel koçluk, deneme analizi ve günlük takip. Pd. Hasan Karakış, Kayapınar / Diyarbakır.">
 <meta property="og:title" content="Karakış Eğitim & Danışmanlık">
-<meta property="og:description" content="Potansiyeli Keşfet, Geleceği Şekillendir. YKS ve LGS için bireysel koçluk ve günlük takip.">
+<meta property="og:description" content="Potansiyelini Keşfet, Geleceğini Şekillendir. YKS ve LGS için bireysel koçluk ve günlük takip.">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#0E1B33">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E1B33'/%3E%3Cpath d='M16 28V14M16 20l-6-5M16 17l6-5M16 23l-5-3' stroke='%23C9A55C' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='16' cy='9' r='2.4' fill='%23C9A55C'/%3E%3C/svg%3E">
@@ -43,6 +43,47 @@ html{scroll-padding-top:76px}
 .contact-card{transition:transform .2s,box-shadow .2s}
 .contact-card:hover{transform:translateY(-3px);box-shadow:var(--bs-box-shadow)!important}
 @media (prefers-reduced-motion:reduce){.br{animation:none;stroke-dashoffset:0}.nd{animation:none;opacity:1}.ln{animation:none;opacity:.85}.contact-card{transition:none}}
+
+/* Karakış markasına özel, erişilebilir ve duyarlı görsel sistem */
+:root{
+  --brand-navy:#14213D;--brand-navy2:#23385E;--brand-gold:#C9A55C;
+  --brand-gold2:#E5D2A4;--brand-ivory:#F7F5F0;--brand-green:#5D8A78;
+  --bs-primary:#14213D;--bs-primary-rgb:20,33,61;
+  --bs-link-color:#14213D;--bs-link-hover-color:#5D8A78;
+  --bs-body-bg:#F7F5F0;--bs-body-color:#14213D;
+  --bs-border-radius:1rem;--bs-border-radius-lg:1.25rem;
+}
+body{background:#F7F5F0;color:#14213D;letter-spacing:.005em}
+.navbar{background:rgba(20,33,61,.97);backdrop-filter:blur(16px);box-shadow:0 8px 28px rgba(10,20,40,.12)}
+.navbar-brand{letter-spacing:-.035em;font-size:1.3rem}
+.navbar .nav-link{font-weight:600;transition:color .18s ease}
+.btn-primary{--bs-btn-bg:#C9A55C;--bs-btn-border-color:#C9A55C;--bs-btn-color:#14213D;--bs-btn-hover-bg:#E5D2A4;--bs-btn-hover-border-color:#E5D2A4;--bs-btn-hover-color:#14213D;--bs-btn-active-bg:#E5D2A4;--bs-btn-active-border-color:#E5D2A4;font-weight:750}
+.btn{border-radius:.9rem;transition:transform .18s ease,box-shadow .18s ease}
+.btn:hover{transform:translateY(-1px)}
+.hero{background:radial-gradient(850px 520px at 80% 38%,#2C426B 0%,#14213D 68%);padding-top:clamp(100px,12vw,140px);padding-bottom:clamp(58px,8vw,92px)}
+.hero h1{max-width:13ch;font-size:clamp(2.65rem,5.2vw,4.8rem);line-height:1.06;letter-spacing:-.055em}
+.hero .lead{max-width:56ch;line-height:1.75}
+#tree{max-height:470px;filter:drop-shadow(0 8px 24px rgba(201,165,92,.08))}
+section{scroll-margin-top:82px}
+section h2{letter-spacing:-.04em}
+.card{border-radius:1.2rem;box-shadow:0 8px 26px rgba(20,33,61,.055);transition:transform .2s ease,box-shadow .2s ease}
+#hizmetler .card:hover{transform:translateY(-4px);box-shadow:0 16px 34px rgba(20,33,61,.1)}
+.card-icon{border-radius:14px;background:#F1E7D0;color:#14213D}
+.step-no{background:#14213D;color:#E5D2A4;box-shadow:0 5px 14px rgba(20,33,61,.12)}
+#uygulama .card{box-shadow:0 18px 44px rgba(0,0,0,.12)}
+.accordion-item{border-color:#E4E7ED;overflow:hidden;border-radius:12px!important;margin-bottom:10px}
+.accordion-button{font-weight:650}
+.form-control:focus,.btn:focus-visible,.navbar-toggler:focus{box-shadow:0 0 0 .22rem rgba(201,165,92,.35)}
+.contact-card{border-radius:1.1rem}
+footer{background:#0C1528!important}
+@media(max-width:767.98px){
+  .hero{padding-top:100px;padding-bottom:46px}
+  .hero h1{font-size:clamp(2.35rem,10vw,3.5rem)}
+  #tree{max-height:300px;margin-top:4px}
+  .navbar .btn{margin-top:6px}
+}
+@media(prefers-reduced-motion:reduce){.btn,.card{transition:none!important}.btn:hover,#hizmetler .card:hover{transform:none}}
+
 </style>
 </head>
 <body data-bs-spy="scroll" data-bs-target="#menu" data-bs-offset="90" tabindex="0">
@@ -71,7 +112,9 @@ html{scroll-padding-top:76px}
   <div class="container">
     <div class="row align-items-center g-4">
       <div class="col-lg-6">
+        <p class="text-uppercase fw-bold small mb-3" style="letter-spacing:.16em;color:#E5D2A4">Karakış Eğitim &amp; Danışmanlık</p>
         <h1 class="display-4">Potansiyeli keşfet, geleceği şekillendir.</h1>
+        <p class="small fw-semibold mt-3 mb-0" style="color:#E5D2A4">Potansiyelini Keşfet, Geleceğini Şekillendir</p>
         <p class="lead mt-3 text-white-50">YKS ve LGS hazırlığında her öğrenciye kendi planı: deneme sonuçlarını birlikte okuyor, eksikleri bulup günlük çalışmayı takip ediyoruz.</p>
         <div class="d-flex flex-wrap gap-2 mt-4">
           <a class="btn btn-primary btn-lg" href="https://wa.me/905446490099" rel="noopener">WhatsApp'tan yaz</a>
