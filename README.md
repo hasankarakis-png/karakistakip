@@ -17,7 +17,7 @@ Mimari: tek dosya web uygulaması (index.html, PWA) + Supabase (giriş, veri tab
    node scripts/create-users.mjs ogrenciler ogrenciler.txt
    ```
    `ogrenciler.txt` her satırda bir "Ad Soyad" içerir. Script her öğrenciye kullanıcı adı ve 6 haneli PIN üretir, `giris-bilgileri.csv` dosyasına yazar.
-6. **Yayınla:** Klasörü Netlify'a sürükle-bırak (zaten sende kurulu yöntem). Öğrenciler adresi açıp "Ana ekrana ekle" yapar.
+6. **Yayınla (Cloudflare Pages):** GitHub deposunu Cloudflare Pages'e bağla. Build command alanını boş bırak; build çıktısı dizini olarak `.` (depo kökü) seç. İlk dağıtımda `index.html`, `sw.js`, `manifest.webmanifest` ve `_headers` dosyalarının yayımlandığını kontrol et. Supabase Edge Functions, frontend dağıtımından ayrı olarak Supabase üzerinden yayımlanır. Eski Netlify adresini yeni Pages/özel alan adı ve giriş akışı doğrulanana kadar kapatma. Öğrenciler tek bir kalıcı alan adı kullanmalı.
 
 ## Yapay zekâ modülü
 Deneme görseli okuma, gelişim analizi ve konu önceliklendirme için `README-AI.md` dosyasına bak.

@@ -40,8 +40,8 @@ Güncel klasörü GitHub'a yükle (Netlify bağlıysa otomatik yayınlanır) ya 
 - **Yetki:** Öğrenci yalnızca kendi verisini, koç tüm öğrencileri görür. Kurallar veritabanında (RLS) uygulanır.
 - **Sınırlar:** Öğrenci başına günde 10 görsel okuma ve 10 analiz. Koç günde 60 analiz. Değiştirmek için `EXTRACT_DAILY_LIMIT`, `INSIGHTS_DAILY_LIMIT`, `INSIGHTS_COACH_DAILY_LIMIT` secret'larını ekle.
 
-## Henüz yok
-- Yapay zekâ ile haftalık çalışma planı üretimi
-- Öğrenciye özel yapay zekâ sohbet koçu
-- Öğrencinin hedef net/puan alanı (bu yüzden hedef farkı analizi yapılmıyor)
-- Koç görüşme başlıkları önbelleğe yazılmaz (öğrenci de aynı satırı okuyabildiği için). Koç her seferinde "raporu üret" düğmesiyle alır.
+## Mevcut sınırlar ve kontrol listesi
+- Haftalık çalışma planı taslağı ve öğrenci sohbet koçu uygulamada mevcut; çalışmaları için `exam-insights` fonksiyonunun güncel sürümünün dağıtılmış olması gerekir.
+- Hedef net/puan alanları uygulamada bulunur. Hedef analizi için `exam_targets` tablosu ve `schema-ai.sql` içindeki RLS kuralları canlı veritabanında kurulmuş olmalıdır.
+- Koç görüşme başlıkları öğrenci tarafından okunabilen rapor önbelleğine yazılmaz; koç bunları raporu yeniden üreterek alır.
+- Bu rehber, canlı Supabase ayarlarının doğru olduğunu tek başına kanıtlamaz. Dağıtım sonrası öğrenci ve koç hesaplarıyla giriş, kota, plan taslağını kaydetme ve veri erişim yetkilerini test et.
