@@ -72,12 +72,27 @@ body.offl::before{content:"⚠️ Kaydedilemedi — bağlantını kontrol et. Ve
 .gl{display:flex;justify-content:space-between;font-size:14px;margin-top:10px}textarea{width:100%;font:16px var(--fb),sans-serif;padding:10px;border-radius:10px;border:1.5px solid var(--line);background:var(--cream);color:var(--ink);min-height:70px;resize:vertical}.nt{padding:8px 0;border-bottom:1px dashed var(--line);font-size:15px}.nt time{display:block;color:var(--mute);font-size:12px}
 .rb{display:flex;justify-content:space-between;gap:10px;width:100%;background:none;border:0;border-bottom:1px dashed var(--line);padding:9px 0;font:inherit;font-size:15px;color:inherit;cursor:pointer;text-align:left}.rb span:last-child{color:var(--mute);text-align:right}
 @media (max-width:480px){.big{font-size:44px}.sum{grid-template-columns:repeat(2,1fr)}}
-#splash{position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;background:var(--cream);animation:sOut .7s ease 2.2s forwards;pointer-events:none}
-#splash .nm{font:700 30px var(--fd);color:var(--ink);animation:fadeUp .8s ease 1s both}#splash .nm b{color:var(--acc)}
-#splash .ring{stroke-dasharray:314;stroke-dashoffset:314;animation:draw 1.4s ease .2s forwards}
-:root[data-theme="light"] #splash{background:#FFD9A0}:root[data-theme="light"] #splash svg{animation:sunUp 1.6s cubic-bezier(.2,.9,.2,1) .1s both}
-body.intro main>*{animation:rise .7s cubic-bezier(.2,.8,.2,1) both;animation-delay:2s}
-body.intro main>*:nth-child(2){animation-delay:2.09s}body.intro main>*:nth-child(3){animation-delay:2.18s}body.intro main>*:nth-child(n+4){animation-delay:2.27s}
+#splash{position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;overflow:hidden;background:radial-gradient(ellipse at 50% 44%,#1b3156 0%,#101a31 42%,#070d19 100%);color:#f8f5ed;animation:sOut .85s cubic-bezier(.7,0,.2,1) 3.15s forwards;pointer-events:none;isolation:isolate}
+#splash:before{content:"";position:absolute;width:min(76vw,520px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(201,165,92,.19),rgba(201,165,92,.04) 42%,transparent 70%);filter:blur(8px);animation:corePulse 2.8s ease-in-out both}
+#splash:after{content:"";position:absolute;inset:-30%;background:repeating-conic-gradient(from 0deg at 50% 45%,transparent 0deg 11deg,rgba(226,201,142,.055) 11.2deg 11.6deg,transparent 12deg 24deg);mask-image:radial-gradient(ellipse at center,#000 0%,transparent 68%);animation:raySpin 18s linear infinite}
+#splash .splash-mark{position:relative;z-index:1;width:clamp(112px,25vw,154px);aspect-ratio:1;filter:drop-shadow(0 0 22px rgba(226,201,142,.22));animation:markIn 1.2s cubic-bezier(.16,1,.3,1) .1s both}
+#splash .ring{stroke-dasharray:314;stroke-dashoffset:314;animation:draw 1.5s cubic-bezier(.2,.8,.2,1) .25s forwards}
+#splash .orbit{transform-origin:60px 60px;animation:orbit 5s linear infinite}
+#splash .spark{transform-box:fill-box;transform-origin:center;animation:spark 1.8s ease-in-out infinite alternate}
+#splash .nm{position:relative;z-index:1;font:700 clamp(27px,6vw,36px) var(--fd);letter-spacing:.11em;text-transform:uppercase;color:#f8f5ed;animation:fadeUp .85s cubic-bezier(.2,.8,.2,1) .75s both}
+#splash .nm b{color:#e2c98e;font-weight:700}
+#splash .tagline{position:relative;z-index:1;max-width:88vw;text-align:center;color:#c8d2e4;font:500 11px/1.6 var(--fb);letter-spacing:.19em;text-transform:uppercase;animation:fadeUp .85s ease 1.15s both}
+#splash .loading-line{position:relative;z-index:1;width:92px;height:2px;margin-top:10px;overflow:hidden;background:rgba(226,201,142,.18);border-radius:9px;animation:fadeUp .6s ease 1.3s both}
+#splash .loading-line:after{content:"";display:block;width:45%;height:100%;background:#e2c98e;box-shadow:0 0 12px #e2c98e;animation:loadSweep 1.35s ease-in-out .1s infinite}
+body.intro main>*{animation:rise .7s cubic-bezier(.2,.8,.2,1) both;animation-delay:3s}
+body.intro main>*:nth-child(2){animation-delay:3.08s}body.intro main>*:nth-child(3){animation-delay:3.16s}body.intro main>*:nth-child(n+4){animation-delay:3.24s}
+@keyframes markIn{from{opacity:0;transform:translateY(18px) scale(.72) rotate(-12deg)}to{opacity:1;transform:none}}
+@keyframes corePulse{0%{opacity:0;transform:scale(.72)}45%{opacity:1;transform:scale(1.06)}100%{opacity:.78;transform:scale(1)}}
+@keyframes raySpin{to{transform:rotate(360deg)}}
+@keyframes orbit{to{transform:rotate(360deg)}}
+@keyframes spark{from{opacity:.35;transform:scale(.7)}to{opacity:1;transform:scale(1.25)}}
+@keyframes loadSweep{0%{transform:translateX(-110%)}100%{transform:translateX(240%)}}
+:root[data-theme="light"] #splash{background:radial-gradient(ellipse at 50% 44%,#233c62 0%,#111d35 48%,#080e1a 100%)}
 .themebtn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;font:700 13px var(--fb);padding:7px 12px;min-height:36px;cursor:pointer}
 @keyframes sOut{to{opacity:0;visibility:hidden}}@keyframes draw{to{stroke-dashoffset:0}}@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 @keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}@keyframes sunUp{from{transform:translateY(130px) scale(.6);opacity:0}to{transform:none;opacity:1}}
@@ -153,7 +168,21 @@ input,select,textarea{border-radius:12px}
 </style>
 </head>
 <body class="intro">
-<div id="splash" aria-hidden="true"><svg width="130" height="130" viewBox="0 0 120 120"><circle cx="60" cy="60" r="50" fill="none" stroke="var(--line)" stroke-width="8"/><circle class="ring" cx="60" cy="60" r="50" fill="none" stroke="var(--acc)" stroke-width="8" stroke-linecap="round" transform="rotate(-90 60 60)"/></svg><div class="nm">Karakış <b>Takip</b></div></div>
+<div id="splash" aria-hidden="true">
+<svg class="splash-mark" viewBox="0 0 120 120" role="presentation">
+  <defs><linearGradient id="goldLine" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f5e3ad"/><stop offset=".55" stop-color="#c9a55c"/><stop offset="1" stop-color="#8f6b2e"/></linearGradient><radialGradient id="goldCore"><stop offset="0" stop-color="#fff4cc" stop-opacity=".95"/><stop offset="1" stop-color="#c9a55c" stop-opacity="0"/></radialGradient></defs>
+  <circle cx="60" cy="60" r="49" fill="none" stroke="#e2c98e" stroke-opacity=".16" stroke-width=".8"/>
+  <circle class="ring" cx="60" cy="60" r="49" fill="none" stroke="url(#goldLine)" stroke-width="1.8" stroke-linecap="round" transform="rotate(-90 60 60)"/>
+  <g class="orbit"><ellipse cx="60" cy="60" rx="57" ry="22" fill="none" stroke="#e2c98e" stroke-opacity=".58" stroke-width=".8" transform="rotate(-38 60 60)"/><circle cx="101" cy="28" r="2.5" fill="#fff0bd"/><circle class="spark" cx="18" cy="77" r="1.8" fill="#e2c98e"/></g>
+  <circle cx="60" cy="60" r="25" fill="url(#goldCore)"/>
+  <path d="M60 91V43M60 65 43 51M60 57 77 42M60 76 45 67M60 70 74 61M60 49 53 38" fill="none" stroke="url(#goldLine)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="60" cy="31" r="4" fill="#f5e3ad"/><circle cx="60" cy="31" r="8" fill="none" stroke="#e2c98e" stroke-opacity=".35"/>
+  <circle class="spark" cx="87" cy="52" r="1.8" fill="#fff0bd"/><circle class="spark" cx="34" cy="83" r="1.5" fill="#e2c98e"/>
+</svg>
+<div class="nm">KARAKIŞ <b>TAKİP</b></div>
+<div class="tagline">Potansiyelini Keşfet, Geleceğini Şekillendir</div>
+<div class="loading-line"></div>
+</div>
 <div class="wrap">
 <header>
   <div><h1>Günlük Takip</h1><small>Karakış Eğitim &amp; Danışmanlık</small></div>
@@ -1010,7 +1039,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="lp")d
   const root=document.documentElement,btn=document.getElementById("theme"),tc=document.getElementById("tc");
   const paint=()=>{const d=root.getAttribute("data-theme")!=="light";btn.textContent=d?"☀ Sabah":"☾ Gece";tc.setAttribute("content",d?"#0B1020":"#C93A20")};
   btn.addEventListener("click",()=>{const n=root.getAttribute("data-theme")==="light"?"dark":"light";root.setAttribute("data-theme",n);try{localStorage.setItem("karakis-tema",n)}catch(e){}paint()});
-  paint();setTimeout(()=>document.body.classList.remove("intro"),3200);
+  paint();setTimeout(()=>document.body.classList.remove("intro"),4050);
 })();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 if(SUPABASE_URL.includes("PROJE-KODU"))document.getElementById("app").innerHTML=`<div class="card"><h2>Kurulum gerekli</h2><p>index.html içindeki SUPABASE_URL ve SUPABASE_KEY değerlerini kendi projenle değiştir (README.md, 4. adım).</p></div>`;
