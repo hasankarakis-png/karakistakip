@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="tr">
+<html lang="tr" data-bs-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -8,253 +8,212 @@
 <meta property="og:title" content="Karakış Eğitim & Danışmanlık">
 <meta property="og:description" content="Potansiyeli Keşfet, Geleceği Şekillendir. YKS ve LGS için bireysel koçluk ve günlük takip.">
 <meta property="og:type" content="website">
-<meta name="theme-color" content="#0A1530">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230A1530'/%3E%3Cpath d='M16 28V14M16 20l-6-5M16 17l6-5M16 23l-5-3' stroke='%23C9A55C' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='16' cy='9' r='2.4' fill='%23C9A55C'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#0E1B33">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E1B33'/%3E%3Cpath d='M16 28V14M16 20l-6-5M16 17l6-5M16 23l-5-3' stroke='%23C9A55C' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='16' cy='9' r='2.4' fill='%23C9A55C'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="vendor/bootstrap.min.css">
 <style>
+/* Bootstrap'in renk değişkenleri marka renklerine ayarlandı; geri kalan her şey standart Bootstrap. */
 :root{
-  --night:#0A1530; --navy:#0E1B33; --navy2:#16294A; --ink:#EAF0FA; --mist:#9FB0CC;
-  --gold:#C9A55C; --gold2:#E2C98E; --ice:#E7EEF8; --text:#14213D; --muted:#4F5C75; --line:#CBD6E6;
-  --d:"Bricolage Grotesque",system-ui,sans-serif; --b:"Source Serif 4",Georgia,serif;
+  --bs-primary:#C9A55C; --bs-primary-rgb:201,165,92;
+  --bs-link-color:#8A6A25; --bs-link-hover-color:#6B5018;
+  --brand-navy:#0E1B33; --brand-navy2:#16294A; --brand-gold:#C9A55C; --brand-gold2:#E2C98E;
 }
-*{box-sizing:border-box;margin:0}
-body{font:400 18px/1.65 var(--b);color:var(--text);background:var(--night);-webkit-font-smoothing:antialiased}
-a{color:inherit}
-:focus-visible{outline:3px solid var(--gold2);outline-offset:3px;border-radius:6px}
-h1,h2,h3{font-family:var(--d);line-height:1.04;letter-spacing:-.025em}
-.wrap{max-width:1120px;margin:0 auto;padding:0 22px;width:100%}
-
-/* ---- İç içe açılan sayfalar ---- */
-#stack{position:relative}
-.pg{position:sticky;top:0;min-height:100svh;display:flex;align-items:center;overflow:hidden;
-  clip-path:circle(var(--r,200vmax) at 50% 170px)}
-.pg::after{content:"";position:absolute;inset:0;background:#000;opacity:calc(var(--o,0)*.55);pointer-events:none}
-.pg .in{width:100%;padding:110px 0 70px;transform-origin:50% 0;transform:scale(calc(1 - var(--o,0)*.07))}
-.pg:first-child{clip-path:none}
-
-/* ---- Yüzen menü ---- */
-.nav{position:fixed;z-index:20;left:50%;top:14px;transform:translateX(-50%);display:flex;align-items:center;gap:6px;
-  padding:7px 8px 7px 18px;border-radius:999px;background:rgba(10,21,48,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-  border:1px solid rgba(159,176,204,.22);font:500 15px var(--d);max-width:calc(100vw - 20px)}
-.nav b{font:800 18px var(--d);color:#fff;margin-right:12px;letter-spacing:-.02em}
-.nav a{color:var(--mist);text-decoration:none;padding:8px 12px;border-radius:999px;white-space:nowrap}
-.nav a:hover{color:#fff}
-.nav a.on{color:var(--navy);background:var(--gold2)}
-.nav a.cta{background:var(--gold);color:var(--navy);font-weight:700;margin-left:4px}
-
-/* ---- 1 · Gece ---- */
-.p1{background:radial-gradient(1100px 620px at 76% 42%,#1B3466 0%,var(--night) 62%);color:var(--ink)}
-.p1 .wrap{display:grid;grid-template-columns:1.05fr .95fr;align-items:center;gap:16px}
-.p1 h1{font-size:clamp(44px,7vw,92px);font-weight:800;color:#fff}
-.p1 .lead{margin-top:22px;max-width:29em;color:#C5D1E6;font-size:20px}
-.btns{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px}
-.btn{font:700 16px var(--d);text-decoration:none;padding:14px 24px;border-radius:999px;display:inline-block;border:1.5px solid transparent;transition:background .2s,color .2s}
-.btn.gold{background:var(--gold);color:var(--navy)}
-.btn.gold:hover{background:var(--gold2)}
-.btn.line{border-color:#3A5788;color:var(--ink)}
-.btn.line:hover{background:#16294A}
-.who{margin-top:26px;color:var(--mist);font:500 15px var(--d)}
-#tree{width:100%;height:auto;max-height:620px;position:relative;z-index:1}
-#snowc{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+html{scroll-padding-top:76px}
+.btn-primary{--bs-btn-bg:#C9A55C;--bs-btn-border-color:#C9A55C;--bs-btn-color:#0E1B33;--bs-btn-hover-bg:#E2C98E;--bs-btn-hover-border-color:#E2C98E;--bs-btn-hover-color:#0E1B33;--bs-btn-active-bg:#E2C98E;--bs-btn-active-border-color:#E2C98E;--bs-btn-active-color:#0E1B33;--bs-btn-focus-shadow-rgb:201,165,92;font-weight:600}
+.btn-outline-light{--bs-btn-hover-color:#0E1B33}
+.bg-brand{background:var(--brand-navy)!important}
+.bg-brand2{background:var(--brand-navy2)!important}
+.text-gold{color:var(--brand-gold2)!important}
+.navbar{background:var(--brand-navy)}
+.navbar .nav-link.active{color:var(--brand-gold2)!important}
+.hero{background:radial-gradient(900px 480px at 78% 40%,#1B3466 0%,var(--brand-navy) 65%);color:#fff;padding-top:110px;padding-bottom:70px;overflow:hidden}
+.hero h1{font-weight:800;letter-spacing:-.02em}
+#tree{width:100%;height:auto;max-height:440px}
 .br{fill:none;stroke:#C9A55C;stroke-width:3;stroke-linecap:round;stroke-dasharray:var(--l);stroke-dashoffset:var(--l);animation:grow 1.7s cubic-bezier(.5,0,.2,1) forwards;animation-delay:var(--t)}
-.br.th{stroke-width:2;stroke:#B79650}
-.br.tw{stroke-width:1.3;stroke:#9C8450}
-.nd{fill:#E2C98E;opacity:0;transform-box:fill-box;transform-origin:center;animation:pop .6s ease forwards,glow 3.4s ease-in-out infinite;animation-delay:var(--t),calc(var(--t) + 1s)}
+.br.th{stroke-width:2;stroke:#B79650}.br.tw{stroke-width:1.3;stroke:#9C8450}
+.nd{fill:#E2C98E;opacity:0;transform-box:fill-box;transform-origin:center;animation:pop .6s ease forwards;animation-delay:var(--t)}
 .ln{stroke:#4B6AA3;stroke-width:1;stroke-dasharray:3 5;opacity:0;animation:fade 1s ease forwards;animation-delay:var(--t)}
 @keyframes grow{to{stroke-dashoffset:0}}
 @keyframes pop{from{opacity:0;transform:scale(.2)}to{opacity:1;transform:scale(1)}}
-@keyframes glow{0%,100%{filter:none}50%{filter:drop-shadow(0 0 6px #E2C98E)}}
 @keyframes fade{to{opacity:.85}}
-
-/* ---- 2 · Buz ---- */
-.p2{background:var(--ice);color:var(--text)}
-.big{font-size:clamp(34px,5.4vw,66px);font-weight:800;color:var(--navy);max-width:13em}
-.sub{margin-top:14px;color:var(--muted);max-width:34em}
-.bento{display:grid;grid-template-columns:1.3fr 1fr 1fr;grid-template-rows:auto auto;gap:16px;margin-top:40px}
-.tile{border-radius:26px;padding:28px;background:#fff;border:1px solid var(--line)}
-.tile h3{font-size:23px;font-weight:700;color:var(--navy)}
-.tile p{margin-top:10px;color:var(--muted);font-size:16.5px}
-.tile.a{grid-row:span 2;background:var(--navy);border-color:var(--navy);color:var(--ink);display:flex;flex-direction:column;justify-content:flex-end;min-height:300px;position:relative;overflow:hidden}
-.tile.a h3{color:#fff;font-size:clamp(28px,3.4vw,40px)}
-.tile.a p{color:#C5D1E6}
-.tile.a::before{content:"TYT AYT";position:absolute;right:-8px;top:6px;font:800 76px/1 var(--d);color:#16294A;letter-spacing:-.04em}
-.tile.d{grid-column:span 2;background:var(--gold2);border-color:var(--gold2)}
-.tile.d p{color:#3A3322}
-
-/* ---- 3 · Altın ---- */
-.p3{background:var(--gold);color:var(--navy)}
-.p3 .big{color:var(--navy)}
-.way{list-style:none;padding:0;margin-top:44px;display:grid;grid-template-columns:repeat(4,1fr);gap:18px;counter-reset:s;align-items:start}
-.way li{counter-increment:s;background:var(--navy);color:var(--ink);border-radius:26px;padding:26px 24px 28px}
-.way li:nth-child(2){margin-top:34px}.way li:nth-child(3){margin-top:68px}.way li:nth-child(4){margin-top:102px}
-.way li::before{content:counter(s);display:block;font:800 64px/1 var(--d);color:var(--gold);margin-bottom:14px;letter-spacing:-.04em}
-.way h3{font-size:21px;color:#fff;font-weight:700}
-.way p{margin-top:8px;color:#C5D1E6;font-size:16px}
-
-/* ---- 4 · Uygulama ---- */
-.p4{background:var(--navy);color:var(--ink)}
-.p4 .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center}
-.p4 .big{color:#fff}.p4 .sub{color:#C5D1E6}
-.p4 ul{margin:22px 0 30px;padding:0;list-style:none;display:grid;gap:10px}
-.p4 li{padding-left:28px;position:relative;color:#DCE5F4}
-.p4 li::before{content:"";position:absolute;left:0;top:.7em;width:14px;height:2px;background:var(--gold)}
-.phone{justify-self:center;width:min(300px,78%);aspect-ratio:9/17;border-radius:36px;background:#0A1429;border:2px solid #2A4070;padding:24px 18px;display:flex;flex-direction:column;gap:12px;position:relative;box-shadow:0 30px 80px rgba(0,0,0,.45)}
-.phone .t{font:700 15px var(--d);color:#fff}
-.phone .row{display:flex;justify-content:space-between;font:500 13px var(--d);color:var(--mist)}
-.phone .bar{height:8px;border-radius:99px;background:#17294B;overflow:hidden}
-.phone .bar b{display:block;height:100%;width:40%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:99px;animation:fill 6s ease-in-out infinite}
-.road{margin-top:auto;position:relative;height:56%}
-.road svg{position:absolute;inset:0;width:100%;height:100%}
-.rk{fill:#E2C98E;filter:drop-shadow(0 0 7px #E2C98E);offset-path:path("M12 190C70 175 80 90 130 100S200 40 232 24");offset-rotate:0deg;animation:fly 6s ease-in-out infinite}
-.plus{position:absolute;right:6px;top:14%;font:800 20px var(--d);color:var(--gold2);opacity:0;animation:plus 6s ease-in-out infinite}
-@keyframes fly{0%{offset-distance:12%}70%,100%{offset-distance:62%}}
-@keyframes fill{0%{width:40%}70%,100%{width:68%}}
-@keyframes plus{0%,55%{opacity:0;transform:translateY(10px)}65%{opacity:1;transform:none}90%,100%{opacity:0;transform:translateY(-24px)}}
-
-/* ---- 5 · Hakkımda ---- */
-.p5{background:#F3F5F9;color:var(--navy)}
-.p5 .quote{font:800 clamp(34px,6.2vw,84px)/1.02 var(--d);letter-spacing:-.035em;max-width:13em}
-.p5 .quote span{color:var(--gold);-webkit-text-stroke:0}
-.p5 .cols{display:grid;grid-template-columns:.7fr 1.3fr;gap:46px;margin-top:54px;align-items:start}
-.facts{display:grid;gap:0;font:600 17px var(--d)}
-.facts div{padding:13px 0;border-top:2px solid var(--navy)}
-.p5 p{color:var(--text)}
-.p5 p+p{margin-top:14px}
-
-/* ---- 6 · İletişim ---- */
-.p6{background:linear-gradient(170deg,var(--navy2) 0%,var(--night) 70%);color:var(--ink)}
-.p6 .big{color:#fff;max-width:12em}
-.call{display:inline-block;margin-top:26px;font:800 clamp(30px,6vw,72px)/1 var(--d);color:var(--gold2);text-decoration:none;letter-spacing:-.03em}
-.call:hover{color:#fff}
-.chan{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:38px}
-.chan a{display:flex;flex-direction:column;gap:4px;padding:22px 24px;border-radius:24px;background:rgba(255,255,255,.06);border:1px solid #2A4070;text-decoration:none;transition:background .2s,border-color .2s}
-.chan a:hover{background:rgba(226,201,142,.14);border-color:var(--gold)}
-.chan b{font:700 20px var(--d);color:#fff}
-.chan span{color:var(--mist);font:500 15px var(--d);overflow-wrap:anywhere}
-.addr{margin-top:34px;color:var(--mist);font:500 15px var(--d)}
-.foot{margin-top:46px;padding-top:22px;border-top:1px solid #243a63;color:#7F92B3;font:500 14px var(--d);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
-
-@media (max-width:860px){
-  .nav{padding-left:12px}.nav b{display:none}.nav a:not(.cta):not(.on){display:none}
-  .p1 .wrap,.p4 .wrap,.p5 .cols{grid-template-columns:1fr}
-  #tree{max-height:380px;order:-1}
-  .pg .in{padding:92px 0 56px}
-  .bento{grid-template-columns:1fr}.tile.a{grid-row:auto;min-height:220px}.tile.d{grid-column:auto}
-  .way{grid-template-columns:1fr}.way li:nth-child(n){margin-top:0}
-  .chan{grid-template-columns:1fr}
-  .phone{aspect-ratio:9/15}
-}
-@media (prefers-reduced-motion:reduce){
-  .br{animation:none;stroke-dashoffset:0}.nd{animation:none;opacity:1}.ln{animation:none;opacity:.85}
-  .phone .bar b{animation:none;width:68%}.rk{animation:none;offset-distance:62%}.plus{animation:none}
-}
+.step-no{width:44px;height:44px;border-radius:50%;background:var(--brand-navy);color:var(--brand-gold2);display:inline-grid;place-items:center;font-weight:800}
+.accordion{--bs-accordion-active-bg:#F3EAD3;--bs-accordion-active-color:#0E1B33;--bs-accordion-btn-focus-box-shadow:0 0 0 .25rem rgba(201,165,92,.35);--bs-accordion-btn-focus-border-color:#C9A55C}
+.form-control:focus,.btn:focus-visible,.navbar-toggler:focus{box-shadow:0 0 0 .25rem rgba(201,165,92,.4)}
+.card-icon{width:46px;height:46px;border-radius:12px;background:rgba(201,165,92,.18);color:#8A6A25;display:grid;place-items:center;font-weight:800;font-size:1.1rem}
+.contact-card{transition:transform .2s,box-shadow .2s}
+.contact-card:hover{transform:translateY(-3px);box-shadow:var(--bs-box-shadow)!important}
+@media (prefers-reduced-motion:reduce){.br{animation:none;stroke-dashoffset:0}.nd{animation:none;opacity:1}.ln{animation:none;opacity:.85}.contact-card{transition:none}}
 </style>
 </head>
-<body>
+<body data-bs-spy="scroll" data-bs-target="#menu" data-bs-offset="90" tabindex="0">
 
-<nav class="nav" id="nav" aria-label="Ana menü">
-  <b>Karakış</b>
-  <a href="#top" data-go="0" class="on">Giriş</a><a href="#hizmetler" data-go="1">Hizmetler</a><a href="#yontem" data-go="2">Yöntem</a><a href="#takip" data-go="3">Uygulama</a><a href="#hakkimda" data-go="4">Hakkımda</a>
-  <a class="cta" href="#iletisim" data-go="5">İletişim</a>
+<!-- Menü -->
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top" id="menu">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="#top">Karakış</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navc" aria-controls="navc" aria-expanded="false" aria-label="Menüyü aç">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navc">
+      <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+        <li class="nav-item"><a class="nav-link" href="#hizmetler">Hizmetler</a></li>
+        <li class="nav-item"><a class="nav-link" href="#yontem">Yöntem</a></li>
+        <li class="nav-item"><a class="nav-link" href="#uygulama">Uygulama</a></li>
+        <li class="nav-item"><a class="nav-link" href="#sss">Sık sorulanlar</a></li>
+        <li class="nav-item"><a class="nav-link" href="#hakkimda">Hakkımda</a></li>
+        <li class="nav-item ms-lg-2"><a class="btn btn-primary btn-sm px-3" href="#iletisim">İletişim</a></li>
+      </ul>
+    </div>
+  </div>
 </nav>
 
-<main id="stack">
-
-<section class="pg p1" id="top"><div class="in"><div class="wrap">
-  <div>
-    <h1>Potansiyeli keşfet, geleceği şekillendir.</h1>
-    <p class="lead">YKS ve LGS hazırlığında her öğrenciye kendi planı: deneme sonuçlarını birlikte okuyor, eksikleri bulup günlük çalışmayı takip ediyoruz.</p>
-    <div class="btns">
-      <a class="btn gold" href="https://wa.me/905446490099" rel="noopener">WhatsApp'tan yaz</a>
-      <a class="btn line" href="https://takip.hasankarakis.com">Öğrenci girişi</a>
-    </div>
-    <p class="who">Pd. Hasan Karakış · Kayapınar, Diyarbakır</p>
-  </div>
-  <div style="position:relative">
-    <canvas id="snowc" aria-hidden="true"></canvas>
-    <svg id="tree" viewBox="0 0 520 600" role="img" aria-label="Kışın çıplak bir ağaç; dalların ucunda birbirine bağlı, ışıldayan noktalar">
-      <g id="branches"></g><g id="nodes"></g>
-    </svg>
-  </div>
-</div></div></section>
-
-<section class="pg p2" id="hizmetler"><div class="in"><div class="wrap">
-  <h2 class="big">İhtiyacın olan desteği seç</h2>
-  <p class="sub">Her program, öğrencinin mevcut netleri ve hedefiyle başlar. Hazır paket yok.</p>
-  <div class="bento">
-    <article class="tile a"><h3>YKS koçluğu</h3><p>Hedef üniversite ve bölüme göre haftalık plan, deneme analizi ve konu bazlı eksik takibi.</p></article>
-    <article class="tile"><h3>LGS koçluğu</h3><p>Ders dağılımı, soru çözüm düzeni ve deneme sonrası hata analizi.</p></article>
-    <article class="tile"><h3>Veli görüşmesi</h3><p>İlerlemeyi sade bir raporla görmek, öğrenciyi baskı altına almadan destek olmak.</p></article>
-    <article class="tile d"><h3>Psikolojik danışmanlık ve rehberlik</h3><p>Sınav kaygısı, motivasyon ve çalışma alışkanlıkları üzerine bireysel görüşmeler.</p></article>
-  </div>
-</div></div></section>
-
-<section class="pg p3" id="yontem"><div class="in"><div class="wrap">
-  <h2 class="big">Dört adımda ilerliyoruz</h2>
-  <ol class="way">
-    <li><h3>Tanışma ve hedef</h3><p>Hedef üniversite, bölüm ve şu anki durum birlikte netleşir.</p></li>
-    <li><h3>Deneme analizi</h3><p>Sonuç belgesi uygulamaya yüklenir, ders ve konu bazında eksikler çıkar.</p></li>
-    <li><h3>Haftalık plan</h3><p>Eksiklere göre görevler yazılır. Her gün ne çözüleceği bellidir.</p></li>
-    <li><h3>Günlük takip</h3><p>Çözülen soru ve süre kaydedilir, hedefe yaklaşma görünür.</p></li>
-  </ol>
-</div></div></section>
-
-<section class="pg p4" id="takip"><div class="in"><div class="wrap">
-  <div>
-    <h2 class="big">Çalışma günlük, ilerleme görünür</h2>
-    <p class="sub">Öğrencilerim için geliştirdiğim takip uygulaması telefonda uygulama gibi çalışır.</p>
-    <ul>
-      <li>Deneme sonucunu PDF veya fotoğraf olarak yükle, netler otomatik okunsun</li>
-      <li>TYT, AYT ve LGS için ayrı hedefler; üniversite ve bölümle birlikte</li>
-      <li>Soru çözdükçe hedefe yaklaşan yol animasyonu</li>
-      <li>Veliye gönderilebilen sade ilerleme raporu</li>
-    </ul>
-    <a class="btn gold" href="https://takip.hasankarakis.com">Öğrenci girişi</a>
-  </div>
-  <div class="phone" aria-hidden="true">
-    <div class="t">Hedef yolculuğum</div>
-    <div class="row"><span>Hedefe yakınlık</span><span>örnek</span></div>
-    <div class="bar"><b></b></div>
-    <div class="road">
-      <svg viewBox="0 0 244 200" fill="none"><path d="M12 190C70 175 80 90 130 100S200 40 232 24" stroke="#2A4070" stroke-width="4" stroke-linecap="round" stroke-dasharray="2 9"/><circle cx="232" cy="24" r="7" stroke="#C9A55C" stroke-width="2.5"/><circle class="rk" r="9" cx="0" cy="0"/></svg>
-      <span class="plus">+12 soru</span>
+<header class="hero" id="top">
+  <div class="container">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-6">
+        <h1 class="display-4">Potansiyeli keşfet, geleceği şekillendir.</h1>
+        <p class="lead mt-3 text-white-50">YKS ve LGS hazırlığında her öğrenciye kendi planı: deneme sonuçlarını birlikte okuyor, eksikleri bulup günlük çalışmayı takip ediyoruz.</p>
+        <div class="d-flex flex-wrap gap-2 mt-4">
+          <a class="btn btn-primary btn-lg" href="https://wa.me/905446490099" rel="noopener">WhatsApp'tan yaz</a>
+          <a class="btn btn-outline-light btn-lg" href="https://takip.hasankarakis.com">Öğrenci girişi</a>
+        </div>
+        <p class="mt-4 mb-0 small text-white-50">Pd. Hasan Karakış · Kayapınar, Diyarbakır</p>
+      </div>
+      <div class="col-lg-6">
+        <svg id="tree" viewBox="0 0 520 600" role="img" aria-label="Kışın çıplak bir ağaç; dalların ucunda birbirine bağlı, ışıldayan noktalar"><g id="branches"></g><g id="nodes"></g></svg>
+      </div>
     </div>
   </div>
-</div></div></section>
+</header>
 
-<section class="pg p5" id="hakkimda"><div class="in"><div class="wrap">
-  <p class="quote">Çok çalışmak yetmez. <span>Doğru yere</span>, doğru düzenle çalışmak gerekir.</p>
-  <div class="cols">
-    <div class="facts"><div>Pd. Hasan Karakış</div><div>Psikolojik danışman</div><div>Kayapınar, Diyarbakır</div></div>
-    <div>
-      <p>Karakış Eğitim & Danışmanlık'ta sınav hazırlığını yalnızca netlerle değil, öğrencinin motivasyonu ve günlük düzeniyle birlikte ele alıyorum.</p>
-      <p>Hem rehberlik hem koçluk tarafında çalıştığım için her öğrenciyle ayrı ayrı ilgileniyorum.</p>
+<main>
+<!-- Hizmetler -->
+<section class="py-5 bg-body-tertiary" id="hizmetler">
+  <div class="container py-lg-4">
+    <h2 class="fw-bold">İhtiyacın olan desteği seç</h2>
+    <p class="text-body-secondary mb-4">Her program, öğrencinin mevcut netleri ve hedefiyle başlar. Hazır paket yok.</p>
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-3">
+      <div class="col"><div class="card h-100 border-0 shadow-sm"><div class="card-body p-4">
+        <div class="card-icon mb-3">Y</div><h3 class="h5">YKS koçluğu</h3>
+        <p class="card-text text-body-secondary">TYT ve AYT için hedef üniversite ve bölüme göre haftalık plan, deneme analizi, konu bazlı eksik takibi.</p></div></div></div>
+      <div class="col"><div class="card h-100 border-0 shadow-sm"><div class="card-body p-4">
+        <div class="card-icon mb-3">L</div><h3 class="h5">LGS koçluğu</h3>
+        <p class="card-text text-body-secondary">Ders dağılımı, soru çözüm düzeni ve deneme sonrası hata analizi.</p></div></div></div>
+      <div class="col"><div class="card h-100 border-0 shadow-sm"><div class="card-body p-4">
+        <div class="card-icon mb-3">P</div><h3 class="h5">Psikolojik danışmanlık</h3>
+        <p class="card-text text-body-secondary">Sınav kaygısı, motivasyon ve çalışma alışkanlıkları üzerine bireysel görüşmeler.</p></div></div></div>
+      <div class="col"><div class="card h-100 border-0 shadow-sm"><div class="card-body p-4">
+        <div class="card-icon mb-3">V</div><h3 class="h5">Veli görüşmesi</h3>
+        <p class="card-text text-body-secondary">İlerlemeyi sade bir raporla görmek, öğrenciyi baskı altına almadan destek olmak.</p></div></div></div>
     </div>
   </div>
-</div></div></section>
+</section>
 
-<section class="pg p6" id="iletisim"><div class="in"><div class="wrap">
-  <h2 class="big">Hedefini birlikte konuşalım</h2>
-  <a class="call" href="tel:+905446490099">0544 649 00 99</a>
-  <div class="chan">
-    <a href="https://wa.me/905446490099" rel="noopener"><b>WhatsApp</b><span>Mesaj gönder</span></a>
-    <a href="tel:+905446490099"><b>Telefon</b><span>0544 649 00 99</span></a>
-    <a href="https://www.instagram.com/pd.hasankarakis.yks" rel="noopener" target="_blank"><b>Instagram</b><span>@pd.hasankarakis.yks</span></a>
+<!-- Yöntem -->
+<section class="py-5" id="yontem">
+  <div class="container py-lg-4">
+    <h2 class="fw-bold mb-4">Dört adımda ilerliyoruz</h2>
+    <div class="row g-4">
+      <div class="col-md-6 col-lg-3"><div class="step-no mb-3">1</div><h3 class="h5">Tanışma ve hedef</h3><p class="text-body-secondary">Hedef üniversite, bölüm ve şu anki durum birlikte netleşir.</p></div>
+      <div class="col-md-6 col-lg-3"><div class="step-no mb-3">2</div><h3 class="h5">Deneme analizi</h3><p class="text-body-secondary">Sonuç belgesi uygulamaya yüklenir, ders ve konu bazında eksikler çıkar.</p></div>
+      <div class="col-md-6 col-lg-3"><div class="step-no mb-3">3</div><h3 class="h5">Haftalık plan</h3><p class="text-body-secondary">Eksiklere göre görevler yazılır. Her gün ne çözüleceği bellidir.</p></div>
+      <div class="col-md-6 col-lg-3"><div class="step-no mb-3">4</div><h3 class="h5">Günlük takip</h3><p class="text-body-secondary">Çözülen soru ve süre kaydedilir, hedefe yaklaşma görünür.</p></div>
+    </div>
   </div>
-  <p class="addr">Kayapınar, Diyarbakır</p>
-  <div class="foot"><span>© <span id="y"></span> Karakış Eğitim & Danışmanlık</span><a href="https://takip.hasankarakis.com">Öğrenci girişi</a></div>
-</div></div></section>
+</section>
 
+<!-- Uygulama -->
+<section class="py-5 bg-brand text-white" id="uygulama">
+  <div class="container py-lg-4">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-7">
+        <h2 class="fw-bold">Çalışma günlük, ilerleme görünür</h2>
+        <p class="text-white-50">Öğrencilerim için geliştirdiğim takip uygulaması telefonda uygulama gibi çalışır.</p>
+        <ul class="list-unstyled my-4 d-grid gap-2">
+          <li class="d-flex gap-2"><span class="text-gold">✓</span>Deneme sonucunu PDF veya fotoğraf olarak yükle, netler otomatik okunsun</li>
+          <li class="d-flex gap-2"><span class="text-gold">✓</span>TYT, AYT ve LGS için ayrı hedefler; üniversite ve bölümle birlikte</li>
+          <li class="d-flex gap-2"><span class="text-gold">✓</span>Soru çözdükçe hedefe yaklaşan yol animasyonu</li>
+          <li class="d-flex gap-2"><span class="text-gold">✓</span>Veliye gönderilebilen sade ilerleme raporu</li>
+        </ul>
+        <a class="btn btn-primary btn-lg" href="https://takip.hasankarakis.com">Öğrenci girişi</a>
+      </div>
+      <div class="col-lg-5">
+        <div class="card bg-brand2 text-white border-secondary-subtle">
+          <div class="card-body p-4">
+            <div class="d-flex justify-content-between small text-white-50"><span>Hedefe yakınlık</span><span>örnek</span></div>
+            <div class="progress my-3" role="progressbar" aria-label="Örnek ilerleme" aria-valuenow="68" aria-valuemin="0" aria-valuemax="100" style="height:10px;background:#0E1B33"><div class="progress-bar progress-bar-striped progress-bar-animated" style="width:68%;background:#C9A55C"></div></div>
+            <div class="d-flex justify-content-between align-items-center"><span class="fw-semibold">Bugün</span><span class="badge text-bg-warning">+12 soru</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SSS -->
+<section class="py-5 bg-body-tertiary" id="sss">
+  <div class="container py-lg-4" style="max-width:820px">
+    <h2 class="fw-bold mb-4">Sık sorulanlar</h2>
+    <div class="accordion" id="sssAcc">
+      <div class="accordion-item"><h3 class="accordion-header"><button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#q1" aria-expanded="true" aria-controls="q1">Koçluk kimler için uygun?</button></h3>
+        <div id="q1" class="accordion-collapse collapse show" data-bs-parent="#sssAcc"><div class="accordion-body text-body-secondary">TYT, AYT ve LGS'ye hazırlanan öğrenciler için. Programı öğrencinin mevcut netlerine ve hedefine göre hazırlıyoruz.</div></div></div>
+      <div class="accordion-item"><h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#q2" aria-expanded="false" aria-controls="q2">Takip uygulamasına nasıl giriyorum?</button></h3>
+        <div id="q2" class="accordion-collapse collapse" data-bs-parent="#sssAcc"><div class="accordion-body text-body-secondary">Kayıt olan öğrenciye kullanıcı adı ve PIN verilir. <a href="https://takip.hasankarakis.com">takip.hasankarakis.com</a> adresinden giriş yapılır; telefonda ana ekrana eklenebilir.</div></div></div>
+      <div class="accordion-item"><h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#q3" aria-expanded="false" aria-controls="q3">Veli ilerlemeyi nasıl görür?</button></h3>
+        <div id="q3" class="accordion-collapse collapse" data-bs-parent="#sssAcc"><div class="accordion-body text-body-secondary">Veli için sade bir özet metni hazırlıyorum: çalışma süresi, çözülen soru ve son deneme sonucu.</div></div></div>
+      <div class="accordion-item"><h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#q4" aria-expanded="false" aria-controls="q4">Görüşme nasıl planlanıyor?</button></h3>
+        <div id="q4" class="accordion-collapse collapse" data-bs-parent="#sssAcc"><div class="accordion-body text-body-secondary">WhatsApp'tan yazabilir veya arayabilirsiniz; uygun gün ve saati birlikte belirleriz.</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- Hakkımda -->
+<section class="py-5" id="hakkimda">
+  <div class="container py-lg-4">
+    <div class="row g-4 align-items-start">
+      <div class="col-lg-4">
+        <h2 class="fw-bold">Hakkımda</h2>
+        <ul class="list-group list-group-flush mt-3">
+          <li class="list-group-item px-0 fw-semibold">Pd. Hasan Karakış</li>
+          <li class="list-group-item px-0">Psikolojik danışman</li>
+          <li class="list-group-item px-0">Kayapınar, Diyarbakır</li>
+        </ul>
+      </div>
+      <div class="col-lg-8">
+        <p class="fs-5">Çok çalışmak yetmez. Doğru yere, doğru düzenle çalışmak gerekir.</p>
+        <p class="text-body-secondary">Karakış Eğitim & Danışmanlık'ta sınav hazırlığını yalnızca netlerle değil, öğrencinin motivasyonu ve günlük düzeniyle birlikte ele alıyorum. Hem rehberlik hem koçluk tarafında çalıştığım için her öğrenciyle ayrı ayrı ilgileniyorum.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- İletişim -->
+<section class="py-5 bg-brand text-white" id="iletisim">
+  <div class="container py-lg-4">
+    <h2 class="fw-bold">Hedefini birlikte konuşalım</h2>
+    <a class="d-inline-block display-5 fw-bold text-gold text-decoration-none my-3" href="tel:+905446490099">0544 649 00 99</a>
+    <div class="row row-cols-1 row-cols-md-3 g-3 mt-1">
+      <div class="col"><a class="card contact-card h-100 text-decoration-none bg-brand2 text-white border-secondary-subtle" href="https://wa.me/905446490099" rel="noopener"><div class="card-body p-4"><div class="h5 mb-1">WhatsApp</div><div class="text-white-50">Mesaj gönder</div></div></a></div>
+      <div class="col"><a class="card contact-card h-100 text-decoration-none bg-brand2 text-white border-secondary-subtle" href="tel:+905446490099"><div class="card-body p-4"><div class="h5 mb-1">Telefon</div><div class="text-white-50">0544 649 00 99</div></div></a></div>
+      <div class="col"><a class="card contact-card h-100 text-decoration-none bg-brand2 text-white border-secondary-subtle" href="https://www.instagram.com/pd.hasankarakis.yks" rel="noopener" target="_blank"><div class="card-body p-4"><div class="h5 mb-1">Instagram</div><div class="text-white-50">@pd.hasankarakis.yks</div></div></a></div>
+    </div>
+    <p class="mt-4 mb-0 text-white-50">Kayapınar, Diyarbakır</p>
+  </div>
+</section>
 </main>
 
+<footer class="bg-black text-white-50 py-3 small">
+  <div class="container d-flex flex-wrap justify-content-between gap-2">
+    <span>© <span id="y"></span> Karakış Eğitim &amp; Danışmanlık</span>
+    <a class="link-light" href="https://takip.hasankarakis.com">Öğrenci girişi</a>
+  </div>
+</footer>
+
+<script src="vendor/bootstrap.bundle.min.js"></script>
 <script>
 (function(){
   document.getElementById("y").textContent=new Date().getFullYear();
-  const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  /* ---- Kışlık ağaç ---- */
+  // Kışlık ağaç (yalnızca kahraman alanında süs)
   const NS="http://www.w3.org/2000/svg",B=document.getElementById("branches"),N=document.getElementById("nodes");
   const el=(n,a,p)=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);p.appendChild(e);return e};
   const tips=[];let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
@@ -277,49 +236,6 @@ h1,h2,h3{font-family:var(--d);line-height:1.04;letter-spacing:-.025em}
   });
   const bb=B.getBBox(),pad=24;
   document.getElementById("tree").setAttribute("viewBox",`${(bb.x-pad).toFixed(0)} ${(bb.y-pad).toFixed(0)} ${(bb.width+2*pad).toFixed(0)} ${(bb.height+2*pad).toFixed(0)}`);
-
-  /* ---- Kar (yalnızca ilk sayfa görünürken çalışır) ---- */
-  const cv=document.getElementById("snowc"),cx=cv.getContext("2d");let W,H,fl=[],run=false;
-  function size(){const r=cv.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);W=cv.width=r.width*d;H=cv.height=r.height*d;fl=Array.from({length:Math.round(r.width/9)},()=>({x:Math.random()*W,y:Math.random()*H,r:(Math.random()*1.8+.6)*d,v:(Math.random()*.5+.25)*d,s:Math.random()*6}))}
-  function snow(){if(!run)return;cx.clearRect(0,0,W,H);cx.fillStyle="rgba(255,255,255,.6)";
-    for(const f of fl){f.y+=f.v;f.s+=.01;f.x+=Math.sin(f.s)*.3;if(f.y>H){f.y=-4;f.x=Math.random()*W}cx.beginPath();cx.arc(f.x,f.y,f.r,0,6.3);cx.fill()}
-    requestAnimationFrame(snow)}
-  size();addEventListener("resize",size);
-  if(reduce){run=true;snow();run=false}
-  else new IntersectionObserver(e=>{const v=e[0].isIntersecting;if(v&&!run){run=true;snow()}else if(!v)run=false}).observe(cv);
-
-  /* ---- Sayfaların birbirinin içinden açılması ---- */
-  const pg=[...document.querySelectorAll(".pg")],links=[...document.querySelectorAll("[data-go]")];
-  let vh=innerHeight,vw=innerWidth,tops=[];
-  function layout(){
-    vh=innerHeight;vw=innerWidth;let y=0;tops=[];
-    pg.forEach(p=>{p.style.top=Math.min(0,vh-p.offsetHeight)+"px";tops.push(y);y+=p.offsetHeight});
-  }
-  const ease=t=>t*t*(3-2*t);
-  function frame(){
-    const sy=scrollY;let cur=0;
-    pg.forEach((p,i)=>{
-      if(sy+vh*.45>=tops[i])cur=i;
-      if(i===0)return;
-      // sayfa alt kenardan yükselirken ilerleme 0'dan 1'e gider
-      const prog=reduce?1:Math.max(0,Math.min(1,(sy+vh-tops[i])/vh));
-      const e=ease(prog);
-      p.style.setProperty("--r",prog>=1?"200vmax":(e*Math.hypot(vw/2,Math.max(vh,p.offsetHeight)-170)*1.03).toFixed(0)+"px");
-      // altta kalan sayfa küçülür ve kararır
-      const prev=pg[i-1];prev.style.setProperty("--o",(reduce?0:Math.min(1,e)).toFixed(3));
-    });
-    links.forEach((a,i)=>a.classList.toggle("on",i===cur&&!a.classList.contains("cta")));
-  }
-  let tick=false;
-  addEventListener("scroll",()=>{if(!tick){tick=true;requestAnimationFrame(()=>{tick=false;frame()})}},{passive:true});
-  addEventListener("resize",()=>{layout();frame()});
-  document.fonts&&document.fonts.ready.then(()=>{layout();frame()});
-  layout();frame();
-
-  links.forEach(a=>a.addEventListener("click",ev=>{
-    ev.preventDefault();const i=+a.dataset.go;
-    scrollTo({top:i===0?0:tops[i],behavior:reduce?"auto":"smooth"});
-  }));
 })();
 </script>
 </body>
