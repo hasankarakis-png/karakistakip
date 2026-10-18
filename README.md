@@ -1,13 +1,13 @@
 # Karakış Günlük Takip · Pro kurulum
 
-Mimari: tek dosya web uygulaması (index.html, PWA) + Supabase (giriş, veri tabanı, canlı güncelleme). Ücretsiz planla 20 öğrenci için yeterlidir.
+Mimari: statik PWA (`index.html` arayüz iskeleti, `styles.css` tasarım, `app.js` uygulama mantığı) + Supabase (giriş, veri tabanı, canlı güncelleme). Ücretsiz planla 20 öğrenci için yeterlidir.
 
 ## Kurulum (yaklaşık 30 dakika)
 
 1. **Proje aç:** supabase.com → New project. Bölge olarak AB (Frankfurt) seç. Veritabanı şifresini kaydet.
 2. **Herkese açık kaydı kapat:** Authentication → Sign In / Providers → "Allow new users to sign up" kapalı olsun (arayüz değişmiş olabilir). Hesapları yalnızca sen oluşturacaksın. "Confirm email" ayarına dokunmana gerek yok: script hesapları zaten onaylı oluşturur (`email_confirm: true`) ve uygulama gerçek e-posta göndermez.
 3. **Şemayı yükle:** SQL Editor → New query → `supabase/schema.sql` içeriğini yapıştır → Run.
-4. **Anahtarları yaz:** Proje adresi (Project URL) ve **Publishable key** (`sb_publishable_...`) değerlerini Settings → API Keys sayfasından al (Connect penceresinde de görünür). `index.html` en üstündeki `SUPABASE_URL` ve `SUPABASE_KEY` yerlerine yaz. Publishable key herkese açık olacak şekilde tasarlanmıştır, güvenliği şemadaki RLS kuralları sağlar. **Secret key'i (`sb_secret_...`) asla index.html'e koyma.** Sayfada "Create new API keys" düğmesi varsa önce ona bas.
+4. **Anahtarları yaz:** Proje adresi (Project URL) ve **Publishable key** (`sb_publishable_...`) değerlerini Settings → API Keys sayfasından al (Connect penceresinde de görünür). `app.js` içindeki `SUPABASE_URL` ve `SUPABASE_KEY` değerlerini güncelle. Publishable key herkese açık olacak şekilde tasarlanmıştır, güvenliği şemadaki RLS kuralları sağlar. **Secret key'i (`sb_secret_...`) asla index.html'e koyma.** Sayfada "Create new API keys" düğmesi varsa önce ona bas.
 5. **Hesapları oluştur** (kendi bilgisayarında, Node.js 18+):
    ```
    npm i @supabase/supabase-js
