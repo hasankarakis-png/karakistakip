@@ -16,7 +16,14 @@ def title(s):
         if w in("VE","İLE"): out.append(low(w));continue
         out.append(up(w[0])+low(w[1:]))
     return "".join(out)
+def ival(v):
+    if isinstance(v,(int,float)): return int(v)
+    v=str(v).strip() if v is not None else ""
+    return int(v) if v.isdigit() else None
 def num(v):
+    if isinstance(v,str):
+        try: v=float(v.replace(",","."))
+        except ValueError: return None
     return round(float(v),5) if isinstance(v,(int,float)) else None
 def conv(path,lv):
     ws=openpyxl.load_workbook(path,read_only=True,data_only=True).worksheets[0];res=[]
@@ -30,7 +37,7 @@ def conv(path,lv):
         il=re.sub(r"^Kktc-","KKTC - ",il)
         tur={"DEVLET":"Devlet","VAKIF":"Vakıf","KKTC":"KKTC","YURTDISI KAMU":"Yurt dışı (kamu)","YURTDISI VAKIF":"Yurt dışı (vakıf)"}.get(str(r[1]).strip(),str(r[1]).title())
         res.append({"kod":str(r[0]).strip(),"uni":title(name),"il":il,"tur":tur,"b":str(r[4]).strip(),"pt":str(r[5]).strip(),"lv":lv,
-                    "k":int(r[6]) if isinstance(r[6],(int,float)) else None,"y":int(r[7]) if isinstance(r[7],(int,float)) else None,"tp":num(r[8]),"mp":num(r[9])})
+                    "k":ival(r[6]),"y":ival(r[7]),"tp":num(r[8]),"mp":num(r[9])})
     return res
 if __name__=="__main__":
     # python3 scripts/import-tercih.py tercih.json 2026:lisans.xlsx:onlisans.xlsx 2025:lisans.xlsx:onlisans.xlsx
