@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="tr" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>YKS Tercih Robotu · Karakış Eğitim</title>
+<meta name="theme-color" content="#0E1B33">
+<link rel="stylesheet" href="yks-tercih.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1/dist/umd/supabase.js"></script>
+</head>
+<body>
+<header class="topbar"><a class="brand" href="index.html">← Karakış Takip</a><div><span class="eyebrow">KARAKIŞ EĞİTİM & DANIŞMANLIK</span><h1>YKS Tercih Robotu</h1><p>Veriye dayalı tercih planlama</p></div><button id="signout" class="btn secondary" hidden>Çıkış</button></header>
+<main class="layout">
+<section class="intro panel"><div><span class="pill">LİSANS · ÖN LİSANS</span><h2>Tercihlerini bilinçli oluştur.</h2><p>Programları filtrele, geçmiş yılların sıralamalarını karşılaştır ve tercih listeni koçunla birlikte değerlendir.</p></div><div class="metric"><b id="programCount">—</b><span>katalogdaki program</span></div></section>
+<div id="notice" class="notice" role="status">Oturum kontrol ediliyor…</div>
+<section id="authPanel" class="panel" hidden><h2>Giriş gerekli</h2><p>Tercih robotu, Karakış Takip hesabınla çalışır.</p><a class="btn" href="index.html">Takip programına dönüp giriş yap</a></section>
+<section id="workspace" hidden>
+<div class="tabs"><button class="tab active" data-tab="search">Program ara</button><button class="tab" data-tab="saved">Tercih listem <span id="savedCount">0</span></button><button class="tab" data-tab="coach" id="coachTab" hidden>Koç araçları</button></div>
+<section id="searchView" class="panel">
+<div class="filters">
+<label class="wide">Bölüm, üniversite, şehir veya program kodu<input id="query" placeholder="Örn. bilgisayar mühendisliği"></label>
+<label>Puan türü<select id="scoreType"><option value="">Tümü</option><option>SAY</option><option>EA</option><option>SÖZ</option><option>DİL</option><option>TYT</option></select></label>
+<label>Şehir<select id="city"><option value="">Tüm şehirler</option></select></label>
+<label>Üniversite türü<select id="uniType"><option value="">Tümü</option><option>Devlet</option><option>Vakıf</option></select></label>
+<label>En yüksek başarı sırası<input id="maxRank" type="number" min="1" placeholder="Örn. 50000"></label>
+<label>Ücret türü<select id="fee"><option value="">Tümü</option><option>Ücretsiz</option><option>Burslu</option><option>İndirimli</option><option>Ücretli</option></select></label>
+<label>Veri yılı<select id="year"><option value="">Tüm yıllar</option></select></label>
+<button id="clearFilters" class="btn secondary">Filtreleri temizle</button>
+</div>
+<div class="results-head"><div><h2>Programlar</h2><p id="resultSummary">Katalog yükleniyor…</p></div><select id="sort"><option value="rank">Başarı sırası: küçükten büyüğe</option><option value="rank-desc">Başarı sırası: büyükten küçüğe</option><option value="name">Bölüm adına göre</option></select></div>
+<div id="results" class="results"></div><button id="loadMore" class="btn secondary" hidden>Daha fazla göster</button>
+</section>
+<section id="savedView" class="panel" hidden><div class="results-head"><div><h2>Tercih listem</h2><p>Tercihlerini sürükleyerek değil, sıra numaralarını değiştirerek düzenleyebilirsin.</p></div><div class="actions"><button id="exportList" class="btn secondary">CSV indir</button><button id="shareList" class="btn">Listeyi paylaş</button></div></div><div id="savedResults"></div></section>
+<section id="coachView" class="panel" hidden><h2>Koç araçları</h2><p>Resmî kaynaktan edinilmiş program kataloğunu CSV ile içe aktar. Yalnızca yetkili koç hesabı bu işlemi yapabilir.</p><div class="import-box"><p>CSV sütunları: <code>program_code, university, department, city, score_type, quota, fee_type, university_type, language, year, base_rank, base_score, source_url</code></p><label>Katalog CSV dosyası<input id="csvFile" type="file" accept=".csv,text/csv"></label><button id="importCsv" class="btn">Kataloğu içe aktar</button><p id="importStatus" role="status"></p></div><h3>Öğrenci tercih listeleri</h3><p class="muted">Bu bölüm yalnızca mevcut RLS izinleriyle erişilebilen kayıtları gösterir.</p><div id="coachLists"></div></section>
+</section>
+</main>
+<dialog id="detailDialog" class="detail"><form method="dialog"><button class="close" aria-label="Kapat">×</button></form><div id="detailContent"></div></dialog>
+<script src="yks-tercih.js"></script>
+</body></html>
