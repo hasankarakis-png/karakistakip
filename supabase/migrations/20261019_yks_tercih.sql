@@ -38,8 +38,7 @@ create table if not exists public.yks_preferences (
   program_id bigint not null references public.yks_programs(id) on delete cascade,
   preference_order integer not null check (preference_order between 1 and 24),
   created_at timestamptz not null default now(),
-  unique(student_id, program_id),
-  unique(student_id, preference_order)
+  unique(student_id, program_id)
 );
 create index if not exists yks_preferences_student_idx on public.yks_preferences(student_id, preference_order);
 alter table public.yks_preferences enable row level security;
