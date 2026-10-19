@@ -238,6 +238,18 @@ button.tr{display:flex;align-items:center;gap:16px;width:100%;text-align:left;co
 body.stu .week-track i{background:linear-gradient(180deg,var(--acc),color-mix(in srgb,var(--acc) 55%,#000))}body.stu .activity-legend i{background:var(--acc)}body.stu .activity-icon{background:var(--goldsoft);color:var(--acc)}body.stu .goal-emblem{background:var(--acc);color:var(--acc-ink);box-shadow:none}body.stu .goal-type:hover,body.stu .goal-type.selected{border-color:var(--acc)}body.stu .goal-icon{background:var(--goldsoft);color:var(--acc)}body.stu .goal-editor{border-color:var(--line);background:var(--card)}
 .pf{text-align:center;padding:26px 16px}.pf .av2{width:96px;height:96px;margin:0 auto 12px;border-radius:50%;background:var(--acc);color:var(--acc-ink);display:grid;place-items:center;font:800 40px var(--fd)}.pf h2{font-size:26px}
 @media (prefers-reduced-motion:reduce){.qa{animation:none}}
+
+/* ===== Tercih robotu ===== */
+.tcf{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.tcf label{display:block;font-size:13px;color:var(--mute)}.tcf input,.tcf select{width:100%;margin-top:4px}
+.tcf .wide{grid-column:1/-1}
+.tcr{border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:10px;background:var(--card)}
+.tcr h3{margin:0;font:600 16px var(--fd);line-height:1.3}.tcr .sub2{color:var(--mute);font-size:13px;margin:3px 0 8px}
+.tcr .rw{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.bd{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700}
+.bd.g{background:#1f3b1b;color:#9be36b}.bd.h{background:var(--goldsoft);color:var(--acc)}.bd.r{background:#3f2418;color:#ffb27a}.bd.n{background:var(--line);color:var(--mute)}
+:root[data-theme="light"] .bd.g{background:#dff3d3;color:#2c6b0f}:root[data-theme="light"] .bd.r{background:#fde3d3;color:#9a4210}
+.tcl{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:14px}.tcl:last-child{border:0}.tcl b{width:26px;color:var(--acc)}.tcl span{flex:1;min-width:0}
+.tcl button{border:0;background:var(--cream);color:var(--ink);border-radius:9px;min-width:34px;min-height:34px;cursor:pointer;font-size:15px}
 </style>
 </head>
 <body class="intro">
@@ -349,7 +361,7 @@ function todayTab(){
   ${quoteCard()}<section class="hero"><div class="st"><span class="dot ${DOT[st]}"></span>${LBL[st]}</div>
   <div class="big" id="clock">${dur(clockMs())}</div><div class="sub" id="clocksub">${clockSub()}</div>
   ${st!=="closed"?`<div class="acts">${b}</div>`:""}</section>
-  ${picker}${tasksRing()}${countdownCard()}
+  ${picker}${tasksRing()}${countdownCard()}<button class="card tr" data-tab="t" aria-label="Tercih robotunu aç"><span class="rg" style="--p:0"><span style="font-size:30px">🎓</span></span><span><h2>Tercih Robotu</h2><p style="font-size:15px">Sıranla bölümleri karşılaştır</p></span></button>
   <div class="stats"><div class="stat"><b>${solvedT}</b><span>çözülen soru</span></div><div class="stat"><b>${solvedT?"%"+acc:"–"}</b><span>doğruluk</span></div><div class="stat"><b>${S.prog?"✓":"–"}</b><span>program</span></div></div>
   ${goalRoad(ME)}${coachForMe()}${streakCard()}${(TK[ME]||[]).some(t=>t.task_date===day())?todayTasks():""}
   ${qa?`<div class="card" id="qcard"><h2>Soru girişi</h2><div class="row">
@@ -565,7 +577,13 @@ function render(){
     }
     const c=document.getElementById("chat");if(c)c.scrollTop=c.scrollHeight;
 }
-document.addEventListener("change",e=>{if(e.target.id==="hd"){S.hard=e.target.value.slice(0,60);save()}});
+document.addEventListener("change",e=>{if(e.target.id==="hd"){S.hard=e.target.value.slice(0,60);save()}
+  const id=e.target.id,v=e.target.value;
+  if(id==="tcrank"||id==="tcpt"||id==="tcq"||id==="tcil"||id==="tctur"){
+    if(id==="tcrank"){TC.rank=String(Math.max(0,Math.floor(+v||0))||"")}if(id==="tcpt")TC.pt=v;if(id==="tcq")TC.q=v.slice(0,60);if(id==="tcil")TC.il=v;if(id==="tctur")TC.tur=v;
+    TC.lim=40;const o=tcLoadList();o.rank=TC.rank;o.pt=TC.pt;tcSave(o);render();
+  }
+});
 /* ===== Yeni özellikler: sekmeler, görevler, sohbet, rozetler, koç araçları ===== */
 let tab="b",FZ=null,CHAT=[],CHATBUSY=false,CHATERR="",PLANBUSY=null,PLANMSG="",ADMMSG=null,EXALL=[],TKALL=[];
 const TK={},PD={};
@@ -754,6 +772,7 @@ function qaSheet(){
   ${it("✍️","Soru girişi","Çözdüğün soruları kaydet","b","qcard")}
   ${it("➕","Yeni Sınav Sonucu","Görseli ya da PDF'i yükle","d")}
   ${it("✅","Haftalık Görevler","Koçunun verdiği görevler","g")}
+  ${it("🎓","Tercih Robotu","Sıranla bölümleri karşılaştır","t")}
   ${it("🤖","Çalışma Asistanı","Plan ve motivasyon için sor","k")}</div>`;
 }
 function profileCard(){
@@ -765,9 +784,77 @@ function accountCard(){
   return `<div class="card"><h2>Hesap</h2><div class="row" style="margin-top:6px"><button class="chip" id="theme2">${dark?"☀ Açık tema":"☾ Koyu tema"}</button><button class="chip" id="out2">Çıkış yap</button></div></div>`;
 }
 
+/* ===== Tercih robotu (veri: tercih.json, resmî kaynaktan yüklenir) ===== */
+let TC={st:"idle",data:null,q:"",il:"",tur:"",pt:"SAY",flt:"",lim:40,rank:"",ucret:""};
+const TCK=()=>"karakis-tercih-"+ME;
+const tcLoadList=()=>{try{return JSON.parse(localStorage.getItem(TCK())||"{}")}catch(e){return{}}};
+const tcSave=o=>{try{localStorage.setItem(TCK(),JSON.stringify(o))}catch(e){}};
+const trn=v=>String(v||"").toLocaleLowerCase("tr").replace(/[^a-z0-9ğüşıöç ]/g,"");
+function tcInit(){
+  const o=tcLoadList();if(TC.st==="idle"){TC.rank=o.rank||"";TC.pt=o.pt||"SAY";TC.st="load";
+    fetch("tercih.json",{cache:"no-cache"}).then(r=>r.ok?r.json():Promise.reject()).then(j=>{TC.data=j&&Array.isArray(j.p)?j:{meta:{},p:[]};TC.st="ok";if(tab==="t")render()}).catch(()=>{TC.data={meta:{},p:[]};TC.st="ok";if(tab==="t")render()})}
+}
+const lastSira=p=>{const k=Object.keys(p.s||{}).filter(y=>num(p.s[y])>0).sort();return k.length?{y:k[k.length-1],v:num(p.s[k[k.length-1]])}:null};
+// Tahmini sınıflandırma (resmî değildir): senin sıran, son yılın taban sırasına oranla.
+function tcClass(rank,p){
+  const l=lastSira(p);if(!rank||!l)return {c:"n",t:"Veri yok"};
+  const r=rank/l.v;
+  return r<=0.85?{c:"g",t:"Güvenli"}:r<=1.08?{c:"h",t:"Hedef"}:{c:"r",t:"Riskli"};
+}
+const nf=n=>Number(n).toLocaleString("tr-TR");
+function tcFiltered(){
+  const D=TC.data.p,q=trn(TC.q),rank=num(TC.rank);
+  let L=D.filter(p=>(!TC.pt||p.pt===TC.pt)&&(!TC.il||p.il===TC.il)&&(!TC.tur||p.tur===TC.tur)&&(!q||trn(p.uni+" "+p.b+" "+p.il+" "+p.kod).includes(q)));
+  if(rank)L=L.map(p=>({p,c:tcClass(rank,p),l:lastSira(p)})).filter(x=>!TC.flt||x.c.c===TC.flt).sort((a,b)=>(a.l?Math.abs(Math.log(rank/a.l.v)):9)-(b.l?Math.abs(Math.log(rank/b.l.v)):9));
+  else L=L.map(p=>({p,c:{c:"n",t:"Sıranı gir"},l:lastSira(p)})).sort((a,b)=>(a.l?a.l.v:9e9)-(b.l?b.l.v:9e9));
+  return L;
+}
+function tcCard(x,saved){
+  const p=x.p,yrs=Object.keys(p.s||{}).sort().reverse().slice(0,4).map(y=>`${esc(y)}: ${nf(num(p.s[y]))}`).join(" · ");
+  const inl=saved.l&&saved.l.includes(p.kod);
+  return `<div class="tcr"><div class="rw"><h3>${esc(p.uni)}</h3><span class="bd ${x.c.c}">${x.c.t}</span></div><p class="sub2" style="margin:3px 0 4px"><b style="color:var(--ink)">${esc(p.b)}</b></p>
+  <p class="sub2" style="margin:0 0 6px">${esc(p.il||"")} · ${esc(p.tur||"")} · ${esc(p.pt||"")}${p.k?" · kontenjan "+esc(p.k):""}${p.uc?" · "+esc(p.uc):""}</p>
+  <p class="sub2" style="margin:0 0 8px">${yrs?"Taban sıra — "+yrs:"Taban sıra verisi yok"}</p>
+  <button class="chip" data-tcadd="${esc(p.kod)}" aria-pressed="${!!inl}">${inl?"✓ Listemde":"＋ Listeme ekle"}</button></div>`;
+}
+function tercihTab(){
+  tcInit();
+  const o=tcLoadList(),list=o.l||[];
+  if(TC.st!=="ok")return `<h1 class="pg">Tercih Robotu</h1><div class="card"><p class="empty" style="margin:0">Yükleniyor…</p></div>`;
+  const D=TC.data,has=D.p.length>0,m=D.meta||{};
+  const ils=[...new Set(D.p.map(p=>p.il).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"tr"));
+  const tur=[...new Set(D.p.map(p=>p.tur).filter(Boolean))].sort();
+  const pts=[...new Set(D.p.map(p=>p.pt).filter(Boolean))];if(!pts.length)["SAY","EA","SÖZ","DİL","TYT"].forEach(x=>pts.push(x));
+  const head=`<h1 class="pg">Tercih Robotu</h1><div class="card"><p class="empty" style="margin:0;font-size:14px">Başarı sıranı gir, programları son yılın taban sırasına göre <b>Güvenli / Hedef / Riskli</b> diye ayır. Bu liste <b>tahmindir</b>, resmî tercih aracı değildir; tercih yapmadan önce ÖSYM tercih kılavuzunu ve koçunu kontrol et.${m.yil?` Veri yılı: ${esc(m.yil)}${m.kaynak?" · "+esc(m.kaynak):""}.`:""}</p></div>`;
+  if(!has)return head+`<div class="card"><h2>Veri henüz yüklenmedi</h2><p class="empty" style="margin:0">Bölüm listesi yüklenince burada arama yapabileceksin. Koçun veriyi eklediğinde bu ekran otomatik dolacak.</p></div>`;
+  const all=tcFiltered(),shown=all.slice(0,TC.lim),rank=num(TC.rank);
+  const cnt={g:0,h:0,r:0};if(rank)tcFiltered().forEach(x=>{if(cnt[x.c.c]!=null)cnt[x.c.c]++});
+  const byKod=Object.fromEntries(D.p.map(p=>[p.kod,p]));
+  const lc=list.map((k,i)=>byKod[k]?{p:byKod[k],i}:null).filter(Boolean);
+  const listCard=`<div class="card"><h2>Tercih listem (${lc.length}/24)</h2>${lc.length?lc.map((x,j)=>`<div class="tcl"><b>${j+1}</b><span>${esc(x.p.uni)} — ${esc(x.p.b)}</span><button data-tcup="${esc(x.p.kod)}" aria-label="Yukarı">↑</button><button data-tcdn="${esc(x.p.kod)}" aria-label="Aşağı">↓</button><button data-tcrm="${esc(x.p.kod)}" aria-label="Çıkar">✕</button></div>`).join("")+`<div class="row"><button class="chip" id="tccopy">📋 Listeyi kopyala</button></div>`:`<p class="empty" style="margin:0">Henüz program eklemedin. Aşağıdan seçip “Listeme ekle” de.</p>`}</div>`;
+  const fl=(k,l)=>`<button class="chip" data-tcflt="${k}" aria-pressed="${TC.flt===k}">${l}${rank&&k?` (${cnt[k]})`:""}</button>`;
+  return head+`<div class="card"><h2>Filtreler</h2><div class="tcf">
+  <label>Başarı sıran<input id="tcrank" type="number" inputmode="numeric" min="1" max="3000000" value="${esc(TC.rank)}" placeholder="örn. 45000"></label>
+  <label>Puan türü<select id="tcpt">${pts.map(x=>`<option${x===TC.pt?" selected":""}>${esc(x)}</option>`).join("")}</select></label>
+  <label class="wide">Ara (üniversite, bölüm, şehir, kod)<input id="tcq" type="text" maxlength="60" value="${esc(TC.q)}"></label>
+  <label>Şehir<select id="tcil"><option value="">Hepsi</option>${ils.map(x=>`<option${x===TC.il?" selected":""}>${esc(x)}</option>`).join("")}</select></label>
+  <label>Üniversite türü<select id="tctur"><option value="">Hepsi</option>${tur.map(x=>`<option${x===TC.tur?" selected":""}>${esc(x)}</option>`).join("")}</select></label></div>
+  ${rank?`<div class="chips" style="margin-top:12px">${fl("","Hepsi")}${fl("g","Güvenli")}${fl("h","Hedef")}${fl("r","Riskli")}</div>`:""}</div>
+  ${listCard}
+  <p class="empty" style="margin:10px 2px">${all.length} program bulundu${rank?" · sıranına yakın olanlar üstte":" · taban sırasına göre"}</p>
+  ${shown.map(x=>tcCard(x,{l:list})).join("")}${all.length>shown.length?`<div class="row"><button class="chip" id="tcmore">Daha fazla göster</button></div>`:""}`;
+}
+function tcAct(D){
+  const o=tcLoadList();o.l=o.l||[];
+  if(D.tcadd){const k=D.tcadd,i=o.l.indexOf(k);if(i>=0)o.l.splice(i,1);else if(o.l.length<24)o.l.push(k);else{alert("En fazla 24 tercih ekleyebilirsin.");return}}
+  if(D.tcrm){o.l=o.l.filter(k=>k!==D.tcrm)}
+  if(D.tcup||D.tcdn){const k=D.tcup||D.tcdn,i=o.l.indexOf(k),j=D.tcup?i-1:i+1;if(i>=0&&j>=0&&j<o.l.length){[o.l[i],o.l[j]]=[o.l[j],o.l[i]]}}
+  tcSave(o);render();
+}
+
 function studentView(){
   const first=esc((NAME||"").trim().split(/\s+/)[0]||"Öğrenci"),st=streakInfo();
-  const body=tab==="g"?tasksTab():tab==="d"?`<h1 class="pg">Analiz</h1>${dailyActivityCard()}${heatCard()}${examCard()}${netChartsCard(ME)}`:tab==="h"?`<h1 class="pg">Profilim</h1>${profileCard()}${goalRoad(ME)}${targetForm(ME,true)}${badgeCard()}${pushCard()}${accountCard()}`:tab==="k"?chatTab():todayTab();
+  const body=tab==="g"?tasksTab():tab==="d"?`<h1 class="pg">Analiz</h1>${dailyActivityCard()}${heatCard()}${examCard()}${netChartsCard(ME)}`:tab==="h"?`<h1 class="pg">Profilim</h1>${profileCard()}${goalRoad(ME)}${targetForm(ME,true)}${badgeCard()}${pushCard()}${accountCard()}`:tab==="k"?chatTab():tab==="t"?tercihTab():todayTab();
   const head=tab==="b"?`<div class="sh"><span class="av">${first.slice(0,1).toLocaleUpperCase("tr-TR")}</span><div><h1>Merhaba, ${first}</h1><p>Odaklan ve ilerlemeye devam et.</p></div><span class="fire" aria-label="${st.cur} gün seri">🔥 ${st.cur}</span></div>`:tab==="g"?`<h1 class="pg">Görevlerim</h1>`:tab==="k"?`<h1 class="pg">Asistan</h1>`:"";
   const nb=(k,ic,l)=>`<button class="pn" data-tab="${k}" aria-current="${tab===k}" aria-label="${l}">${IC[ic]}</button>`;
   return `<div class="stu-main">${head}${body}</div><nav class="pill" aria-label="Öğrenci sekmeleri">${nb("b","home","Ana sayfa")}${nb("g","cal","Görevler")}<button class="fab" id="qaopen" aria-label="Hızlı işlemler">+</button>${nb("d","bars","Analiz")}${nb("h","user","Profil")}</nav>${QA?qaSheet():""}`;
@@ -828,6 +915,10 @@ function ui(t){
   if(id==="qabg"){QA=false;render();return true}
   if(D.qa){QA=false;tab=D.qa;render();window.scrollTo(0,0);if(D.qs)setTimeout(()=>{const e=document.getElementById(D.qs);if(e)e.scrollIntoView({behavior:"smooth",block:"center"})},60);return true}
   if(D.hm){HMSEL=D.hm;render();return true}
+  if(D.tcadd||D.tcrm||D.tcup||D.tcdn){tcAct(D);return true}
+  if(D.tcflt!=null){TC.flt=D.tcflt;TC.lim=40;render();return true}
+  if(id==="tcmore"){TC.lim+=40;render();return true}
+  if(id==="tccopy"){const o=tcLoadList(),by=Object.fromEntries((TC.data.p||[]).map(p=>[p.kod,p]));const t=(o.l||[]).map((k,i)=>by[k]?`${i+1}. ${by[k].uni} - ${by[k].b} (${k})`:"").filter(Boolean).join("\n");try{navigator.clipboard.writeText(tx).then(()=>{t.textContent="Kopyalandı ✓"},()=>{t.textContent="Kopyalanamadı"})}catch(e){t.textContent="Kopyalanamadı"}return true}
   if(id==="theme2"){document.getElementById("theme").click();setTimeout(render,30);return true}
   if(id==="out2"){logout();return true}
   if(id==="guideok"){try{localStorage.setItem(GK(),"1")}catch(e){}render();return true}
