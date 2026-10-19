@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="tr" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0E1B33">
+<title>YKS Tercih Merkezi · Karakış Takip</title>
+<link rel="stylesheet" href="yks-tercih.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1/dist/umd/supabase.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="index.html"><span class="mark">K</span><span><b>KARAKIŞ</b><small>EĞİTİM &amp; DANIŞMANLIK</small></span></a>
+  <a class="back" href="index.html">← Takip paneline dön</a>
+</header>
+<main class="shell">
+  <section class="hero">
+    <p class="eyebrow">KARAKIŞ TAKİP · YKS</p>
+    <h1>Tercihlerini bilinçli planla.</h1>
+    <p>Programları filtrele, başarı sıralamanla karşılaştır ve en fazla 24 tercihlik listeni oluştur.</p>
+  </section>
+  <div id="notice" class="notice" role="status">Oturum kontrol ediliyor…</div>
+  <section id="workspace" hidden>
+    <div class="toolbar">
+      <div><h2>Program kataloğu</h2><p id="catalogInfo" class="muted">Henüz program verisi yüklenmedi.</p></div>
+      <label class="upload">ÖSYM/YÖK Atlas CSV yükle<input id="csvFile" type="file" accept=".csv,text/csv"></label>
+    </div>
+    <section class="filters card">
+      <label class="wide">Bölüm, üniversite, şehir veya program kodu<input id="q" type="search" placeholder="Örn. psikoloji, Diyarbakır…"></label>
+      <label>Puan türü<select id="score"><option value="">Tüm puan türleri</option><option>SAY</option><option>EA</option><option>SÖZ</option><option>DİL</option><option>TYT</option></select></label>
+      <label>Şehir<select id="city"><option value="">Tüm şehirler</option></select></label>
+      <label>Başarı sırası en az<input id="rankMin" type="number" min="1" placeholder="Örn. 1000"></label>
+      <label>Başarı sırası en çok<input id="rankMax" type="number" min="1" placeholder="Örn. 100000"></label>
+      <label class="wide">Kendi başarı sıran (isteğe bağlı)<input id="myRank" type="number" min="1" placeholder="Örn. 45000"></label>
+      <button id="clearFilters" class="btn secondary">Filtreleri temizle</button>
+    </section>
+    <div class="columns">
+      <section>
+        <div class="section-head"><h2>Arama sonuçları</h2><span id="resultCount" class="pill">0 program</span></div>
+        <div id="results" class="results"></div>
+      </section>
+      <aside class="card shortlist">
+        <div class="section-head"><h2>Tercih listem</h2><span id="shortCount" class="pill">0/24</span></div>
+        <p class="muted small">Sıralamayı yukarı/aşağı taşıyabilir, listeyi CSV olarak dışa aktarabilirsin.</p>
+        <ol id="shortlist"></ol>
+        <div class="stack">
+          <button id="exportList" class="btn">Tercih listesini indir (CSV)</button>
+          <button id="clearList" class="btn secondary">Listeyi temizle</button>
+        </div>
+        <p class="disclaimer">Bu araç tercih planlama desteğidir; yerleşme garantisi veya resmî tercih onayı değildir. Başarı sıralamaları ve kontenjanlar yıl bazında değişebilir.</p>
+      </aside>
+    </div>
+    <details class="card import-help">
+      <summary>CSV dosyası nasıl hazırlanır?</summary>
+      <p>UTF-8 CSV dosyasında sütun başlıkları şu alanlarla eşleşmelidir: <code>program_kodu</code>, <code>universite</code>, <code>bolum</code>, <code>sehir</code>, <code>puan_turu</code>, <code>basari_sirasi</code>, <code>taban_puan</code>, <code>kontenjan</code>, <code>yil</code>. Türkçe başlıklar (Üniversite, Program, Şehir, Puan Türü, Başarı Sırası, Taban Puan, Kontenjan, Yıl) da desteklenir. Program verisi bu sayfaya otomatik olarak uydurulmaz; resmî ve güncel kaynaktan alınan dosyayı kullan.</p>
+    </details>
+  </section>
+</main>
+<script src="yks-tercih.js"></script>
+</body>
+</html>
