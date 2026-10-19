@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """ÖSYM yerleştirme tablolarından (Tablo-3 ön lisans, Tablo-4 lisans; "en küçük ve en büyük puanlar") tercih.json üretir.
-Kullanım: python3 scripts/import-tercih.py <yıl> <lisans.xlsx> <onlisans.xlsx> [çıktı=tercih.json]
+En yeni yıl ana veridir; önceki yıllar program koduyla eşleştirilip "h" altına eklenir.
+Kullanım: python3 scripts/import-tercih.py tercih.json 2026:lisans.xlsx:onlisans.xlsx 2025:lisans.xlsx:onlisans.xlsx
 Yalnızca genel kontenjan sütunları kullanılır. Hücrede "--" olan değerler boş (null) kalır."""
 import sys,re,json,openpyxl
 PROV="Adana Adıyaman Afyonkarahisar Ağrı Aksaray Amasya Ankara Antalya Ardahan Artvin Aydın Balıkesir Bartın Batman Bayburt Bilecik Bingöl Bitlis Bolu Burdur Bursa Çanakkale Çankırı Çorum Denizli Diyarbakır Düzce Edirne Elazığ Erzincan Erzurum Eskişehir Gaziantep Giresun Gümüşhane Hakkari Hatay Iğdır Isparta İstanbul İzmir Kahramanmaraş Karabük Karaman Kars Kastamonu Kayseri Kırıkkale Kırklareli Kırşehir Kilis Kocaeli Konya Kütahya Malatya Manisa Mardin Mersin Muğla Muş Nevşehir Niğde Ordu Osmaniye Rize Sakarya Samsun Siirt Sinop Sivas Şanlıurfa Şırnak Tekirdağ Tokat Trabzon Tunceli Uşak Van Yalova Yozgat Zonguldak".split()
@@ -32,7 +33,16 @@ def conv(path,lv):
                     "k":int(r[6]) if isinstance(r[6],(int,float)) else None,"y":int(r[7]) if isinstance(r[7],(int,float)) else None,"tp":num(r[8]),"mp":num(r[9])})
     return res
 if __name__=="__main__":
-    yil,lis,onl=sys.argv[1],sys.argv[2],sys.argv[3];out=sys.argv[4] if len(sys.argv)>4 else "tercih.json"
-    P=conv(lis,"L")+conv(onl,"O")
-    json.dump({"meta":{"yil":int(yil),"kaynak":"ÖSYM %s yerleştirme sonuçları (Tablo-3, Tablo-4)"%yil,"guncelleme":""},"p":P},open(out,"w",encoding="utf-8"),ensure_ascii=False,separators=(",",":"))
-    print(len(P),"program yazıldı →",out)
+    # python3 scripts/import-tercih.py tercih.json 2026:lisans.xlsx:onlisans.xlsx 2025:lisans.xlsx:onlisans.xlsx
+    out=sys.argv[1];yillar=[]
+    for a in sys.argv[2:]:
+        y,lis,onl=a.split(":",2)[0],a.split(":",2)[1],a.split(":",2)[2];yillar.append((int(y),conv(lis,"L")+conv(onl,"O")))
+    yillar.sort(key=lambda x:-x[0]);son=yillar[0][0]
+    P=yillar[0][1];by={p["kod"]:p for p in P}
+    for y,L in yillar[1:]:
+        for q in L:
+            p=by.get(q["kod"])
+            if p is not None: p.setdefault("h",{})[str(y)]=[q["tp"],q["k"],q["y"]]  # [taban puan, kontenjan, yerleşen]
+    kaynak="ÖSYM %s yerleştirme sonuçları (Tablo-3, Tablo-4)"%" ve ".join(str(y) for y,_ in yillar)
+    json.dump({"meta":{"yil":son,"yillar":[y for y,_ in yillar],"kaynak":kaynak,"guncelleme":""},"p":P},open(out,"w",encoding="utf-8"),ensure_ascii=False,separators=(",",":"))
+    print(len(P),"program yazıldı →",out,"| geçmiş yıl eşleşen:",sum(1 for p in P if p.get("h")))

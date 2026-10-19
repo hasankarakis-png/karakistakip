@@ -804,26 +804,34 @@ function tcClass(puan,p){
 }
 const nf=(n,d=2)=>Number(n).toLocaleString("tr-TR",{minimumFractionDigits:d,maximumFractionDigits:d});
 function tcFiltered(){
-  const D=TC.data.p,q=trn(TC.q),puan=num(TC.rank);
-  let L=D.filter(p=>p.lv===TC.lv&&(!TC.pt||p.pt===TC.pt)&&(!TC.il||p.il===TC.il)&&(!TC.tur||p.tur===TC.tur)&&(!q||trn(p.uni+" "+p.b+" "+p.il+" "+p.kod).includes(q)));
+  const D=TC.data.p,qs=trn(TC.q).split(/\s+/).filter(Boolean),puan=num(TC.rank);
+  const hay=p=>p._h||(p._h=trn(p.uni+" "+p.b+" "+p.il+" "+p.kod));
+  let L=D.filter(p=>p.lv===TC.lv&&(!TC.pt||p.pt===TC.pt)&&(!TC.il||p.il===TC.il)&&(!TC.tur||p.tur===TC.tur)&&(!qs.length||qs.every(w=>hay(p).includes(w))));
   L=L.map(p=>({p,c:tcClass(puan,p)}));
   if(puan){if(TC.flt)L=L.filter(x=>x.c.c===TC.flt);L.sort((a,b)=>(a.p.tp==null?9e9:Math.abs(puan-a.p.tp))-(b.p.tp==null?9e9:Math.abs(puan-b.p.tp)))}
   else L.sort((a,b)=>(b.p.tp==null?-1:b.p.tp)-(a.p.tp==null?-1:a.p.tp));
   return L;
+}
+function tcHist(p){
+  const h=p.h||{},ys=Object.keys(h).sort().reverse();if(!ys.length)return"";
+  const rows=ys.map(y=>{const [tp,k,yr]=h[y];return `${esc(y)}: ${tp==null?"taban yok":"<b style=\"color:var(--ink)\">"+nf(tp)+"</b>"}${k!=null?" · kont. "+k:""}${yr!=null?" · yerleşen "+yr:""}`}).join("<br>");
+  const prev=h[ys[0]][0],tr=p.tp!=null&&prev!=null?p.tp-prev:null;
+  const arrow=tr==null?"":Math.abs(tr)<0.5?" (≈ aynı)":tr>0?` <span style="color:var(--warn)">▲ ${nf(tr,1)} puan yükselmiş</span>`:` <span style="color:var(--ok)">▼ ${nf(-tr,1)} puan düşmüş</span>`;
+  return `<p class="sub2" style="margin:0 0 8px">${rows}${arrow}</p>`;
 }
 function tcCard(x,list){
   const p=x.p,inl=list.includes(p.kod),dolmadi=p.k!=null&&p.y!=null&&p.y<p.k;
   return `<div class="tcr"><div class="rw"><h3>${esc(p.uni)}</h3><span class="bd ${x.c.c}">${x.c.t}</span></div><p class="sub2" style="margin:3px 0 4px"><b style="color:var(--ink)">${esc(p.b)}</b></p>
   <p class="sub2" style="margin:0 0 6px">${esc(p.il||"")} · ${esc(p.tur||"")} · ${esc(p.pt||"")} · kod ${esc(p.kod)}</p>
   <p class="sub2" style="margin:0 0 8px">${p.tp==null?"2026 taban puanı yok":`2026 taban puan <b style="color:var(--ink)">${nf(p.tp)}</b> · en yüksek ${p.mp==null?"–":nf(p.mp)}`} · kontenjan ${p.k==null?"–":p.k} · yerleşen ${p.y==null?"–":p.y}${dolmadi?" · <span style=\"color:var(--warn)\">kontenjan dolmadı</span>":""}</p>
-  <button class="chip" data-tcadd="${esc(p.kod)}" aria-pressed="${inl}">${inl?"✓ Listemde":"＋ Listeme ekle"}</button></div>`;
+  ${tcHist(p)}<button class="chip" data-tcadd="${esc(p.kod)}" aria-pressed="${inl}">${inl?"✓ Listemde":"＋ Listeme ekle"}</button></div>`;
 }
 function tercihTab(){
   tcInit();
   const o=tcLoadList(),list=o.l||[];
   if(TC.st!=="ok")return `<h1 class="pg">Tercih Robotu</h1><div class="card"><p class="empty" style="margin:0">Yükleniyor…</p></div>`;
   const D=TC.data,has=D.p.length>0,m=D.meta||{};
-  const head=`<h1 class="pg">Tercih Robotu</h1><div class="card"><p class="empty" style="margin:0;font-size:14px">Puanını gir; programları <b>${m.yil||"2026"} yerleşen son öğrencinin (taban) puanına</b> göre <b>Güvenli / Hedef / Riskli</b> diye ayırırız. Bu liste <b>tahmindir</b>, resmî tercih aracı değildir. Taban puanlar her yıl değişir; tercih yapmadan önce ÖSYM tercih kılavuzunu ve koçunu kontrol et.${m.kaynak?` Kaynak: ${esc(m.kaynak)}.`:""}</p></div>`;
+  const head=`<h1 class="pg">Tercih Robotu</h1><div class="card"><p class="empty" style="margin:0;font-size:14px">Puanını gir; programları <b>${m.yil||"2026"} yerleşen son öğrencinin (taban) puanına</b> göre <b>Güvenli / Hedef / Riskli</b> diye ayırırız. Bu liste <b>tahmindir</b>, resmî tercih aracı değildir. Taban puanlar her yıl değişir ve yıllar arasında birebir kıyaslanamaz; tercih yapmadan önce ÖSYM tercih kılavuzunu ve koçunu kontrol et.${m.kaynak?` Kaynak: ${esc(m.kaynak)}.`:""}</p></div>`;
   if(!has)return head+`<div class="card"><h2>Veri henüz yüklenmedi</h2><p class="empty" style="margin:0">Bölüm listesi yüklenince burada arama yapabileceksin.</p></div>`;
   const base=D.p.filter(p=>p.lv===TC.lv);
   const ils=[...new Set(base.map(p=>p.il).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"tr"));
