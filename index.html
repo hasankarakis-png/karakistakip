@@ -136,7 +136,7 @@ body:has(.side-nav) .wrap{max-width:none;width:100%;margin:0;padding:22px 28px 4
 body:has(.side-nav) header{max-width:1480px;margin:0 auto 18px;padding:0 0 16px;border-bottom:1px solid var(--line)}
 header h1{font-size:19px;letter-spacing:-.04em}header small{letter-spacing:.01em}
 #app{max-width:1480px;margin:0 auto}
-.dashboard-shell{display:grid;grid-template-columns:218px minmax(0,1fr);gap:24px;align-items:start}
+.dashboard-shell{display:block}
 .dashboard-main{min-width:0;max-width:1180px;width:100%;margin:0 auto}
 .side-nav{position:fixed;z-index:40;left:0;top:0;bottom:0;width:236px;padding:26px 14px 18px;background:var(--card);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:7px}
 .side-brand{display:flex;align-items:center;gap:11px;padding:5px 10px 25px}
@@ -195,8 +195,8 @@ header h1{font-size:19px;letter-spacing:-.04em}header small{letter-spacing:.01em
 
 
 /* ===== Öğrenci arayüzü: siyah + limon teması, yüzen alt menü ===== */
-body.stu{--cream:#0a0a0a;--card:#151515;--line:#272727;--ink:#f3f3ee;--mute:#9b9b94;--acc:#d9f24a;--acc-ink:#12160a;--goldsoft:#252a10;--hero-bg:linear-gradient(160deg,#1d2209,#131313 70%);--hero-ink:#f3f3ee;--hero-sub:#a7ab94;--hbtn:#d9f24a;--hbtn-ink:#12160a;--press:#1f1f1f;--press-ink:#d9f24a;--ok:#d9f24a;--warn:#ffb84d;--glow:0 0 26px rgba(217,242,74,.32);--panel-shadow:none}
-:root[data-theme="light"] body.stu{--cream:#f4f5ec;--card:#fff;--line:#e3e6d2;--ink:#14160c;--mute:#666a54;--acc:#667a00;--acc-ink:#fff;--goldsoft:#eef3c4;--hero-bg:#14160c;--hero-ink:#f3f3ee;--hero-sub:#a9ad95;--hbtn:#d9f24a;--hbtn-ink:#12160a;--press:#eef0dd;--press-ink:#667a00;--glow:0 0 22px rgba(102,122,0,.25)}
+body.stu,body.coach{--gold:var(--acc);--cream:#0a0a0a;--card:#151515;--line:#272727;--ink:#f3f3ee;--mute:#9b9b94;--acc:#d9f24a;--acc-ink:#12160a;--goldsoft:#252a10;--hero-bg:linear-gradient(160deg,#1d2209,#131313 70%);--hero-ink:#f3f3ee;--hero-sub:#a7ab94;--hbtn:#d9f24a;--hbtn-ink:#12160a;--press:#1f1f1f;--press-ink:#d9f24a;--ok:#d9f24a;--warn:#ffb84d;--glow:0 0 26px rgba(217,242,74,.32);--panel-shadow:none}
+:root[data-theme="light"] body.stu,:root[data-theme="light"] body.coach{--gold:var(--acc);--cream:#f4f5ec;--card:#fff;--line:#e3e6d2;--ink:#14160c;--mute:#666a54;--acc:#667a00;--acc-ink:#fff;--goldsoft:#eef3c4;--hero-bg:#14160c;--hero-ink:#f3f3ee;--hero-sub:#a9ad95;--hbtn:#d9f24a;--hbtn-ink:#12160a;--press:#eef0dd;--press-ink:#667a00;--glow:0 0 22px rgba(102,122,0,.25)}
 body.stu header{display:none}
 body.stu .wrap{padding:14px 14px 130px}
 .stu-main{max-width:600px;margin:0 auto}
@@ -242,6 +242,14 @@ body.stu .week-track i{background:linear-gradient(180deg,var(--acc),color-mix(in
 /* ===== Tercih robotu ===== */
 .tcf{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.tcf label{display:block;font-size:13px;color:var(--mute)}.tcf input,.tcf select{width:100%;margin-top:4px}
 .tcf .wide{grid-column:1/-1}
+body.coach .sum,body.coach .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}body.coach .stat{min-width:0;overflow-wrap:anywhere}
+body.coach .card,body.coach .s{border-radius:20px;background:var(--card);border:1px solid var(--line);box-shadow:none}body.coach .s.live{border-color:var(--acc)}
+body.coach .hero{background:var(--hero-bg);color:var(--hero-ink);border:1px solid var(--line);border-radius:24px}body.coach .btn{background:var(--acc);color:var(--acc-ink);border:0;border-radius:14px;font-weight:800}
+body.coach .chip[aria-pressed="true"]{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)}
+.dcols{column-gap:14px}.dcols>*{break-inside:avoid}
+@media(min-width:1000px){.dcols{columns:2}.dcols .card{margin-top:0;margin-bottom:14px}}
+details.fold>summary{cursor:pointer;font-weight:800;font-size:16px}details.fold .card{border:0;padding:0;background:none;margin-top:14px}
+.ktc{display:flex;align-items:center;gap:10px;padding:7px 0}.ktc b{flex:0 0 112px;font-weight:600;font-size:14px}.ktc .ktpr{flex:1}.ktc em{font-style:normal;color:var(--mute);min-width:38px;text-align:right;font-size:13px}
 .ktbar{display:flex;align-items:center;gap:12px;margin:4px 0 14px}.ktback{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:20px;cursor:pointer}
 .ktseg{display:flex;gap:6px;padding:5px;border:1px solid var(--line);border-radius:18px;background:var(--card)}.ktseg button{flex:1;min-height:48px;border:0;border-radius:14px;background:transparent;color:var(--ink);font:800 17px var(--fb);cursor:pointer}.ktseg button[aria-pressed="true"]{background:var(--acc);color:var(--acc-ink)}
 .ktd{display:flex;align-items:center;gap:12px;width:100%;margin-top:10px;padding:20px 16px;border:0;border-radius:18px;background:var(--card);color:var(--ink);font:600 17px var(--fb);text-align:left;cursor:pointer}.ktd b{flex:1;font-weight:600}.ktd em{font-style:normal;color:var(--mute);min-width:40px;text-align:right}.ktd>i{color:var(--acc);font-style:normal}
@@ -556,6 +564,13 @@ function histCard(id,X){
   ${Object.keys(week).sort().map(k=>`<div class="subj"><span>Hafta: ${fd(k)}</span><span>${hmin(week[k].m)} · ${week[k].q} soru</span></div>`).join("")}
   ${R.length?R.slice().reverse().map(r=>`<button class="rb" data-d="${r.d}"><span>${fd(r.d)}</span><span>${r.has?hmin(r.m)+" · "+r.q+" soru"+(r.prog?" · ✓":""):"kayıt yok"}</span></button>`).join(""):`<p class="empty">Bu dönemde gün yok.</p>`}</div>`;
 }
+let KTC={};
+function ktCoachCard(id){
+  if(!(id in KTC)){KTC[id]=null;Promise.resolve(sb.from("topic_progress").select("done").eq("student_id",id).maybeSingle()).then(r=>{KTC[id]=new Set(r&&r.data&&Array.isArray(r.data.done)?r.data.done:[]);if(sel===id)render()},()=>{KTC[id]=new Set()})}
+  const D=KTC[id];if(!D)return `<div class="card"><h2>Konu takibi</h2><p class="empty">Yükleniyor…</p></div>`;
+  const blk=ex=>{let T=0,N=0;const rows=KT[ex].map((d,di)=>{const m=d.t.length;let n=0;d.t.forEach((_,ti)=>{if(D.has(ktId(ex,di,ti)))n++});T+=m;N+=n;const p=Math.round(n*100/m);return `<div class="ktc"><b>${esc(d.n)}</b><span class="ktpr"><i style="width:${p}%"></i></span><em>%${p}</em></div>`}).join("");return `<div class="subj"><span><b>${ex}</b></span><span>${N}/${T} konu · %${T?Math.round(N*100/T):0}</span></div>${rows}`};
+  return `<div class="card"><h2>Konu takibi</h2>${D.size?"":`<p class="empty" style="margin:0 0 6px">Öğrenci henüz konu işaretlememiş.</p>`}${blk("TYT")}<div style="height:10px"></div>${blk("AYT")}</div>`;
+}
 function detailView(){
   const pr=STU.find(r=>r.id===sel);if(!pr){sel=null;return coachView()}
   const past=selDay&&selDay!==day();let x;
@@ -569,9 +584,9 @@ function detailView(){
   <div class="big" style="font-size:34px">${x.n}</div>
   <div class="sub">Net çalışma: ${Math.floor(x.m/60)} sa ${x.m%60} dk</div></section>
   <div class="stats"><div class="stat"><b>${sn}</b><span>çözülen soru</span></div><div class="stat"><b>${sn?"%"+acc:"–"}</b><span>doğruluk</span></div><div class="stat"><b>${x.p>=1?"✓":"–"}</b><span>program</span></div></div>
-  ${past?"":`<div id="detail-history">${histCard(x.id,x)+aiCard(x.id)+goalRoad(x.id)+netChartsCard(x.id)}</div>`+targetForm(x.id,false)}<div class="card"><h2>Derslere göre sorular</h2>${Object.keys(by).length?Object.entries(by).map(([k,v])=>`<div class="subj"><span>${esc(k)}${v.k.length?" ("+esc(v.k.join(", "))+")":""}</span><span>${v.n} soru · ${v.c} doğru${v.b?" · "+v.b+" boş":""}</span></div>`).join(""):`<p class="empty">Henüz soru girişi yok.</p>`}</div>
+  <div class="dcols">${past?"":`<div id="detail-history">${histCard(x.id,x)}</div>`+ktCoachCard(x.id)+(past?"":`${aiCard(x.id)+goalRoad(x.id)+netChartsCard(x.id)}`+targetForm(x.id,false))}<div class="card"><h2>Derslere göre sorular</h2>${Object.keys(by).length?Object.entries(by).map(([k,v])=>`<div class="subj"><span>${esc(k)}${v.k.length?" ("+esc(v.k.join(", "))+")":""}</span><span>${v.n} soru · ${v.c} doğru${v.b?" · "+v.b+" boş":""}</span></div>`).join(""):`<p class="empty">Henüz soru girişi yok.</p>`}</div>
   ${x.mood?`<div class="card"><h2>Gün puanı</h2><p class="empty" style="margin:0">${x.mood} / 5</p></div>`:""}
-  ${past?"":`<div id="detail-tasks">${trendCard(x)+coachCards(x,sn)+taskCard(x)}</div>`+denemeCard(x)+parentCard(x)+adminCard(x)}<div class="card"><h2>Günün akışı</h2>${x.L.length?`<ul class="tl">${x.L.slice().reverse().map(l=>`<li><time>${l.t}</time>${l.m}</li>`).join("")}</ul>`:`<p class="empty">${past?"Bu güne ait hareket kaydı yok.":"Bugün henüz bir hareket yok."}</p>`}</div>`;
+  ${past?"":`<div id="detail-tasks">${trendCard(x)+coachCards(x,sn)+taskCard(x)}</div>`+`<details class="card fold"><summary>⚙️ Diğer işlemler (deneme ekle, veli özeti, hesap)</summary>${denemeCard(x)+parentCard(x)+adminCard(x)}</details>`}<div class="card"><h2>Günün akışı</h2>${x.L.length?`<ul class="tl">${x.L.slice().reverse().map(l=>`<li><time>${l.t}</time>${l.m}</li>`).join("")}</ul>`:`<p class="empty">${past?"Bu güne ait hareket kaydı yok.":"Bugün henüz bir hareket yok."}</p>`}</div></div>`;
 }
 function render(){
     const app=document.getElementById("app");
@@ -1378,7 +1393,7 @@ async function start(){
   if(pe){ME=null;showLogin("Sunucuya ulaşılamadı. İnternetini kontrol edip sayfayı yenile.");return}
   if(!p){await sb.auth.signOut();ME=null;showLogin("Profil bulunamadı, koçuna haber ver.");return}
   NAME=p.name;ROLE=p.role;view=ROLE==="coach"?"c":"s";
-  document.getElementById("who").textContent=NAME+" · ";document.getElementById("out").hidden=false;document.getElementById("reset").hidden=ROLE==="coach";document.body.classList.toggle("stu",ROLE==="student");
+  document.getElementById("who").textContent=NAME+" · ";document.getElementById("out").hidden=false;document.getElementById("reset").hidden=ROLE==="coach";document.body.classList.toggle("stu",ROLE==="student");document.body.classList.toggle("coach",ROLE==="coach");
   if(ROLE==="coach"){await pullCoach();["daily","goals","notes","exam_results","weekly_tasks"].reduce((ch,t)=>ch.on("postgres_changes",{event:"*",schema:"public",table:t},refresh),sb.channel("koc")).subscribe();setInterval(refresh,60000)}
   else{await loadStudent();setInterval(refresh,45000);setInterval(()=>{if(rollover()){save();render()}},30000);pushState().then(()=>{if(tab==='h')render()})}
   render();
