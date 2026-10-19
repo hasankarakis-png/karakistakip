@@ -1,3 +1,4 @@
+-- DURUM: Supabase projesine uygulandı (tablo + challenge_board + yetkiler). Bildirim: functions/challenge-notify.
 -- Challenge (yarışma): koç oluşturur, öğrenciler ortak sıralamayı görür.
 -- Sıralamada yalnızca "Ad S." biçiminde kısaltılmış isim, süre/soru toplamı ve canlı durum görünür.
 create table if not exists public.challenges (

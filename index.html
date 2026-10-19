@@ -251,6 +251,7 @@ body.coach .chip[aria-pressed="true"]{background:var(--acc);color:var(--acc-ink)
 details.fold>summary{cursor:pointer;font-weight:800;font-size:16px}details.fold .card{border:0;padding:0;background:none;margin-top:14px}
 .ktc{display:flex;align-items:center;gap:10px;padding:7px 0}.ktc b{flex:0 0 112px;font-weight:600;font-size:14px}.ktc .ktpr{flex:1}.ktc em{font-style:normal;color:var(--mute);min-width:38px;text-align:right;font-size:13px}
 .av img,.av2 img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}.av,.av2{overflow:hidden}.mav{width:30px;height:30px;border-radius:50%;object-fit:cover;flex:none}.big .mav{width:52px;height:52px}
+.chr{display:flex;align-items:center;gap:10px;padding:10px 8px;border-radius:14px}.chr.me{background:var(--goldsoft)}.chk{flex:none;width:30px;text-align:center;font-size:20px}.chn{flex:1;min-width:0;display:block;overflow-wrap:anywhere}.chn .ktpr{margin-top:6px}.chv{flex:none;text-align:right;font-weight:700;font-size:15px}.chv small{display:block;font-weight:500;color:var(--mute);font-size:11px}.chl{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--acc);box-shadow:0 0 8px var(--acc);vertical-align:middle}
 .ktbar{display:flex;align-items:center;gap:12px;margin:4px 0 14px}.ktback{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:20px;cursor:pointer}
 .ktseg{display:flex;gap:6px;padding:5px;border:1px solid var(--line);border-radius:18px;background:var(--card)}.ktseg button{flex:1;min-height:48px;border:0;border-radius:14px;background:transparent;color:var(--ink);font:800 17px var(--fb);cursor:pointer}.ktseg button[aria-pressed="true"]{background:var(--acc);color:var(--acc-ink)}
 .ktd{display:flex;align-items:center;gap:12px;width:100%;margin-top:10px;padding:20px 16px;border:0;border-radius:18px;background:var(--card);color:var(--ink);font:600 17px var(--fb);text-align:left;cursor:pointer}.ktd b{flex:1;font-weight:600}.ktd em{font-style:normal;color:var(--mute);min-width:40px;text-align:right}.ktd>i{color:var(--acc);font-style:normal}
@@ -375,7 +376,7 @@ function todayTab(){
   ${quoteCard()}<section class="hero"><div class="st"><span class="dot ${DOT[st]}"></span>${LBL[st]}</div>
   <div class="big" id="clock">${dur(clockMs())}</div><div class="sub" id="clocksub">${clockSub()}</div>
   ${st!=="closed"?`<div class="acts">${b}</div>`:""}</section>
-  ${picker}${tasksRing()}${countdownCard()}<button class="card tr" data-tab="c" aria-label="Konu takibini aç"><span class="rg" style="--p:0"><span style="font-size:30px">📚</span></span><span><h2>Konu Takibi</h2><p style="font-size:15px">Bitirdiğin konuları işaretle</p></span></button><button class="card tr" data-tab="t" aria-label="Tercih robotunu aç"><span class="rg" style="--p:0"><span style="font-size:30px">🎓</span></span><span><h2>Tercih Robotu</h2><p style="font-size:15px">Sıranla bölümleri karşılaştır</p></span></button>
+  ${picker}${tasksRing()}${countdownCard()}${chHomeCard()}<button class="card tr" data-tab="c" aria-label="Konu takibini aç"><span class="rg" style="--p:0"><span style="font-size:30px">📚</span></span><span><h2>Konu Takibi</h2><p style="font-size:15px">Bitirdiğin konuları işaretle</p></span></button><button class="card tr" data-tab="t" aria-label="Tercih robotunu aç"><span class="rg" style="--p:0"><span style="font-size:30px">🎓</span></span><span><h2>Tercih Robotu</h2><p style="font-size:15px">Sıranla bölümleri karşılaştır</p></span></button>
   <div class="stats"><div class="stat"><b>${solvedT}</b><span>çözülen soru</span></div><div class="stat"><b>${solvedT?"%"+acc:"–"}</b><span>doğruluk</span></div><div class="stat"><b>${S.prog?"✓":"–"}</b><span>program</span></div></div>
   ${goalRoad(ME)}${coachForMe()}${streakCard()}${(TK[ME]||[]).some(t=>t.task_date===day())?todayTasks():""}
   ${qa?`<div class="card" id="qcard"><h2>Soru girişi</h2><div class="row">
@@ -520,7 +521,7 @@ function coachView(){
   <section id="coach-students" class="coach-section"><div class="section-heading"><div><div class="eyebrow">ÖĞRENCİ TAKİBİ</div><h2>Öğrenciler</h2></div><span class="count-pill">${all.length} kayıt</span></div>
   ${classCard()}<div class="grid">${all.map(x=>`<button class="s${x.live?" live":""}" data-i="${x.id}"><div class="h">${mav(x.id)}<span class="dot ${DOT[x.st]}"></span>${x.n}${flags(x.hist).length?" 🚩":""}</div><div class="sp">${LBL[x.st]}</div>
   <div class="n"><span>${Math.floor(x.m/60)} sa ${x.m%60} dk</span><span>${x.q} soru</span></div><div class="bar"><i style="width:${Math.round(x.p*100)}%"></i></div></button>`).join("")}</div></section>
-  <section id="coach-tasks" class="coach-section"><div class="section-heading"><div><div class="eyebrow">PLANLAMA</div><h2>Görev yönetimi</h2></div></div>${bulkCard()}</section>
+  <section id="coach-tasks" class="coach-section"><div class="section-heading"><div><div class="eyebrow">PLANLAMA</div><h2>Görev yönetimi</h2></div></div>${bulkCard()}${chCoachCard()}</section>
   <section id="coach-tools" class="coach-section"><div class="section-heading"><div><div class="eyebrow">YÖNETİM</div><h2>Koç araçları</h2></div></div>${addStudentCard()}${backupCard()}${thCard()}</section>`;
 }
 let selDay=null,per="hw";const HIST={},DSTATE={};
@@ -794,6 +795,7 @@ function qaSheet(){
   ${it("✍️","Soru girişi","Çözdüğün soruları kaydet","b","qcard")}
   ${it("➕","Yeni Sınav Sonucu","Görseli ya da PDF'i yükle","d")}
   ${it("✅","Haftalık Görevler","Koçunun verdiği görevler","g")}
+  ${it("🏆","Yarışma","Arkadaşlarınla sıralamayı gör","y")}
   ${it("📚","Konu Takibi","Bitirdiğin konuları işaretle","c")}
   ${it("🎓","Tercih Robotu","Sıranla bölümleri karşılaştır","t")}
   ${it("🤖","Çalışma Asistanı","Plan ve motivasyon için sor","k")}</div>`;
@@ -989,9 +991,78 @@ function ktAct(D){
   if(D.ktall!=null){const di=+D.ktall,ex=KTS.exam,[n,m]=ktCount(ex,di);KT[ex][di].t.forEach((_,ti)=>{const id=ktId(ex,di,ti);if(n===m)KTS.done.delete(id);else KTS.done.add(id)});ktSave();render()}
 }
 
+/* Yarışma (challenge): koç oluşturur ve duyurur, herkes sıralamayı görür */
+let CH={st:"idle",list:[],sel:null,board:null,busy:false,msg:""};
+const chDays=(a,b)=>{const p=s=>{const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d).getTime()};return Math.round((p(b)-p(a))/864e5)};
+const chActive=c=>c&&c.start_day<=day()&&c.end_day>=day();
+const chVal=(c,v)=>c.metric==="minutes"?hmin(Math.round(v)):Math.round(v)+" soru";
+async function chBoardLoad(){
+  const c=CH.list.find(x=>x.id===CH.sel);if(!c){CH.board=null;return}
+  try{const r=await sb.rpc("challenge_board",{p_id:c.id});CH.board=r&&!r.error&&Array.isArray(r.data)?{id:c.id,rows:r.data}:{id:c.id,rows:[]}}catch(e){CH.board={id:c.id,rows:[]}}
+}
+async function chLoad(force){
+  if(CH.busy||(CH.st!=="idle"&&!force))return;CH.busy=true;CH.st="load";
+  try{
+    const r=await sb.from("challenges").select("id,title,metric,start_day,end_day,notified_at").order("id",{ascending:false}).limit(8);
+    CH.list=r&&Array.isArray(r.data)?r.data:[];
+    if(!CH.list.find(x=>x.id===CH.sel)){const a=CH.list.find(chActive);CH.sel=(a||CH.list[0]||{}).id||null}
+    await chBoardLoad();
+  }catch(e){}
+  CH.st="ok";CH.busy=false;if(tab==="y"||ROLE==="coach"||tab==="b")render();
+}
+function chBoardHTML(c){
+  const B=CH.board&&CH.board.id===c.id?CH.board.rows:null;
+  if(!B)return `<p class="empty">Yükleniyor…</p>`;
+  if(!B.length)return `<p class="empty">Henüz sıralama yok.</p>`;
+  const tot=+B[0].total||0;
+  return B.map((r,i)=>{const t=+r.total||0,w=tot?Math.max(3,Math.round(t*100/tot)):0,md=["🥇","🥈","🥉"][i]||`<b>${i+1}</b>`;
+    return `<div class="chr${r.me?" me":""}"><span class="chk">${md}</span><span class="chn">${esc(r.label)}${r.live?` <i class="chl" title="Şu an çalışıyor"></i>`:""}${r.me?" · sen":""}<span class="ktpr"><i style="width:${w}%"></i></span></span><span class="chv">${chVal(c,t)}${+r.today>0?`<small>bugün +${chVal(c,+r.today)}</small>`:""}</span></div>`}).join("");
+}
+function chInfo(c){
+  const left=chDays(day(),c.end_day),st=day()<c.start_day?`${chDays(day(),c.start_day)} gün sonra başlıyor`:left>=0?(left===0?"son gün":left+" gün kaldı"):"bitti";
+  return `${c.metric==="minutes"?"En çok çalışma süresi":"En çok çözülen soru"} · ${fd(c.start_day)} – ${fd(c.end_day)} · ${st}`;
+}
+function chHomeCard(){
+  chLoad();const c=CH.list.find(chActive);if(!c)return "";
+  const B=CH.board&&CH.board.id===c.id?CH.board.rows:null,i=B?B.findIndex(r=>r.me):-1;
+  return `<button class="card tr" data-tab="y" aria-label="Yarışmayı aç"><span class="rg" style="--p:0"><span style="font-size:30px">🏆</span></span><span><h2>${esc(c.title)}</h2><p style="font-size:15px">${i>=0?`${i+1}. sıradasın · `:""}${chDays(day(),c.end_day)===0?"son gün":chDays(day(),c.end_day)+" gün kaldı"}</p></span></button>`;
+}
+function yarisTab(){
+  chLoad();
+  const chips=CH.list.map(c=>`<button class="chip" data-chsel="${c.id}" aria-pressed="${c.id===CH.sel}">${esc(c.title.length>18?c.title.slice(0,17)+"…":c.title)}</button>`).join("");
+  const c=CH.list.find(x=>x.id===CH.sel);
+  return `<h1 class="pg">Yarışma</h1>${CH.st!=="ok"?`<p class="empty">Yükleniyor…</p>`:!c?`<div class="card"><p class="empty" style="margin:0">Şu an bir yarışma yok. Koçun yarışma başlatınca burada ve bildirimde göreceksin.</p></div>`:`${CH.list.length>1?`<div class="chips" style="margin-bottom:10px">${chips}</div>`:""}<div class="card"><h2>${esc(c.title)}</h2><p class="sub2" style="margin:2px 0 12px">${chInfo(c)}</p>${chBoardHTML(c)}<button class="chip" id="chrf" style="margin-top:12px">↻ Yenile</button></div><p class="sub2" style="margin:10px 4px">Sıralamada isimler kısaltılmış görünür. Yeşil nokta şu an çalışıyor demek.</p>`}`;
+}
+function chCoachCard(){
+  chLoad();
+  const rows=CH.list.map(c=>`<div class="chr${c.id===CH.sel?" me":""}" data-chsel="${c.id}" style="cursor:pointer"><span class="chn"><b>${esc(c.title)}</b><small style="display:block;color:var(--mute)">${chInfo(c)}</small></span><span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${c.notified_at?`<span class="bd g">duyuruldu</span>`:`<button class="chip" data-chnot="${c.id}">📣 Duyur</button>`}<button class="chip" data-chdel="${c.id}">Sil</button></span></div>`).join("");
+  const sel=CH.list.find(x=>x.id===CH.sel);
+  return `<details class="card"${CH.msg||CH.list.length?" open":""}><summary style="cursor:pointer;font-weight:700">🏆 Yarışmalar</summary>
+  <div class="row"><label>Başlık<input id="cht" type="text" maxlength="80" placeholder="Hafta şampiyonu" style="width:170px"></label><label>Ölçüt<select id="chm"><option value="minutes">Çalışma süresi</option><option value="questions">Çözülen soru</option></select></label><label>Başlangıç<input id="chs" type="date" value="${day()}" style="width:150px"></label><label>Bitiş<input id="che" type="date" value="${dayN(6)}" style="width:150px"></label><button class="btn" style="padding:11px 16px" id="chmk">Oluştur ve duyur</button></div>
+  <p class="empty" style="font-size:13px;margin:6px 0 0">${CH.msg?esc(CH.msg):"Oluşturunca tüm öğrencilere bildirim gider. En fazla 60 gün."}</p>
+  ${rows?`<div style="margin-top:10px">${rows}</div>`:""}${sel?`<h3 style="margin:14px 0 6px">${esc(sel.title)} · sıralama</h3>${chBoardHTML(sel)}`:""}</details>`;
+}
+async function chCreate(){
+  const g=i=>document.getElementById(i).value,title=g("cht").trim().slice(0,80),m=g("chm"),a=g("chs"),b=g("che");
+  if(title.length<3){CH.msg="Başlık en az 3 harf olmalı.";render();return}
+  if(!a||!b||b<a||chDays(a,b)>60){CH.msg="Tarihleri kontrol et (bitiş başlangıçtan önce olamaz, en fazla 60 gün).";render();return}
+  if(!confirm("“"+title+"” yarışması oluşturulsun ve tüm öğrencilere bildirim gitsin mi?"))return;
+  CH.msg="Oluşturuluyor…";render();
+  const r=await sb.from("challenges").insert({title,metric:m,start_day:a,end_day:b,created_by:ME}).select("id");
+  if(r&&r.error||!(r&&r.data&&r.data[0])){CH.msg="Oluşturulamadı: "+((r&&r.error&&r.error.message)||"hata");render();return}
+  const id=r.data[0].id;CH.sel=id;
+  const n=await callFn("challenge-notify",{id});
+  CH.msg=n.error?"Yarışma oluşturuldu ama bildirim gitmedi: "+n.error+" (listeden “Duyur” ile tekrar dene)":"Yarışma oluşturuldu. "+n.sent+" öğrenciye bildirim gönderildi.";
+  await chLoad(true);
+}
+async function chAct(D){
+  if(D.chsel){CH.sel=+D.chsel;CH.board=null;render();await chBoardLoad();render();return}
+  if(D.chnot){const n=await callFn("challenge-notify",{id:+D.chnot});CH.msg=n.error?n.error:"Bildirim gönderildi: "+n.sent+" öğrenci.";await chLoad(true);return}
+  if(D.chdel){if(!confirm("Bu yarışma silinsin mi?"))return;await dbw(sb.from("challenges").delete().eq("id",+D.chdel));CH.msg="Yarışma silindi.";await chLoad(true)}
+}
 function studentView(){
   const first=esc((NAME||"").trim().split(/\s+/)[0]||"Öğrenci"),st=streakInfo();
-  const body=tab==="g"?tasksTab():tab==="d"?`<h1 class="pg">Analiz</h1>${dailyActivityCard()}${heatCard()}${examCard()}${netChartsCard(ME)}`:tab==="h"?`<h1 class="pg">Profilim</h1>${profileCard()}${goalRoad(ME)}${targetForm(ME,true)}${badgeCard()}${pushCard()}${accountCard()}`:tab==="k"?chatTab():tab==="t"?tercihTab():tab==="c"?konuTab():todayTab();
+  const body=tab==="g"?tasksTab():tab==="d"?`<h1 class="pg">Analiz</h1>${dailyActivityCard()}${heatCard()}${examCard()}${netChartsCard(ME)}`:tab==="h"?`<h1 class="pg">Profilim</h1>${profileCard()}${goalRoad(ME)}${targetForm(ME,true)}${badgeCard()}${pushCard()}${accountCard()}`:tab==="k"?chatTab():tab==="t"?tercihTab():tab==="c"?konuTab():tab==="y"?yarisTab():todayTab();
   const head=tab==="b"?`<div class="sh"><span class="av">${avIn(ME,NAME)}</span><div><h1>Merhaba, ${first}</h1><p>Odaklan ve ilerlemeye devam et.</p></div><span class="fire" aria-label="${st.cur} gün seri">🔥 ${st.cur}</span></div>`:tab==="g"?`<h1 class="pg">Görevlerim</h1>`:tab==="k"?`<h1 class="pg">Asistan</h1>`:"";
   const nb=(k,ic,l)=>`<button class="pn" data-tab="${k}" aria-current="${tab===k}" aria-label="${l}">${IC[ic]}</button>`;
   return `<div class="stu-main">${head}${body}</div><nav class="pill" aria-label="Öğrenci sekmeleri">${nb("b","home","Ana sayfa")}${nb("g","cal","Görevler")}<button class="fab" id="qaopen" aria-label="Hızlı işlemler">+</button>${nb("d","bars","Analiz")}${nb("h","user","Profil")}</nav>${QA?qaSheet():""}`;
@@ -1049,6 +1120,9 @@ function ui(t){
   const D=t.dataset,id=t.id;
   if(D.tab){tab=D.tab;QA=false;render();window.scrollTo(0,0);return true}
   if(id==="phdel"){phDel();return true}
+  if(id==="chmk"){chCreate();return true}
+  if(id==="chrf"){chLoad(true);return true}
+  if(D.chsel||D.chnot||D.chdel){chAct(D);return true}
   if(id==="qaopen"){QA=true;render();return true}
   if(id==="qabg"){QA=false;render();return true}
   if(D.qa){QA=false;tab=D.qa;render();window.scrollTo(0,0);if(D.qs)setTimeout(()=>{const e=document.getElementById(D.qs);if(e)e.scrollIntoView({behavior:"smooth",block:"center"})},60);return true}
