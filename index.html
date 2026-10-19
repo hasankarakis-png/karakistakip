@@ -193,6 +193,51 @@ header h1{font-size:19px;letter-spacing:-.04em}header small{letter-spacing:.01em
 }
 @media (prefers-reduced-motion:reduce){.s,.side-nav>button,.week-track i{transition:none!important}}
 
+
+/* ===== Öğrenci arayüzü: siyah + limon teması, yüzen alt menü ===== */
+body.stu{--cream:#0a0a0a;--card:#151515;--line:#272727;--ink:#f3f3ee;--mute:#9b9b94;--acc:#d9f24a;--acc-ink:#12160a;--goldsoft:#252a10;--hero-bg:linear-gradient(160deg,#1d2209,#131313 70%);--hero-ink:#f3f3ee;--hero-sub:#a7ab94;--hbtn:#d9f24a;--hbtn-ink:#12160a;--press:#1f1f1f;--press-ink:#d9f24a;--ok:#d9f24a;--warn:#ffb84d;--glow:0 0 26px rgba(217,242,74,.32);--panel-shadow:none}
+:root[data-theme="light"] body.stu{--cream:#f4f5ec;--card:#fff;--line:#e3e6d2;--ink:#14160c;--mute:#666a54;--acc:#667a00;--acc-ink:#fff;--goldsoft:#eef3c4;--hero-bg:#14160c;--hero-ink:#f3f3ee;--hero-sub:#a9ad95;--hbtn:#d9f24a;--hbtn-ink:#12160a;--press:#eef0dd;--press-ink:#667a00;--glow:0 0 22px rgba(102,122,0,.25)}
+body.stu header{display:none}
+body.stu .wrap{padding:14px 14px 130px}
+.stu-main{max-width:600px;margin:0 auto}
+.sh{display:flex;align-items:center;gap:12px;margin:4px 0 16px}
+.sh .av{width:52px;height:52px;border-radius:50%;background:var(--acc);color:var(--acc-ink);display:grid;place-items:center;font:800 22px var(--fd);flex:none}
+.sh h1{font-size:24px;letter-spacing:-.03em;line-height:1.15}.sh p{margin:2px 0 0;color:var(--mute);font-size:14px}
+.sh .fire{margin-left:auto;display:flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:9px 15px;font:800 18px var(--fd);white-space:nowrap}
+.pg{font:700 28px var(--fd);letter-spacing:-.03em;margin:6px 0 16px;text-align:center}
+.qt{position:relative;padding-left:22px}.qt:before{content:"";position:absolute;left:14px;top:18px;bottom:18px;width:4px;border-radius:9px;background:var(--acc)}
+.qt h2{font-size:17px;margin:0 0 8px 6px}.qt p{margin:0 0 0 6px;font-size:18px;line-height:1.45}
+button.tr{display:flex;align-items:center;gap:16px;width:100%;text-align:left;color:var(--ink);font:inherit;cursor:pointer}
+.tr .rg{width:84px;height:84px;border-radius:50%;flex:none;display:grid;place-items:center;background:conic-gradient(var(--acc) calc(var(--p)*1%),var(--line) 0);position:relative}
+.tr .rg:before{content:"";position:absolute;inset:8px;border-radius:50%;background:var(--card)}.tr .rg span{position:relative;font:800 20px var(--fd);color:var(--acc)}
+.tr h2{font-size:19px;margin:0}.tr p{margin:3px 0 0;font-size:18px;color:var(--mute)}.tr small{color:var(--mute);font-size:13px}
+.nets{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px}
+.nets>div{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px}.nets small{display:block;color:var(--acc);font-weight:700;font-size:13px}.nets b{font:700 22px var(--fd)}
+.cd{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}
+.cd>div{background:var(--cream);border-radius:16px;padding:14px 4px;text-align:center}.cd b{display:block;font:700 34px var(--fd);font-variant-numeric:tabular-nums;line-height:1.1}.cd span{font-size:13px;color:var(--mute)}
+.cdh{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.cdh h2{font-size:22px}.cdh small{color:var(--acc);font-weight:600}
+.hm{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,1fr);gap:4px;margin:12px 0 6px}
+.hm button{width:100%;aspect-ratio:1;border:0;border-radius:5px;background:#232323;padding:0;min-width:0;cursor:pointer}
+:root[data-theme="light"] .hm button{background:#e6e9d3}
+.hm button.l1{background:#3d4a14}.hm button.l2{background:#7d9420}.hm button.l3{background:#aac331}.hm button.l4{background:#d9f24a}
+:root[data-theme="light"] .hm button.l1{background:#d8e28a}:root[data-theme="light"] .hm button.l2{background:#b3c64a}:root[data-theme="light"] .hm button.l3{background:#8aa21c}:root[data-theme="light"] .hm button.l4{background:#667a00}
+.hm button.td{outline:2px solid var(--acc);outline-offset:1px}.hm button.sel{outline:2px solid var(--ink);outline-offset:1px}
+.hmw{display:flex;gap:8px}.hmd{display:grid;grid-template-rows:repeat(7,1fr);gap:4px;margin:12px 0 6px;font-size:11px;color:var(--mute);align-items:center}
+.hmm{position:relative;height:16px;font-size:12px;color:var(--mute);margin-left:30px}.hmm span{position:absolute}
+.hmf{display:flex;justify-content:space-between;align-items:center;color:var(--mute);font-size:13px}.hmf i{display:inline-block;width:14px;height:14px;border-radius:4px;margin:0 2px;vertical-align:-2px}
+.pill{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom));width:min(calc(100% - 24px),520px);height:68px;z-index:60;display:grid;grid-template-columns:1fr 1fr 86px 1fr 1fr;align-items:center;background:var(--card);border:1.5px solid color-mix(in srgb,var(--acc) 38%,transparent);border-radius:999px;padding:0 8px;box-shadow:0 12px 34px rgba(0,0,0,.45)}
+.pill .pn{background:none;border:0;color:var(--mute);height:100%;display:grid;place-items:center;cursor:pointer;border-radius:999px}
+.pill .pn[aria-current=true]{color:var(--acc)}.pill .pn svg{width:28px;height:28px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.pill .fab{width:70px;height:70px;border-radius:50%;background:var(--acc);color:var(--acc-ink);border:0;font:300 42px/1 var(--fb);margin-top:-32px;justify-self:center;display:grid;place-items:center;box-shadow:0 8px 24px color-mix(in srgb,var(--acc) 40%,transparent);cursor:pointer;padding:0 0 4px}
+.qa-bg{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.6);border:0;width:100%;cursor:default}
+.qa{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:min(100%,560px);z-index:71;background:var(--card);border-radius:28px 28px 0 0;padding:12px 16px calc(22px + env(safe-area-inset-bottom));max-height:88vh;overflow:auto;animation:qaUp .25s ease}
+@keyframes qaUp{from{transform:translate(-50%,40px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+.qa .grab{width:48px;height:5px;border-radius:9px;background:var(--line);margin:0 auto 16px}.qa h2{font-size:24px;margin:0 0 6px}
+.qa-i{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--cream);border:0;border-radius:18px;padding:16px;margin-top:10px;color:var(--ink);font:inherit;cursor:pointer;min-height:64px}
+.qa-i>span:first-child{font-size:24px;width:30px;text-align:center}.qa-i b{display:block;font:600 18px var(--fd)}.qa-i small{display:block;color:var(--mute);font-size:14px;margin-top:2px}.qa-i i{margin-left:auto;color:var(--mute);font-style:normal;font-size:22px}
+body.stu .week-track i{background:linear-gradient(180deg,var(--acc),color-mix(in srgb,var(--acc) 55%,#000))}body.stu .activity-legend i{background:var(--acc)}body.stu .activity-icon{background:var(--goldsoft);color:var(--acc)}body.stu .goal-emblem{background:var(--acc);color:var(--acc-ink);box-shadow:none}body.stu .goal-type:hover,body.stu .goal-type.selected{border-color:var(--acc)}body.stu .goal-icon{background:var(--goldsoft);color:var(--acc)}body.stu .goal-editor{border-color:var(--line);background:var(--card)}
+.pf{text-align:center;padding:26px 16px}.pf .av2{width:96px;height:96px;margin:0 auto 12px;border-radius:50%;background:var(--acc);color:var(--acc-ink);display:grid;place-items:center;font:800 40px var(--fd)}.pf h2{font-size:26px}
+@media (prefers-reduced-motion:reduce){.qa{animation:none}}
 </style>
 </head>
 <body class="intro">
@@ -301,13 +346,13 @@ function todayTab(){
   const qa=st!=="idle"&&st!=="closed";
   const solvedT=solved(),acc=solvedT?Math.round(correct()/solvedT*100):0;
   return `${guideCard()}${live&&curNet()>4*3600e3?`<div class="card" style="border-color:var(--warn)"><p style="margin:0">⏰ Sayaç 4 saatten uzun süredir açık. Çalışmayı bitirdiysen <b>Çalışmayı noktala</b>'ya bas, yoksa süren fazla görünür.</p></div>`:""}
-  <section class="hero"><div class="st"><span class="dot ${DOT[st]}"></span>${LBL[st]}</div>
+  ${quoteCard()}<section class="hero"><div class="st"><span class="dot ${DOT[st]}"></span>${LBL[st]}</div>
   <div class="big" id="clock">${dur(clockMs())}</div><div class="sub" id="clocksub">${clockSub()}</div>
   ${st!=="closed"?`<div class="acts">${b}</div>`:""}</section>
-  ${picker}
+  ${picker}${tasksRing()}${countdownCard()}
   <div class="stats"><div class="stat"><b>${solvedT}</b><span>çözülen soru</span></div><div class="stat"><b>${solvedT?"%"+acc:"–"}</b><span>doğruluk</span></div><div class="stat"><b>${S.prog?"✓":"–"}</b><span>program</span></div></div>
-  ${goalRoad(ME)}${coachForMe()}${streakCard()}${todayTasks()}
-  ${qa?`<div class="card"><h2>Soru girişi</h2><div class="row">
+  ${goalRoad(ME)}${coachForMe()}${streakCard()}${(TK[ME]||[]).some(t=>t.task_date===day())?todayTasks():""}
+  ${qa?`<div class="card" id="qcard"><h2>Soru girişi</h2><div class="row">
   <label>Ders<select id="qs">${SUBJ.map(x=>`<option${x===subj?" selected":""}>${x}</option>`).join("")}</select></label>
   <label>Çözülen<input id="qn" type="number" min="1" inputmode="numeric"></label>
   <label>Doğru<input id="qc" type="number" min="0" inputmode="numeric"></label><label>Boş<input id="qb" type="number" min="0" inputmode="numeric"></label><label>Konu<input id="qk" type="text" maxlength="40" style="width:140px"></label>
@@ -456,7 +501,7 @@ let selDay=null,per="hw";const HIST={},DSTATE={};
 const PER=[["hw","Bu hafta"],["lw","Geçen hafta"],["tm","Bu ay"],["lm","Geçen ay"]];
 const fd=s=>{const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString("tr-TR",{weekday:"short",day:"numeric",month:"short"})};
 const hmin=m=>Math.floor(m/60)+" sa "+(m%60)+" dk";
-async function loadHist(id){try{const {data,error}=await sb.from("daily").select("day,snap").eq("student_id",id).gte("day",dayN(-70)).order("day");if(error)throw error;HIST[id]=Object.fromEntries((data||[]).map(r=>[r.day,r.snap||{}]))}catch(e){HIST[id]=HIST[id]||{}}}
+async function loadHist(id){try{const {data,error}=await sb.from("daily").select("day,snap").eq("student_id",id).gte("day",dayN(-130)).order("day");if(error)throw error;HIST[id]=Object.fromEntries((data||[]).map(r=>[r.day,r.snap||{}]))}catch(e){HIST[id]=HIST[id]||{}}}
 async function loadDay(id,d){try{const {data}=await sb.from("daily").select("state,snap").eq("student_id",id).eq("day",d).maybeSingle();DSTATE[id+"|"+d]=data||{state:{},snap:{}}}catch(e){DSTATE[id+"|"+d]={state:{},snap:{}}}}
 function range(p){
   const t=new Date();t.setHours(0,0,0,0);
@@ -657,9 +702,75 @@ async function chatSend(){
   const r=await callFn("exam-insights",{action:"chat",messages:CHAT});
   CHATBUSY=false;if(r.reply)CHAT.push({role:"model",text:r.reply});else CHATERR=r.error||"Cevap alınamadı.";CHAT=CHAT.slice(-8);render();
 }
+
+/* ===== Öğrenci arayüzü (siyah + limon) ===== */
+let QA=false,HMSEL=null;
+const IC={
+  home:'<svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10"/><path d="M10 20v-6h4v6"/></svg>',
+  cal:'<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17M8 14h2M12 14h2M8 17h2M12 17h2"/></svg>',
+  bars:'<svg viewBox="0 0 24 24"><path d="M5 20V12M10 20V6M15 20V9M20 20V14" stroke-width="3.2"/></svg>',
+  user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c.8-4 3.8-6 7.5-6s6.7 2 7.5 6"/></svg>'
+};
+const QUOTES=["Bugün attığın küçük adım, sınav günü büyük fark yaratır.","Mükemmel olmak zorunda değilsin, devam etmen yeterli.","Zor konular, doğru çalışmayla kolaylaşır.","Her çözdüğün soru seni hedefe biraz daha yaklaştırır.","Yorulduğunda dinlen, ama vazgeçme.","İstikrar, motivasyondan daha güçlüdür.","Dünün netini değil, dünkü kendini geç.","Hata yaptığın yer, öğrenmeye en açık olduğun yerdir."];
+const quoteCard=()=>`<div class="card qt"><h2>Günün Sözü</h2><p>“${QUOTES[Math.floor(Date.now()/864e5)%QUOTES.length]}”</p></div>`;
+function tasksRing(){
+  const L=(TK[ME]||[]).filter(t=>t.task_date===day()),d=L.filter(t=>t.done).length,p=L.length?Math.round(d/L.length*100):0;
+  const last=t=>{const a=(EX[ME]||[]).filter(e=>e.exam_type===t&&e.total_net!=null);return a.length?num(a[a.length-1].total_net):null};
+  const kinds=["TYT","AYT"].concat(last("LGS")!=null?["LGS"]:[]);
+  return `<button class="card tr" data-tab="g" aria-label="Görevlerim sekmesini aç"><span class="rg" style="--p:${p}"><span>${L.length?d+"/"+L.length:"+"}</span></span><span><h2>Bugünkü Görevler</h2><p>${L.length?d+" / "+L.length+" tamamlandı":"Henüz görev yok"}</p>${L.length?"":"<small>Koçun görev atayınca burada görünür.</small>"}</span></button>
+  <div class="nets">${kinds.map(k=>`<div><small>${k} son net</small><b>${last(k)==null?"—":last(k)}</b></div>`).join("")}</div>`;
+}
+const YKS=new Date(2027,5,19,10,15,0);
+const cdParts=()=>{let t=Math.max(0,YKS-Date.now());const s=Math.floor(t/1000);return [Math.floor(s/86400),Math.floor(s%86400/3600),Math.floor(s%3600/60),s%60]};
+function countdownCard(){
+  const v=cdParts();
+  return `<div class="card"><div class="cdh"><h2>YKS 2027</h2><small>19 Haziran 2027</small></div><div class="cd">${["Gün","Saat","Dakika","Saniye"].map((l,i)=>`<div><b id="cd${i}">${i?String(v[i]).padStart(2,"0"):v[i]}</b><span>${l}</span></div>`).join("")}</div></div>`;
+}
+function heatCard(){
+  const H=Object.assign({},HIST[ME]||{});H[day()]=snap();
+  const WK=18,today=new Date();today.setHours(0,0,0,0);
+  const dow=(today.getDay()+6)%7; // Pzt=0
+  const start=new Date(today);start.setDate(start.getDate()-dow-(WK-1)*7);
+  const lvl=m=>m<=0?0:m<30?1:m<90?2:m<180?3:4;
+  const cells=[],months=[];let lastM=-1;
+  for(let w=0;w<WK;w++)for(let r=0;r<7;r++){
+    const d=new Date(start);d.setDate(start.getDate()+w*7+r);const k=ymd(d),fut=d>today;
+    if(r===0&&d.getMonth()!==lastM){lastM=d.getMonth();months.push([w,d.toLocaleDateString("tr-TR",{month:"short"})])}
+    if(fut){cells.push(`<span></span>`);continue}
+    const z=H[k]||{},m=num(z.m);
+    cells.push(`<button class="l${lvl(m)}${k===day()?" td":""}${HMSEL===k?" sel":""}" data-hm="${k}" aria-label="${k}: ${m} dakika"></button>`);
+  }
+  const sel=HMSEL&&H[HMSEL]?`<b>${fd(HMSEL)}</b>: ${hm2(num(H[HMSEL].m))} · ${num(H[HMSEL].q)} soru`:"Dokun: o günün çalışmasını gör";
+  const cw=`calc((100% - 30px - ${(WK-1)*4}px)/${WK})`;
+  return `<div class="card"><h2>Yoğunluk Haritası</h2><div class="hmm" style="margin-left:30px">${months.map(([w,n])=>`<span style="left:calc(${w} * (100% / ${WK}))">${esc(n)}</span>`).join("")}</div>
+  <div class="hmw"><div class="hmd"><span>Pzt</span><span></span><span>Çar</span><span></span><span>Cum</span><span></span><span>Paz</span></div><div class="hm" style="flex:1;grid-template-columns:repeat(${WK},1fr)">${cells.join("")}</div></div>
+  <p class="empty" style="margin:4px 0 8px;font-size:14px">${sel}</p>
+  <div class="hmf"><span>Az</span><span><i style="background:var(--line)"></i><i style="background:#3d4a14"></i><i style="background:#7d9420"></i><i style="background:#aac331"></i><i style="background:#d9f24a"></i></span><span>Çok</span></div></div>`;
+}
+function qaSheet(){
+  const it=(ic,t,sub,tab,sc)=>`<button class="qa-i" data-qa="${tab}"${sc?` data-qs="${sc}"`:""}><span aria-hidden="true">${ic}</span><span><b>${t}</b><small>${sub}</small></span><i aria-hidden="true">›</i></button>`;
+  return `<button class="qa-bg" id="qabg" aria-label="Kapat"></button><div class="qa" role="dialog" aria-modal="true" aria-label="Hızlı işlemler"><div class="grab"></div><h2>Hızlı işlemler</h2>
+  ${it("⏱","Kronometre","Derse başla, mola ver, süreni gör","b")}
+  ${it("✍️","Soru girişi","Çözdüğün soruları kaydet","b","qcard")}
+  ${it("➕","Yeni Sınav Sonucu","Görseli ya da PDF'i yükle","d")}
+  ${it("✅","Haftalık Görevler","Koçunun verdiği görevler","g")}
+  ${it("🤖","Çalışma Asistanı","Plan ve motivasyon için sor","k")}</div>`;
+}
+function profileCard(){
+  const f=(NAME||"Ö").trim();
+  return `<div class="card pf"><div class="av2">${esc(f.slice(0,1).toLocaleUpperCase("tr-TR"))}</div><h2>${esc(f)}</h2><p class="empty" style="margin:4px 0 0">Öğrenci hesabı</p></div>`;
+}
+function accountCard(){
+  const dark=document.documentElement.getAttribute("data-theme")!=="light";
+  return `<div class="card"><h2>Hesap</h2><div class="row" style="margin-top:6px"><button class="chip" id="theme2">${dark?"☀ Açık tema":"☾ Koyu tema"}</button><button class="chip" id="out2">Çıkış yap</button></div></div>`;
+}
+
 function studentView(){
-  const body=tab==="g"?tasksTab():tab==="d"?examCard()+netChartsCard(ME):tab==="h"?goalRoad(ME)+targetForm(ME,true)+badgeCard()+pushCard():tab==="k"?chatTab():todayTab();
-  return `<nav class="side-nav bnav" aria-label="Öğrenci sekmeleri"><div class="side-brand"><span class="brand-mark">K</span><div><b>KARAKIŞ</b><small>ÖĞRENCİ PANELİ</small></div></div><div class="side-label">ÇALIŞMA ALANI</div>${TABS.map(([k,i,l])=>`<button data-tab="${k}" aria-current="${tab===k}"><span aria-hidden="true">${i}</span><span class="nav-label">${l}</span>${k==="b"?'<i class="nav-dot"></i>':""}</button>`).join("")}<div class="side-foot"><span class="side-avatar">${esc((NAME||"Ö").slice(0,1).toUpperCase())}</span><div><b>${esc(NAME||"Öğrenci")}</b><small>Gelişim yolculuğun</small></div></div></nav><div class="dashboard-main"><div class="page-intro"><div><div class="eyebrow">${fd(day()).toLocaleUpperCase("tr-TR")}</div><h1>${({"b":"Bugünün planı","g":"Görevlerim","d":"Deneme analizi","h":"Hedef yolculuğum","k":"Çalışma asistanım"})[tab]||"Panelim"}</h1><p>Her gün küçük bir adım, büyük bir değişim.</p></div><span class="status-pill"><i></i> Kişisel panelin</span></div>${tab==="b"?dailyActivityCard(): ""}${body}</div>`;
+  const first=esc((NAME||"").trim().split(/\s+/)[0]||"Öğrenci"),st=streakInfo();
+  const body=tab==="g"?tasksTab():tab==="d"?`<h1 class="pg">Analiz</h1>${dailyActivityCard()}${heatCard()}${examCard()}${netChartsCard(ME)}`:tab==="h"?`<h1 class="pg">Profilim</h1>${profileCard()}${goalRoad(ME)}${targetForm(ME,true)}${badgeCard()}${pushCard()}${accountCard()}`:tab==="k"?chatTab():todayTab();
+  const head=tab==="b"?`<div class="sh"><span class="av">${first.slice(0,1).toLocaleUpperCase("tr-TR")}</span><div><h1>Merhaba, ${first}</h1><p>Odaklan ve ilerlemeye devam et.</p></div><span class="fire" aria-label="${st.cur} gün seri">🔥 ${st.cur}</span></div>`:tab==="g"?`<h1 class="pg">Görevlerim</h1>`:tab==="k"?`<h1 class="pg">Asistan</h1>`:"";
+  const nb=(k,ic,l)=>`<button class="pn" data-tab="${k}" aria-current="${tab===k}" aria-label="${l}">${IC[ic]}</button>`;
+  return `<div class="stu-main">${head}${body}</div><nav class="pill" aria-label="Öğrenci sekmeleri">${nb("b","home","Ana sayfa")}${nb("g","cal","Görevler")}<button class="fab" id="qaopen" aria-label="Hızlı işlemler">+</button>${nb("d","bars","Analiz")}${nb("h","user","Profil")}</nav>${QA?qaSheet():""}`;
 }
 
 /* deneme: silme, düzeltme, elle ekleme */
@@ -712,7 +823,13 @@ function classCard(){
 }
 function ui(t){
   const D=t.dataset,id=t.id;
-  if(D.tab){tab=D.tab;render();window.scrollTo(0,0);return true}
+  if(D.tab){tab=D.tab;QA=false;render();window.scrollTo(0,0);return true}
+  if(id==="qaopen"){QA=true;render();return true}
+  if(id==="qabg"){QA=false;render();return true}
+  if(D.qa){QA=false;tab=D.qa;render();window.scrollTo(0,0);if(D.qs)setTimeout(()=>{const e=document.getElementById(D.qs);if(e)e.scrollIntoView({behavior:"smooth",block:"center"})},60);return true}
+  if(D.hm){HMSEL=D.hm;render();return true}
+  if(id==="theme2"){document.getElementById("theme").click();setTimeout(render,30);return true}
+  if(id==="out2"){logout();return true}
   if(id==="guideok"){try{localStorage.setItem(GK(),"1")}catch(e){}render();return true}
   if(D.qdel!=null){const i=+D.qdel;if(S.qs[i]){const q=S.qs.splice(i,1)[0];log("Soru kaydı silindi ("+q.s+", "+q.n+")");save();render()}return true}
   if(D.tgsel){TGSEL[D.sid||ME]=D.tgsel;TGMSG="";render();return true}
@@ -774,6 +891,7 @@ async function wakeSync(){try{if(!("wakeLock" in navigator))return;if(S.status==
 function clockTick(){
   const c=document.getElementById("clock");
   if(c&&ROLE==="student"&&view==="s"&&tab==="b"){c.textContent=dur(clockMs());const u=document.getElementById("clocksub");if(u)u.textContent=clockSub()}
+  if(ROLE==="student"&&tab==="b"){const v=cdParts();v.forEach((x,i)=>{const e=document.getElementById("cd"+i);if(e)e.textContent=i?String(x).padStart(2,"0"):x})}
   try{document.title=(S&&S.status==="study")?dur(curNet())+" · Karakış Takip":"Karakış Takip"}catch(e){}
 }
 setInterval(()=>{clockTick();wakeSync()},1000);
