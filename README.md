@@ -51,3 +51,16 @@ Cloudflare (Turnstile, Pages, alan adı, AI Gateway) kurulumu için README-CLOUD
 - Yapay zekâ kotası yalnızca sunucuda artırılır; öğrenci sayaç veya rapor önbelleği yazamaz.
 - Öğrenci: ilk giriş rehberi (veri/yapay zekâ bilgilendirmesi dahil), yanlış girilen soru kaydını silme, 4 saati aşan sayaç uyarısı, "Asistan" sekmesi, çıkışta cihazdaki verinin temizlenmesi.
 - Koç: tüm öğrencilere toplu görev ata, CSV yedek (günlük çalışma, denemeler, görevler), veli özetine son deneme/hedef/görev bilgisi ve WhatsApp/paylaş düğmesi.
+
+
+## YKS Tercih Merkezi
+
+Takip panelindeki **YKS Tercih** bağlantısı `yks-tercih.html` sayfasını açar. Özellikler:
+
+- Üniversite/bölüm/şehir/program kodu araması ve puan türü, şehir, başarı sırası filtreleri
+- CSV katalog içe aktarma; beklenen alanlar `program_kodu`, `universite`, `bolum`, `sehir`, `puan_turu`, `basari_sirasi`, `taban_puan`, `kontenjan`, `yil`
+- En fazla 24 programlık, sırası değiştirilebilir ve CSV olarak dışa aktarılabilir tercih listesi
+- Tercih listesi tarayıcıda kullanıcı kimliğine göre ayrılır; henüz Supabase veritabanına veya cihazlar arası eşitlemeye yazılmaz
+- Resmî katalog dosyası otomatik eklenmez. Güncel ÖSYM/YÖK Atlas verisi kullanılmalı; araç yerleşme garantisi vermez.
+
+Yayın öncesi test: giriş yapmış öğrenci hesabıyla sayfayı aç, CSV içe aktar, filtreleri dene, 24 program sınırını ve dışa aktarılan CSV'yi kontrol et. Gerçek öğrenci verisiyle koç/öğrenci yetki ve RLS testleri ayrıca yapılmalı.
