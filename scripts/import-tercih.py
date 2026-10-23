@@ -39,8 +39,35 @@ def conv(path,lv):
         res.append({"kod":str(r[0]).strip(),"uni":title(name),"il":il,"tur":tur,"b":str(r[4]).strip(),"pt":str(r[5]).strip(),"lv":lv,
                     "k":ival(r[6]),"y":ival(r[7]),"tp":num(r[8]),"mp":num(r[9])})
     return res
+
+def pack(meta,P):
+    """Dosyayı küçültür (v2): tekrarlayan metinler sözlüğe, her program tek satır dizi. İstemci açılışta nesnelere geri çevirir."""
+    yl=[str(y) for y in meta["yillar"][1:]]
+    U,I,T={},{},{}
+    ix=lambda d,k:d.setdefault(k,len(d))
+    r2=lambda v:None if v is None else round(v,2)
+    rows=[]
+    for p in P:
+        h=p.get("h") or {}
+        rows.append([p["kod"],ix(U,p["uni"]),ix(I,p["il"]),ix(T,p["tur"]),p["b"],p["pt"],p["lv"],p["k"],p["y"],r2(p["tp"]),r2(p["mp"]),
+                     [([r2(h[y][0]),h[y][1],h[y][2]] if y in h else None) for y in yl] if h else 0])
+    return {"v":2,"meta":meta,"u":list(U),"il":list(I),"tur":list(T),"p":rows}
+def unpack(d):
+    if d.get("v")!=2: return d
+    yl=[str(y) for y in d["meta"]["yillar"][1:]];P=[]
+    for r in d["p"]:
+        h={y:v for y,v in zip(yl,r[11])} if r[11] else None
+        h={y:v for y,v in h.items() if v} if h else None
+        p={"kod":r[0],"uni":d["u"][r[1]],"il":d["il"][r[2]],"tur":d["tur"][r[3]],"b":r[4],"pt":r[5],"lv":r[6],"k":r[7],"y":r[8],"tp":r[9],"mp":r[10]}
+        if h:p["h"]=h
+        P.append(p)
+    return {"meta":d["meta"],"p":P}
 if __name__=="__main__":
     # python3 scripts/import-tercih.py tercih.json 2026:lisans.xlsx:onlisans.xlsx 2025:lisans.xlsx:onlisans.xlsx
+    if sys.argv[1]=="--repack":  # eski (v1) dosyayı v2'ye çevir: --repack tercih.json
+        d=json.load(open(sys.argv[2],encoding="utf-8"))
+        if d.get("v")!=2: json.dump(pack(d["meta"],d["p"]),open(sys.argv[2],"w",encoding="utf-8"),ensure_ascii=False,separators=(",",":"))
+        sys.exit()
     out=sys.argv[1];yillar=[]
     for a in sys.argv[2:]:
         y,lis,onl=a.split(":",2)[0],a.split(":",2)[1],a.split(":",2)[2];yillar.append((int(y),conv(lis,"L")+conv(onl,"O")))
@@ -51,5 +78,6 @@ if __name__=="__main__":
             p=by.get(q["kod"])
             if p is not None: p.setdefault("h",{})[str(y)]=[q["tp"],q["k"],q["y"]]  # [taban puan, kontenjan, yerleşen]
     kaynak="ÖSYM %s yerleştirme sonuçları (Tablo-3, Tablo-4)"%" ve ".join(str(y) for y,_ in yillar)
-    json.dump({"meta":{"yil":son,"yillar":[y for y,_ in yillar],"kaynak":kaynak,"guncelleme":""},"p":P},open(out,"w",encoding="utf-8"),ensure_ascii=False,separators=(",",":"))
+    meta={"yil":son,"yillar":[y for y,_ in yillar],"kaynak":kaynak,"guncelleme":""}
+    json.dump(pack(meta,P),open(out,"w",encoding="utf-8"),ensure_ascii=False,separators=(",",":"))
     print(len(P),"program yazıldı →",out,"| geçmiş yıl eşleşen:",sum(1 for p in P if p.get("h")))
