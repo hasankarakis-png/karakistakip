@@ -54,6 +54,8 @@ async function puAssign(id){
 }
 function puAct(D,id){
   const sid=sel;if(!sid&&!D.pugo&&!D.puok)return false;
+  if(D.plopen){PLV=sid;render();window.scrollTo(0,0);return true}
+  if(D.plback){PLV=null;render();window.scrollTo(0,0);return true}
   if(D.pugo){puRead(D.pugo);return true}
   if(D.puok){puAssign(D.puok);return true}
   if(D.pucancel){PU[D.pucancel]={};render();return true}
@@ -73,4 +75,9 @@ function weekGrid(x){
   const done=L.filter(t=>t.done).length,past=L.filter(t=>t.task_date<today),pm=past.filter(t=>!t.done).length;
   return `<div class="card"><h2>📊 Haftalık plan takibi</h2>${nav}<div style="overflow-x:auto"><table class="wg"><thead><tr><th></th>${days.map((d,i)=>`<th${d===today?` class="wgt"`:""}>${PDAY[i]}</th>`).join("")}</tr></thead><tbody>${subs.map(s=>`<tr><th>${esc(s)}</th>${days.map(d=>cell(s,d)).join("")}</tr>`).join("")}</tbody></table></div>
   <p class="empty" style="margin:10px 0 0;font-size:14px">${done}/${L.length} görev tamamlandı · %${Math.round(done*100/L.length)}${pm?` · <span style="color:var(--warn)">geçmiş günlerde ${pm} görev yapılmadı</span>`:past.length?" · geçmiş günlerin hepsi tamam 👏":""}</p></div>`;
+}
+
+let PLV=null;
+function planPage(x){
+  return `<button class="back" data-plback="1">← ${esc(x.n)}</button><h1 class="pg" style="margin:6px 0 12px">📄 Program ver</h1>${planUploadCard(x)}${weekGrid(x)}`;
 }

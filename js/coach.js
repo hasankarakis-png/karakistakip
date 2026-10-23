@@ -29,6 +29,7 @@ function classCard(){
 }
 function ui(t){
   const D=t.dataset,id=t.id;
+  if(id==="who"||id==="hdrhome"||D.gohome){PLV=null;if(ROLE==="coach"){sel=null;selDay=null;render()}else{tab="b";QA=false;render()}window.scrollTo(0,0);return true}
   if(D.tab){tab=D.tab;QA=false;render();window.scrollTo(0,0);return true}
   if(id==="phdel"){phDel();return true}
   if(id==="taask"){taAsk();return true}
@@ -59,7 +60,7 @@ function ui(t){
   if(id==="bkadd"){bulkAdd();return true}
   if(id==="pwa"){const p=document.getElementById("pt");window.open("https://wa.me/?text="+encodeURIComponent(p.value),"_blank","noopener");return true}
   if(id==="psh"){const p=document.getElementById("pt");if(navigator.share)navigator.share({text:p.value}).catch(()=>{});else{const c=document.getElementById("cp");if(c)c.click()}return true}
-  if((D.pugo||D.puok||D.pucancel||D.putog!=null||D.wk!=null)&&puAct(D,id))return true;
+  if((D.pugo||D.puok||D.pucancel||D.putog!=null||D.wk!=null||D.plopen||D.plback)&&puAct(D,id))return true;
   if(D.rpt){rptRun(D.rpt);return true}
   if(id==='rptcp'){const e=document.getElementById('rpt');if(e&&navigator.clipboard)navigator.clipboard.writeText(e.value);return true}
   if(id==='rptwa'){const e=document.getElementById('rpt');if(e)window.open('https://wa.me/?text='+encodeURIComponent(e.value),'_blank','noopener');return true}
@@ -78,7 +79,7 @@ function ui(t){
   return false;
 }
 document.addEventListener("click",e=>{
-  const t=e.target.closest("button");if(!t)return;
+  const t=e.target.closest("button,[data-gohome],#who,#hdrhome");if(!t)return;
   rollover();
   if(ui(t))return;
   if(t.id==="t1"){view="s";render()}else if(t.id==="t2"){view="c";sel=null;render()}
@@ -97,7 +98,7 @@ document.addEventListener("click",e=>{
   else if(t.id==="aiping")aiPing();
   else if(t.id==="login")doLogin();
   else if(t.id==="out"){logout()}
-  else if(t.id==="back"){sel=null;selDay=null;render()}
+  else if(t.id==="back"){PLV=null;sel=null;selDay=null;render()}
   else if(t.id==="backhist"){selDay=null;render()}
   else if(t.dataset.per){per=t.dataset.per;render()}
   else if(t.dataset.d){selDay=t.dataset.d===day()?null:t.dataset.d;render();if(selDay&&!DSTATE[sel+"|"+selDay]){const id=sel,d=selDay;loadDay(id,d).then(()=>{if(sel===id&&selDay===d)render()})}}
