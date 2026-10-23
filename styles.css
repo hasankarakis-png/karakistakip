@@ -250,3 +250,8 @@ details.fold>summary{cursor:pointer;font-weight:800;font-size:16px}details.fold 
 .tcl button{border:0;background:var(--cream);color:var(--ink);border-radius:9px;min-width:34px;min-height:34px;cursor:pointer;font-size:15px}
 .pomo{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;padding:10px 12px;border:1px solid var(--line,#ffffff22);border-radius:14px;font-size:14px}
 .pomo b{font:800 18px var(--fd);color:var(--acc)}
+.wg{width:100%;border-collapse:collapse;font-size:13px;text-align:center}
+.wg th,.wg td{padding:7px 4px;border-bottom:1px solid var(--line,#ffffff1a)}
+.wg thead th{color:var(--mut);font-weight:600}.wg thead th.wgt{color:var(--acc)}
+.wg tbody th{text-align:left;font-weight:600;white-space:nowrap;padding-right:8px}
+.wg0{color:var(--mut);opacity:.5}.wgok{color:var(--acc);font-weight:800}.wgbad{color:var(--warn);font-weight:800}.wgw{color:var(--mut)}
