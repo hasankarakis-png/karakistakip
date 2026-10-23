@@ -1,0 +1,75 @@
+/* Cloudflare Turnstile (robot doğrulaması). TS_KEY boşsa kapalıdır; Supabase'de Captcha açılmadan önce anahtar buraya yazılmalıdır. */
+const TS_KEY="0x4AAAAAAFZUyqWLetPIf5hy";let TSTOKEN="",TSID=null,TSLOAD=null;
+function tsScript(){return TSLOAD||(TSLOAD=new Promise((ok,no)=>{const s=document.createElement("script");s.src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";s.async=true;s.onload=ok;s.onerror=no;document.head.appendChild(s)}))}
+async function tsMount(){
+  TSTOKEN="";TSID=null;if(!TS_KEY)return;
+  const el=document.getElementById("ts");if(!el)return;
+  try{await tsScript();if(window.turnstile&&document.getElementById("ts"))TSID=window.turnstile.render("#ts",{sitekey:TS_KEY,callback:t=>{TSTOKEN=t},"expired-callback":()=>{TSTOKEN=""},"error-callback":()=>{TSTOKEN=""},theme:"auto",language:"tr"})}catch(e){el.textContent="Robot doğrulaması yüklenemedi. İnternetini kontrol edip sayfayı yenile."}
+}
+const setLoginMsg=m=>{let e=document.getElementById("lmsg");if(!e){e=document.createElement("p");e.id="lmsg";e.className="empty";e.style.color="var(--warn)";const t=document.getElementById("ts");(t?t.parentNode:document.getElementById("app")).appendChild(e)}e.textContent=m};
+const showLogin=msg=>{document.getElementById("app").innerHTML=loginView(msg);tsMount()};
+async function doLogin(){
+  const u=document.getElementById("lu").value.trim().toLowerCase().replace(/[^a-z0-9._-]/g,""),p=document.getElementById("lp").value;
+  if(!u||!p)return;
+  if(TS_KEY&&!TSTOKEN)return setLoginMsg("Önce robot doğrulamasını tamamla.");
+  const r=await sb.auth.signInWithPassword({email:u+"@takip.karakis.app",password:p,options:TS_KEY?{captchaToken:TSTOKEN}:undefined});
+  if(r.error){
+    const m=String(r.error.message||""),st=r.error.status;
+    showLogin(/captcha/i.test(m)?"Robot doğrulaması başarısız, tekrar dene.":st===429||/rate|too many/i.test(m)?"Çok fazla deneme yapıldı, biraz bekleyip tekrar dene.":(st===400||/invalid/i.test(m))?"Kullanıcı adı veya PIN hatalı.":"Giriş yapılamadı. İnternet bağlantını kontrol et.");return}
+  start();
+}
+async function loadStudent(){
+  const r=await sb.from("daily").select("state").eq("student_id",ME).eq("day",day()).maybeSingle();
+  let loc=null;try{const j=JSON.parse(localStorage.getItem(KEY+ME)||"null");if(j&&j.day===day()&&Array.isArray(j.log))loc=Object.assign(fresh(),j)}catch(e){}
+  if(r.error){
+    // Okuma başarısızsa boş gün kurup sunucudaki kaydın üstüne yazma: cihazdaki yedeği kullan, yoksa durma.
+    if(!loc)throw new Error("Verilerin yüklenemedi. İnternetini kontrol edip sayfayı yenile.");
+    S=loc;setSync("⚠️ Sunucuya ulaşılamadı, cihazdaki kayıt gösteriliyor");
+  }else{
+    const srv=r.data?Object.assign(fresh(),r.data.state):null;
+    // Sunucuya henüz gitmemiş yerel kayıt daha ilerideyse onu koru.
+    S=srv&&loc?(loc.log.length>srv.log.length?loc:srv):(srv||loc||fresh());
+    if(S===loc&&loc.log.length&&(!srv||loc.log.length>srv.log.length))DIRTY=true;
+  }
+  S.day=day();if(DIRTY)save();
+  await pullStudent();await Promise.all([loadExams(ME),loadReport(ME),loadTarget(ME),loadTasks(ME),loadHist(ME)]);
+}
+async function pullStudent(){
+  const [g,n]=await Promise.all([sb.from("goals").select("*").eq("student_id",ME).eq("day",day()).maybeSingle(),sb.from("notes").select("body,created_at").eq("student_id",ME).order("created_at")]);
+  C.goals[ME]=g.data?{day:g.data.day,s:g.data.subj,q:g.data.q,m:g.data.m}:undefined;
+  C.notes[ME]=(n.data||[]).map(r=>({t:Date.parse(r.created_at),x:r.body}));
+}
+async function pullCoach(){
+  const [p,d,g,n,e,w]=await Promise.all([sb.from("profiles").select("id,name").eq("role","student").order("name"),sb.from("daily").select("student_id,day,state,snap").gte("day",dayN(-6)),sb.from("goals").select("*").eq("day",day()),sb.from("notes").select("student_id,body,created_at").order("created_at"),sb.from("exam_results").select("student_id,topics").order("exam_date").order("created_at"),sb.from("weekly_tasks").select("student_id,done").gte("task_date",dayN(-6)).lte("task_date",day())]);
+  STU=p.data||[];ROWS=d.data||[];C.goals={};C.notes={};C.den={};
+  (g.data||[]).forEach(r=>C.goals[r.student_id]={day:r.day,s:r.subj,q:r.q,m:r.m});
+  (n.data||[]).forEach(r=>(C.notes[r.student_id]=C.notes[r.student_id]||[]).push({t:Date.parse(r.created_at),x:r.body}));
+  EXALL=e.data||[];TKALL=w.data||[];
+}
+let rt;
+const refresh=()=>{clearTimeout(rt);rt=setTimeout(async()=>{if(!ME||busy()||PX||AIBUSY||PLANBUSY||CHATBUSY)return;try{if(ROLE==="coach"){await pullCoach();if(sel)await Promise.all([loadHist(sel),loadTasks(sel),loadExams(sel)])}else await Promise.all([pullStudent(),loadTasks(ME)]);render();setSync("Güncellendi "+hm(Date.now()))}catch(e){}},2500)};
+async function start(){
+  const app=document.getElementById("app");
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){showLogin();return}
+  ME=session.user.id;
+  const {data:p,error:pe}=await sb.from("profiles").select("name,role").eq("id",ME).maybeSingle();
+  if(pe){ME=null;showLogin("Sunucuya ulaşılamadı. İnternetini kontrol edip sayfayı yenile.");return}
+  if(!p){await sb.auth.signOut();ME=null;showLogin("Profil bulunamadı, koçuna haber ver.");return}
+  NAME=p.name;ROLE=p.role;view=ROLE==="coach"?"c":"s";
+  document.getElementById("who").textContent=NAME+" · ";document.getElementById("out").hidden=false;document.getElementById("reset").hidden=ROLE==="coach";document.body.classList.toggle("stu",ROLE==="student");document.body.classList.toggle("coach",ROLE==="coach");if(ROLE==="student")setTimeout(()=>{try{tcInit()}catch(e){}},4500);
+  if(ROLE==="coach"){await pullCoach();["daily","goals","notes","exam_results","weekly_tasks"].reduce((ch,t)=>ch.on("postgres_changes",{event:"*",schema:"public",table:t},refresh),sb.channel("koc")).subscribe();setInterval(refresh,60000)}
+  else{await loadStudent();setInterval(refresh,45000);setInterval(()=>{if(rollover()){save();render()}},30000);pushState().then(()=>{if(tab==='h')render()})}
+  render();
+}
+document.addEventListener("input",e=>{if(e.target.dataset&&e.target.dataset.rx!=null||e.target.id==="ext")recalcExam()});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="lp")doLogin();if(e.key==="Enter"&&e.target.id==="cin")chatSend()});
+(function(){
+  const root=document.documentElement,btn=document.getElementById("theme"),tc=document.getElementById("tc");
+  const paint=()=>{const d=root.getAttribute("data-theme")!=="light";btn.textContent=d?"☀ Sabah":"☾ Gece";tc.setAttribute("content",d?"#0B1020":"#C93A20")};
+  btn.addEventListener("click",()=>{const n=root.getAttribute("data-theme")==="light"?"dark":"light";root.setAttribute("data-theme",n);try{localStorage.setItem("karakis-tema",n)}catch(e){}paint()});
+  paint();setTimeout(()=>document.body.classList.remove("intro"),4050);
+})();
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+if(SUPABASE_URL.includes("PROJE-KODU"))document.getElementById("app").innerHTML=`<div class="card"><h2>Kurulum gerekli</h2><p>index.html içindeki SUPABASE_URL ve SUPABASE_KEY değerlerini kendi projenle değiştir (README.md, 4. adım).</p></div>`;
+else start().catch(e=>{showLogin("Bağlantı hatası: "+e.message)});

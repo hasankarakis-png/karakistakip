@@ -12,3 +12,9 @@
 
 /index.html
   Cache-Control: no-cache
+
+/js/*
+  Cache-Control: no-cache
+
+/styles.css
+  Cache-Control: no-cache
