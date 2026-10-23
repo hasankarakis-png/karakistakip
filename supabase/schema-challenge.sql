@@ -55,3 +55,8 @@ begin
 end $$;
 revoke all on function public.challenge_board(bigint) from public, anon;
 grant execute on function public.challenge_board(bigint) to authenticated;
+
+-- SOHBET (uygulandı): tüm erişim fonksiyonlarla; tablo doğrudan okunamaz/yazılamaz.
+-- challenges.chat_open (koç sohbeti kapatabilir), challenge_messages(id, challenge_id, student_id, body<=300, hidden),
+-- challenge_chat(p_id) son 80 mesaj (kısaltılmış isim, koç "Koç"), challenge_post(p_id,p_body) link/telefon/sosyal medya engeli,
+-- 4 sn hız sınırı, günde 120 mesaj; challenge_msg_hide(p_msg) yalnızca koç (mesajı gizler).
