@@ -26,8 +26,8 @@ const shift=(s,k)=>{const[y,m,d]=s.split("-").map(Number);return ymd(new Date(y,
 async function loadTasks(id){try{const {data,error}=await sb.from("weekly_tasks").select("*").eq("student_id",id).gte("task_date",dayN(-7)).lte("task_date",dayN(14)).order("task_date").order("id");if(error)throw error;TK[id]=data||[]}catch(e){TK[id]=TK[id]||[]}}
 async function loadPlan(id){try{const {data}=await sb.from("plan_drafts").select("*").eq("student_id",id).maybeSingle();PD[id]=data||null}catch(e){PD[id]=null}}
 function taskRow(t,coach){
-  const sub=[t.subject,t.amount].filter(Boolean).map(esc).join(" · ")+(t.source==="ai"?" · 🤖 plan":"");
-  return `<div class="tk${t.done?" done":""}">${coach?`<span aria-hidden="true">${t.done?"✅":"⬜"}</span>`:`<button class="tkb" data-tk="${t.id}" aria-pressed="${!!t.done}" aria-label="Görevi tamamlandı olarak işaretle">${t.done?"✓":""}</button>`}<span class="tkt"><b>${esc(t.title)}</b>${sub?`<small>${sub}</small>`:""}</span>${coach?`<button class="chip" data-tkdel="${t.id}" aria-label="Görevi sil">Sil</button>`:""}</div>`;
+  const sub=[t.subject,t.amount].filter(Boolean).map(esc).join(" · ")+(t.source==="ai"?" · 🤖 plan":t.source==="student"?" · ✍️ ben ekledim":"");
+  return `<div class="tk${t.done?" done":""}">${coach?`<span aria-hidden="true">${t.done?"✅":"⬜"}</span>`:`<button class="tkb" data-tk="${t.id}" aria-pressed="${!!t.done}" aria-label="Görevi tamamlandı olarak işaretle">${t.done?"✓":""}</button>`}<span class="tkt"><b>${esc(t.title)}</b>${sub?`<small>${sub}</small>`:""}</span>${coach?`<button class="chip" data-tkdel="${t.id}" aria-label="Görevi sil">Sil</button>`:(t.source==="student"&&!t.done?`<button class="chip" data-selfdel="${t.id}" aria-label="Görevi sil">Sil</button>`:"")}</div>`;
 }
 function taskList(L,coach){
   const by={};L.forEach(t=>(by[t.task_date]=by[t.task_date]||[]).push(t));
@@ -138,7 +138,7 @@ function todayTasks(){
 }
 function tasksTab(){
   const L=(TK[ME]||[]).filter(t=>t.task_date>=dayN(-3)),d=L.filter(t=>t.done).length;
-  return overdueCard(ME,false)+`<div class="card"><h2>Haftalık görevlerim</h2>${L.length?`<p class="empty" style="margin:0 0 8px">${d}/${L.length} tamamlandı</p><div class="bar"><i style="width:${Math.round(d/L.length*100)}%"></i></div>${taskList(L,false)}`:`<p class="empty">Koçun henüz görev atamadı.</p>`}</div>${focusCard()}`;
+  return overdueCard(ME,false)+`<div class="card"><h2>Haftalık görevlerim</h2>${L.length?`<p class="empty" style="margin:0 0 8px">${d}/${L.length} tamamlandı</p><div class="bar"><i style="width:${Math.round(d/L.length*100)}%"></i></div>${taskList(L,false)}`:`<p class="empty">Koçun henüz görev atamadı.</p>`}</div>${weekGrid({id:ME})}${boostCard(ME,false)}${focusCard()}`;
 }
 function chatTab(){
   return `<div class="card"><h2>Yapay zekâ asistanın</h2><p class="empty" style="margin:0 0 10px;font-size:14px">Çalışma planı, deneme ve motivasyon konusunda sor. Deneme verilerine bakarak cevap verir. Resmî karar yerine geçmez; önemli konularda koçuna danış.</p>

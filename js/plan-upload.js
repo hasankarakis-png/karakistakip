@@ -16,7 +16,7 @@ function planUploadCard(x){
     ${dr.notlar.length?`<p class="empty" style="font-size:13px;margin:10px 0 0">📝 Programdaki notlar (göreve çevrilmedi): ${dr.notlar.map(esc).join(" · ")}</p>`:""}
     <div class="row"><button class="btn" style="padding:11px 16px" data-puok="${x.id}"${P.busy?" disabled":""}>${sel} görevi ata</button><button class="chip" data-pucancel="${x.id}">Vazgeç</button></div></div>`;
   }
-  return `<div class="card"><h2>📄 Program PDF'i yükle</h2>${body}</div>`;
+  return `<div class="card" id="detail-plan"><h2>📄 Program PDF'i yükle</h2>${body}</div>${boostCard(x.id,true)}`;
 }
 async function puRead(id){
   const f=(document.getElementById("puf")||{}).files&&document.getElementById("puf").files[0],P=PU[id]=PU[id]||{};
@@ -54,13 +54,16 @@ async function puAssign(id){
 }
 function puAct(D,id){
   if(D.plpick){const id=(document.getElementById("plsel")||{}).value;if(!id)return true;sel=id;selDay=null;PLV=id;render();window.scrollTo(0,0);Promise.all([loadHist(id),loadExams(id),loadTasks(id),loadTarget(id)]).then(()=>{if(sel===id)render()});return true}
-  const sid=sel;if(!sid&&!D.pugo&&!D.puok)return false;
+  const sid=sel||ME;if(!sid&&!D.pugo&&!D.puok)return false;
   if(D.plopen){PLV=sid;render();window.scrollTo(0,0);return true}
   if(D.plback){PLV=null;render();window.scrollTo(0,0);return true}
   if(D.pugo){puRead(D.pugo);return true}
   if(D.puok){puAssign(D.puok);return true}
   if(D.pucancel){PU[D.pucancel]={};render();return true}
   if(D.putog!=null){const P=PU[sid];if(P&&P.draft){puSync(sid);const r=P.draft.rows[+D.putog];if(r)r.on=!r.on;const y=window.scrollY;render();window.scrollTo(0,y)}return true}
+  if(D.boost){boostGo(D.boost);return true}
+  if(D.bmadd){boostManual(D.bmadd);return true}
+  if(D.selfdel){selfDel(D.selfdel);return true}
   if(D.wk!=null){WK[sid]=(WK[sid]||0)+(+D.wk);render();return true}
   return false;
 }
@@ -85,4 +88,43 @@ function planPage(x){
 
 function planPickCard(all){
   return `<div class="card" style="border-color:var(--acc)"><h2>📄 Program ver</h2><p class="empty" style="margin:0 0 8px;font-size:14px">Öğrenci seç, hazırladığın haftalık program PDF'ini yükle. Öğrenci yalnızca hangi gün ne yapacağını görür.</p><div class="row" style="margin-top:0"><select id="plsel" style="flex:1;min-width:0">${all.slice().sort((a,b)=>a.n.localeCompare(b.n,"tr")).map(x=>`<option value="${x.id}">${esc(x.n)}</option>`).join("")}</select><button class="btn" style="padding:11px 16px" data-plpick="1">Devam</button></div></div>`;
+}
+
+/* Deneme analizinden öncelikli konuları ödeve ekle (koç: doğrudan; öğrenci: kendi ödevi) */
+const BO={};
+function boostCard(id,coach){
+  const o=BO[id]||(BO[id]={n:3,d:coach?day():dayN(1),msg:""});
+  const mine=!coach;
+  return `<div class="card"><h2>${mine?"➕ Ödevlerimi artır":"➕ Deneme analizinden ödev ekle"}</h2><p class="empty" style="margin:0 0 8px;font-size:14px">${mine?"Son denemelerinde tekrar eden yanlışlarına göre en önemli konuları ödevine ekleyebilirsin.":"Öğrencinin tekrar eden yanlış konularından önem sırasına göre ekler."}</p>
+  <div class="row" style="margin-top:0"><label>Kaç konu<select id="bon">${[1,2,3,4,5].map(i=>`<option${i===o.n?" selected":""}>${i}</option>`).join("")}</select></label><label>Tarih<input id="bod" type="date" value="${o.d}" min="${day()}" style="width:150px"></label><button class="btn" style="padding:11px 16px" data-boost="${id}">Önerilenleri ekle</button></div>
+  ${mine?`<h2 style="margin-top:14px;font-size:16px">Kendim ekleyeyim</h2><div class="row" style="margin-top:0"><label>Ders<select id="bms"><option value="">Ders</option>${SUBJ.map(s=>`<option>${s}</option>`).join("")}</select></label><label>Konu<input id="bmt" type="text" maxlength="100" placeholder="ör. Üslü sayılar" style="width:170px"></label><label>Miktar<input id="bma" type="text" maxlength="60" placeholder="30 soru" style="width:100px"></label><button class="chip" data-bmadd="${id}">Ekle</button></div>`:""}
+  ${o.msg?`<p class="empty" style="margin:8px 0 0;font-size:14px">${esc(o.msg)}</p>`:""}</div>`;
+}
+function boostSugg(id,n,date){
+  const done=id===ME&&KTS.done?KTS.done:(KTC[id]||new Set()),have=new Set((TK[id]||[]).filter(t=>t.task_date===date).map(t=>(t.subject||"")+"|"+t.title));
+  return tekrarList(id,done).filter(o=>!have.has(o.ders.slice(0,40)+"|"+o.konu.slice(0,120))).slice(0,n).map(o=>({d:date,title:o.konu.slice(0,120),subject:o.ders.slice(0,40),amount:(o.mt&&o.mt.done?"30 soru":"konu tekrarı + 30 soru")}));
+}
+async function boostRun(id,rows,okMsg){
+  const o=BO[id]||(BO[id]={});let err=null;
+  if(ROLE==="student"){const r=await sb.rpc("task_self_add",{p_rows:rows});if(r.error)err=r.error.message}
+  else{const r=await dbw(sb.from("weekly_tasks").insert(rows.map(x=>({student_id:id,task_date:x.d,title:x.title,subject:x.subject,amount:x.amount,source:"coach",created_by:ME}))));if(r&&r.error)err=r.error.message}
+  o.msg=err?"Eklenemedi: "+err:okMsg;await loadTasks(id);render();
+}
+async function boostGo(id){
+  const o=BO[id]||(BO[id]={n:3,msg:""});o.n=+(document.getElementById("bon")||{}).value||3;o.d=(document.getElementById("bod")||{}).value||day();
+  if(o.d<day()){o.msg="Geçmiş bir tarih seçilemez.";render();return}
+  if(ROLE==="coach"&&!(id in KTC)){o.msg="Konu takibi yükleniyor, bir saniye sonra tekrar bas.";render();return}
+  const rows=boostSugg(id,o.n,o.d);
+  if(!rows.length){o.msg="Önerilecek konu bulunamadı. Yanlış konu verisi olan en az 2 deneme gerekir ya da bu konular o güne zaten eklenmiş.";render();return}
+  await boostRun(id,rows,rows.length+" konu eklendi: "+rows.map(r=>r.title).join(", "));
+}
+async function boostManual(id){
+  const g=i=>(document.getElementById(i)||{}).value||"",o=BO[id]||(BO[id]={n:3,msg:""});
+  o.d=g("bod")||day();const title=g("bmt").trim();
+  if(!title){o.msg="Konu adını yaz.";render();return}
+  await boostRun(id,[{d:o.d,title,subject:g("bms"),amount:g("bma").trim()}],"Eklendi: "+title);
+}
+async function selfDel(id){
+  const r=await sb.rpc("task_self_del",{p_id:+id});if(r.error){alert("Silinemedi: "+r.error.message);return}
+  await loadTasks(ME);render();
 }
