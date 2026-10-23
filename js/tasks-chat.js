@@ -33,6 +33,18 @@ function taskList(L,coach){
   const by={};L.forEach(t=>(by[t.task_date]=by[t.task_date]||[]).push(t));
   return Object.keys(by).sort().map(d=>`<div class="tkd">${d===day()?"Bugün":fd(d)}</div>`+by[d].map(t=>taskRow(t,coach)).join("")).join("");
 }
+
+/* geciken görevler */
+const overdue=id=>(TK[id]||[]).filter(t=>t.task_date<day()&&!t.done);
+function overdueCard(id,coach){
+  const L=overdue(id);if(!L.length)return"";
+  return `<div class="card" style="border-color:var(--warn)"><h2>⏰ Geciken görevler (${L.length})</h2>${taskList(L,coach)}<div class="row"><button class="btn" style="padding:11px 16px" data-rs="${dayN(1)}" data-rsid="${id}">Yarına kaydır</button><button class="chip" data-rs="${day()}" data-rsid="${id}">Bugüne al</button></div></div>`;
+}
+async function reschedule(id,date){
+  const ids=overdue(id).map(t=>t.id);if(!ids.length)return;
+  try{const r=await sb.rpc("task_reschedule",{p_ids:ids,p_date:date});if(r.error)throw r.error}catch(e){alert("Kaydırılamadı: "+(e&&e.message||e));return}
+  await loadTasks(id);render();
+}
 async function togTask(id){
   const t=(TK[ME]||[]).find(x=>String(x.id)===String(id));if(!t)return;
   t.done=!t.done;t.done_at=t.done?new Date().toISOString():null;render();
@@ -47,7 +59,7 @@ async function addTask(){
 function taskCard(x){
   const L=(TK[x.id]||[]).filter(t=>t.task_date>=dayN(-3)),d=L.filter(t=>t.done).length,p=PD[x.id];
   const plan=p&&p.content?`<div class="card" style="border-color:var(--acc);margin:12px 0 0"><h2>🤖 Plan taslağı</h2><p class="empty" style="margin:0 0 6px">${esc(p.content.ozet||"")}</p>${p.content.notlar?`<p class="empty" style="margin:0 0 6px;font-size:14px">${esc(p.content.notlar)}</p>`:""}${taskList((p.content.gorevler||[]).map(g=>({...g,id:0,done:false,source:"ai"})),true).replace(/<button[^>]*data-tkdel[^>]*>.*?<\/button>/g,"")}<p class="empty" style="font-size:13px;margin:8px 0">Taslak öğrenciye henüz görünmez. İncele, uygunsa onayla.</p><div class="row"><button class="btn" style="padding:11px 16px" id="planok">Onayla ve öğrenciye ata</button><button class="chip" id="plandel">Taslağı sil</button></div></div>`:"";
-  return `<div class="card"><h2>Haftalık görevler</h2>${L.length?`<p class="empty" style="margin:0 0 8px">${d}/${L.length} tamamlandı · %${Math.round(d/L.length*100)}</p><div class="bar"><i style="width:${Math.round(d/L.length*100)}%"></i></div>${taskList(L,true)}`:`<p class="empty">Bu öğrenciye atanmış görev yok.</p>`}
+  return overdueCard(x.id,true)+`<div class="card"><h2>Haftalık görevler</h2>${L.length?`<p class="empty" style="margin:0 0 8px">${d}/${L.length} tamamlandı · %${Math.round(d/L.length*100)}</p><div class="bar"><i style="width:${Math.round(d/L.length*100)}%"></i></div>${taskList(L,true)}`:`<p class="empty">Bu öğrenciye atanmış görev yok.</p>`}
   <div class="row"><label>Tarih<input id="tkd" type="date" value="${day()}" style="width:150px"></label><label>Ders<select id="tks"><option value="">Ders</option>${SUBJ.map(s=>`<option>${s}</option>`).join("")}</select></label><label>Görev<input id="tkt" type="text" maxlength="120" style="width:170px"></label><label>Miktar<input id="tka" type="text" maxlength="60" placeholder="60 soru" style="width:100px"></label><button class="btn" style="padding:11px 16px" id="tkadd">Ekle</button></div>
   <div class="row"><button class="chip" id="planrun"${PLANBUSY?" disabled":""}>🤖 Yapay zekâyla haftalık plan taslağı üret</button></div>
   <p class="empty" style="font-size:14px;margin:6px 0 0">${PLANBUSY===x.id?"Plan hazırlanıyor, yarım dakika sürebilir…":esc(PLANMSG)}</p>${plan}</div>`;
@@ -81,10 +93,16 @@ function streakCard(){const s=streakInfo();return `<div class="card"><div class=
 function badgeCard(){const s=streakInfo(),B=badgeList();return `<div class="card"><h2>Seri ve rozetler</h2><p class="empty" style="margin:0 0 10px">🔥 ${s.cur} gün seri · en uzun ${s.best} gün · ${B.filter(b=>b[2]).length}/${B.length} rozet</p><div class="bdg">${B.map(b=>`<div class="bd${b[2]?" on":""}"><b>${b[0]}</b>${b[1]}</div>`).join("")}</div></div>`}
 const FZP=()=>{try{return +localStorage.getItem("karakis-odak-"+day())||0}catch(e){return 0}};
 const fzTxt=()=>{const s=Math.max(0,Math.ceil((FZ.end-Date.now())/1000));return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")};
+const fzLbl=()=>FZ.mode==="w"?"Odaklan, telefonu bırak.":FZ.mode==="l"?"Uzun mola (15 dk) — dinlen.":"Kısa mola (5 dk).";
+const fzStart=m=>{FZ={mode:m,end:Date.now()+(m==="w"?25:m==="l"?15:5)*60000};render();wakeSync()};
 function focusCard(){
-  return `<div class="card"><h2>Odak zamanlayıcı</h2><div class="big" id="fz" style="font-size:44px;text-align:center">${FZ?fzTxt():"25:00"}</div><p class="empty" style="text-align:center;margin:4px 0 10px">${FZ?(FZ.mode==="w"?"Odaklan, telefonu bırak.":"Mola zamanı."):"Bugün tamamlanan odak: "+FZP()}</p><div class="row" style="justify-content:center">${FZ?`<button class="chip" data-fz="stop">Durdur</button>`:`<button class="btn" style="padding:11px 16px" data-fz="w">25 dk odak</button><button class="chip" data-fz="r">5 dk mola</button>`}</div></div>`;
+  return `<div class="card"><h2>🍅 Pomodoro</h2><div class="big" id="fz" style="font-size:44px;text-align:center">${FZ?fzTxt():"25:00"}</div><p class="empty" style="text-align:center;margin:4px 0 10px">${FZ?fzLbl():"25 dk odak, 5 dk mola. Otomatik devam eder. Bugün tamamlanan: "+FZP()+" tur"}</p><div class="row" style="justify-content:center">${FZ?`<button class="chip" data-fz="stop">Durdur</button>`:`<button class="btn" style="padding:11px 16px" data-fz="w">25 dk odak</button><button class="chip" data-fz="b">5 dk mola</button>`}</div></div>`;
 }
-setInterval(()=>{if(!FZ)return;if(Date.now()>=FZ.end){const w=FZ.mode==="w";FZ=null;if(w){try{localStorage.setItem("karakis-odak-"+day(),FZP()+1)}catch(x){}}try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(x){}render();return}const e=document.getElementById("fz");if(e)e.textContent=fzTxt()},1000);
+function pomoChip(){
+  if(ROLE!=="student")return"";
+  return `<div class="pomo">${FZ?`<span>🍅 <b id="fzh">${fzTxt()}</b> · ${FZ.mode==="w"?"odak":"mola"}</span><button class="chip" data-fz="stop">Durdur</button>`:`<span>🍅 Pomodoro · bugün ${FZP()} tur</span><button class="chip" data-fz="w">25 dk odak başlat</button>`}</div>`;
+}
+setInterval(()=>{if(!FZ)return;if(Date.now()>=FZ.end){const w=FZ.mode==="w";let n=0;if(w){try{n=FZP()+1;localStorage.setItem("karakis-odak-"+day(),n)}catch(x){}}FZ=w?{mode:n%4===0?"l":"b",end:Date.now()+(n%4===0?15:5)*60000}:null;try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(x){}try{if("Notification" in window&&Notification.permission==="granted")new Notification(w?"Odak bitti 🎉":"Mola bitti",{body:w?"Mola zamanı.":"Yeni tura hazır mısın?"})}catch(x){}render();return}const t=fzTxt();["fz","fzh"].forEach(i=>{const e=document.getElementById(i);if(e)e.textContent=t})},1000);
 
 /* bildirim (web push) */
 const VAPID_PUB="BLxGZLx6y3dW1FClX4OxwHrj1c15zQ5kTn_uWWxSkDOKRKheCIR1M_oCtyvIvryHC6hmnDRsKj1lrACBTmdnK90";let PUSHON=null,PUSHMSG="";
@@ -120,7 +138,7 @@ function todayTasks(){
 }
 function tasksTab(){
   const L=(TK[ME]||[]).filter(t=>t.task_date>=dayN(-3)),d=L.filter(t=>t.done).length;
-  return `<div class="card"><h2>Haftalık görevlerim</h2>${L.length?`<p class="empty" style="margin:0 0 8px">${d}/${L.length} tamamlandı</p><div class="bar"><i style="width:${Math.round(d/L.length*100)}%"></i></div>${taskList(L,false)}`:`<p class="empty">Koçun henüz görev atamadı.</p>`}</div>${focusCard()}`;
+  return overdueCard(ME,false)+`<div class="card"><h2>Haftalık görevlerim</h2>${L.length?`<p class="empty" style="margin:0 0 8px">${d}/${L.length} tamamlandı</p><div class="bar"><i style="width:${Math.round(d/L.length*100)}%"></i></div>${taskList(L,false)}`:`<p class="empty">Koçun henüz görev atamadı.</p>`}</div>${focusCard()}`;
 }
 function chatTab(){
   return `<div class="card"><h2>Yapay zekâ asistanın</h2><p class="empty" style="margin:0 0 10px;font-size:14px">Çalışma planı, deneme ve motivasyon konusunda sor. Deneme verilerine bakarak cevap verir. Resmî karar yerine geçmez; önemli konularda koçuna danış.</p>

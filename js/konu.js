@@ -34,7 +34,7 @@ function ktLoad(){
   KTS.done=new Set(Array.isArray(loc)?loc:[]);
   Promise.resolve(sb.from("topic_progress").select("done").eq("student_id",ME).maybeSingle()).then(r=>{
     if(r&&r.data&&Array.isArray(r.data.done)){r.data.done.forEach(k=>KTS.done.add(k));try{localStorage.setItem(ktKey(),JSON.stringify([...KTS.done]))}catch(e){}}
-    KTS.st="ok";if(tab==="c")render();
+    KTS.st="ok";if(tab==="c"||tab==="b")render();
   },()=>{KTS.st="ok"});
 }
 function ktSave(){
@@ -43,6 +43,32 @@ function ktSave(){
   KTS.timer=setTimeout(()=>{dbw(sb.from("topic_progress").upsert({student_id:ME,done:a,updated_at:new Date().toISOString()},{onConflict:"student_id"}))},700);
 }
 function ktCount(ex,di){const d=KT[ex][di];let n=0;d.t.forEach((_,ti)=>{if(KTS.done.has(ktId(ex,di,ti)))n++});return [n,d.t.length]}
+
+/* Tekrar et: tekrar eden yanlış konular + konu takibi eşleşmesi */
+const ktN=x=>String(x||"").toLocaleLowerCase("tr").replace(/[^a-zçğıöşü0-9 ]/g," ").replace(/\s+/g," ").trim();
+function ktMatch(type,ders,konu,done){
+  const E=KT[type];if(!E)return null;const dn=ktN(ders),kn=ktN(konu);if(!kn)return null;
+  const wk=kn.split(" ").filter(w=>w.length>=5);
+  for(let di=0;di<E.length;di++){
+    const dd=ktN(E[di].n);if(!(dd.includes(dn)||dn.includes(dd)))continue;
+    for(let ti=0;ti<E[di].t.length;ti++){
+      const tn=ktN(E[di].t[ti]);
+      if(tn.includes(kn)||kn.includes(tn)||wk.some(w=>tn.includes(w.slice(0,Math.max(5,w.length-2))))){return {id:ktId(type,di,ti),name:E[di].t[ti],done:done.has(ktId(type,di,ti))}}
+    }
+  }
+  return null;
+}
+function tekrarList(id,done){
+  const ex=(EX[id]||[]).filter(e=>Array.isArray(e.topics)&&e.topics.length).slice().sort((a,b)=>String(a.exam_date||"").localeCompare(String(b.exam_date||""))).slice(-5);
+  const m={};
+  ex.forEach((e,i)=>e.topics.forEach(t=>{if(!t||!t.konu||num(t.yanlis)<=0)return;const k=(t.ders||"")+"|"+ktN(t.konu),o=m[k]=m[k]||{ders:t.ders||"",konu:t.konu,type:e.exam_type,n:0,y:0,last:i};o.n++;o.y+=num(t.yanlis);o.last=i}));
+  return Object.values(m).filter(o=>o.n>=2||o.y>=3).map(o=>({...o,score:o.n*3+o.y+o.last*0.1,mt:ktMatch(o.type,o.ders,o.konu,done)})).sort((a,b)=>b.score-a.score).slice(0,6);
+}
+function tekrarCard(id,done,lim){
+  const L=tekrarList(id,done||new Set()).slice(0,lim||6);
+  if(!L.length)return"";
+  return `<div class="card"><h2>🔁 Öncelikli tekrar listesi</h2><p class="empty" style="margin:0 0 8px;font-size:14px">Son denemelerde tekrar eden yanlışlar</p>${L.map(o=>`<div class="subj"><span><b>${esc(o.ders)}</b> · ${esc(o.konu)}<br><small style="color:var(--mut)">${o.n} denemede yanlış · toplam ${o.y} yanlış${o.mt?(o.mt.done?" · konuyu bitirmişsin → soru çöz":" · konu takibinde işaretli değil → önce konuyu çalış"):""}</small></span><span>${o.mt?(o.mt.done?"✅":"📖"):""}</span></div>`).join("")}</div>`;
+}
 function konuTab(){
   ktLoad();if(!KTS.done)return `<p class="empty">Yükleniyor…</p>`;
   const ex=KTS.exam,di=KTS.ders;
@@ -53,7 +79,7 @@ function konuTab(){
     ${d.t.map((t,ti)=>{const id=ktId(ex,di,ti),on=KTS.done.has(id);return `<button class="ktt" data-ktt="${id}" aria-pressed="${on}"><span class="ktck">${on?"✓":""}</span><span>${esc(t)}</span></button>`}).join("")}`;
   }
   let T=0,D=0;KT[ex].forEach((_,i)=>{const [n,m]=ktCount(ex,i);D+=n;T+=m});
-  return `<h1 class="pg">Konu Takibi</h1>
+  return `<h1 class="pg">Konu Takibi</h1>${tekrarCard(ME,KTS.done)}
   <div class="ktseg">${["TYT","AYT"].map(e=>`<button data-kte="${e}" aria-pressed="${ex===e}">${e}</button>`).join("")}</div>
   <p class="sub2" style="margin:10px 2px">${ex} genel ilerleme: <b style="color:var(--ink)">${D}/${T} konu · %${T?Math.round(D*100/T):0}</b></p>
   ${KT[ex].map((d,i)=>{const [n,m]=ktCount(ex,i),p=m?Math.round(n*100/m):0;return `<button class="ktd" data-ktd="${i}"><b>${esc(d.n)}</b><span class="ktpr"><i style="width:${p}%"></i></span><em>%${p}</em><i aria-hidden="true">›</i></button>`}).join("")}`;

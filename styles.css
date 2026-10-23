@@ -248,3 +248,5 @@ details.fold>summary{cursor:pointer;font-weight:800;font-size:16px}details.fold 
 :root[data-theme="light"] .bd.g{background:#dff3d3;color:#2c6b0f}:root[data-theme="light"] .bd.r{background:#fde3d3;color:#9a4210}
 .tcl{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:14px}.tcl:last-child{border:0}.tcl b{width:26px;color:var(--acc)}.tcl span{flex:1;min-width:0}
 .tcl button{border:0;background:var(--cream);color:var(--ink);border-radius:9px;min-width:34px;min-height:34px;cursor:pointer;font-size:15px}
+.pomo{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;padding:10px 12px;border:1px solid var(--line,#ffffff22);border-radius:14px;font-size:14px}
+.pomo b{font:800 18px var(--fd);color:var(--acc)}

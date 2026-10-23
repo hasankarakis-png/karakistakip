@@ -82,8 +82,8 @@ function todayTab(){
   return `${guideCard()}${live&&curNet()>4*3600e3?`<div class="card" style="border-color:var(--warn)"><p style="margin:0">⏰ Sayaç 4 saatten uzun süredir açık. Çalışmayı bitirdiysen <b>Çalışmayı noktala</b>'ya bas, yoksa süren fazla görünür.</p></div>`:""}
   ${quoteCard()}<section class="hero"><div class="st"><span class="dot ${DOT[st]}"></span>${LBL[st]}</div>
   <div class="big" id="clock">${dur(clockMs())}</div><div class="sub" id="clocksub">${clockSub()}</div>
-  ${st!=="closed"?`<div class="acts">${b}</div>`:""}</section>
-  ${picker}${tasksRing()}${countdownCard()}${chHomeCard()}<button class="card tr" data-tab="c" aria-label="Konu takibini aç"><span class="rg" style="--p:0"><span style="font-size:30px">📚</span></span><span><h2>Konu Takibi</h2><p style="font-size:15px">Bitirdiğin konuları işaretle</p></span></button><button class="card tr" data-tab="t" aria-label="Tercih robotunu aç"><span class="rg" style="--p:0"><span style="font-size:30px">🎓</span></span><span><h2>Tercih Robotu</h2><p style="font-size:15px">Sıranla bölümleri karşılaştır</p></span></button>
+  ${st!=="closed"?`<div class="acts">${b}</div>`:""}${live?pomoChip():""}</section>
+  ${picker}${overdueCard(ME,false)}${tasksRing()}${(ktLoad(),tekrarCard(ME,KTS.done,3))}${countdownCard()}${chHomeCard()}<button class="card tr" data-tab="c" aria-label="Konu takibini aç"><span class="rg" style="--p:0"><span style="font-size:30px">📚</span></span><span><h2>Konu Takibi</h2><p style="font-size:15px">Bitirdiğin konuları işaretle</p></span></button><button class="card tr" data-tab="t" aria-label="Tercih robotunu aç"><span class="rg" style="--p:0"><span style="font-size:30px">🎓</span></span><span><h2>Tercih Robotu</h2><p style="font-size:15px">Sıranla bölümleri karşılaştır</p></span></button>
   <div class="stats"><div class="stat"><b>${solvedT}</b><span>çözülen soru</span></div><div class="stat"><b>${solvedT?"%"+acc:"–"}</b><span>doğruluk</span></div><div class="stat"><b>${S.prog?"✓":"–"}</b><span>program</span></div></div>
   ${goalRoad(ME)}${coachForMe()}${streakCard()}${(TK[ME]||[]).some(t=>t.task_date===day())?todayTasks():""}
   ${qa?`<div class="card" id="qcard"><h2>Soru girişi</h2><div class="row">
@@ -168,6 +168,27 @@ function denemeCard(x){
 function thCard(){
   const t=C.th,i=(id,l,v,mn,mx)=>`<label>${l}<input id="${id}" type="number" min="${mn}" max="${mx}" value="${v}" inputmode="numeric"></label>`;
   return `<details class="card"><summary style="cursor:pointer;font-weight:700">⚙️ Uyarı eşikleri</summary><div class="row">${i("th1","Kayıtsız gün",t.gap,1,5)}${i("th2","Süre düşüşü (%)",t.drop,10,95)}${i("th3","Düşük puan ≤",t.mood,1,4)}${i("th4","Uyku (sa) altı",t.sleep,3,9)}<button class="btn" style="padding:11px 16px" id="savth">Kaydet</button></div><div class="row"><button class="chip" id="aiping">Yapay zekâ bağlantısını test et</button></div><p class="empty" id="aipo" style="font-size:13px;margin:6px 0 0"></p></details>`;
+}
+
+/* Haftalık rapor taslağı (yapay zekâ, yalnızca koç) */
+const RPT={};
+function rptFacts(x){
+  const h=x.hist,n=h.length||1,sum=k=>h.reduce((a,d)=>a+(d[k]||0),0),ex=(EX[x.id]||[]),E=ex[ex.length-1],P=ex[ex.length-2],tg=tgPick(x.id),note=(C.notes[x.id]||[]).slice(-1)[0];
+  const tk=(TK[x.id]||[]).filter(t=>t.task_date>=dayN(-6)&&t.task_date<=day());
+  return {gun:n,ort_dk:Math.round(sum("m")/n),calisilan:h.filter(d=>d.m>0).length,soru:sum("q"),prog:sum("prog"),gorev_ok:tk.filter(t=>t.done).length,gorev_top:tk.length,geciken:overdue(x.id).length,
+    son_deneme:E?(E.exam_name||E.exam_type||""):"",son_net:E&&E.total_net!=null?+E.total_net:null,onceki_net:P&&P.total_net!=null?+P.total_net:null,
+    hedef:tg?[tg.university,tg.department].filter(Boolean).join(" – "):"",tekrar:tekrarList(x.id,new Set()).slice(0,5).map(o=>o.ders+" · "+o.konu+" ("+o.n+" denemede yanlış)"),not:note?note.x:""};
+}
+async function rptRun(id){
+  const x=roster().find(r=>r.id===id);if(!x||(RPT[id]&&RPT[id].busy))return;
+  RPT[id]={busy:true};render();
+  const r=await callFn("weekly-report",{ad:(STU.find(p=>p.id===id)||{}).name||x.n,veri:rptFacts(x)});
+  RPT[id]=r.veli?{res:r}:{err:r.error||"Rapor hazırlanamadı."};render();
+}
+function reportCard(x){
+  const R=RPT[x.id]||{};
+  const out=R.res?`<div class="card" style="border-color:var(--acc);margin:12px 0 0"><h2>Koç değerlendirmesi</h2><p class="empty" style="margin:0 0 8px">${esc(R.res.degerlendirme||"")}</p>${(R.res.oneriler||[]).map(o=>`<div class="subj"><span>• ${esc(o)}</span></div>`).join("")}<h2 style="margin-top:14px">Veli mesajı taslağı</h2><textarea id="rpt" style="min-height:170px">${esc(R.res.veli)}</textarea><div class="row"><button class="btn" style="padding:11px 16px" id="rptcp">Kopyala</button><button class="chip" id="rptwa">WhatsApp'ta gönder</button></div><p class="empty" style="font-size:13px;margin:8px 0 0">Bu bir taslaktır; göndermeden önce oku ve düzenle.</p></div>`:"";
+  return `<div class="card"><h2>🤖 Haftalık rapor taslağı</h2><p class="empty" style="margin:0 0 8px;font-size:14px">Son 7 günün verisinden koç değerlendirmesi ve veliye gidecek mesaj taslağı hazırlar.</p><div class="row" style="margin-top:0"><button class="btn" style="padding:11px 16px" data-rpt="${x.id}"${R.busy?" disabled":""}>${R.busy?"Hazırlanıyor…":"Taslak hazırla"}</button></div>${R.err?`<p style="color:var(--warn);margin:8px 0 0">${esc(R.err)}</p>`:""}${out}</div>`;
 }
 function parentCard(x){
   const h=x.hist,n=h.length,sum=k=>h.reduce((a,d)=>a+(d[k]||0),0),am=Math.round(sum("m")/n),sl=h.filter(d=>d.sleep>0),note=(C.notes[x.id]||[]).slice(-1)[0];

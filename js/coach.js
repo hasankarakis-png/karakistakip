@@ -59,11 +59,15 @@ function ui(t){
   if(id==="bkadd"){bulkAdd();return true}
   if(id==="pwa"){const p=document.getElementById("pt");window.open("https://wa.me/?text="+encodeURIComponent(p.value),"_blank","noopener");return true}
   if(id==="psh"){const p=document.getElementById("pt");if(navigator.share)navigator.share({text:p.value}).catch(()=>{});else{const c=document.getElementById("cp");if(c)c.click()}return true}
+  if(D.rpt){rptRun(D.rpt);return true}
+  if(id==='rptcp'){const e=document.getElementById('rpt');if(e&&navigator.clipboard)navigator.clipboard.writeText(e.value);return true}
+  if(id==='rptwa'){const e=document.getElementById('rpt');if(e)window.open('https://wa.me/?text='+encodeURIComponent(e.value),'_blank','noopener');return true}
+  if(D.rs){reschedule(D.rsid||ME,D.rs);return true}
   if(D.tk){togTask(D.tk);return true}
   if(D.tkdel){delTask(D.tkdel);return true}
   if(D.exdel){exDel(D.exdel);return true}
   if(D.exedit){exEdit(D.exedit);return true}
-  if(D.fz){FZ=D.fz==="stop"?null:{mode:D.fz,end:Date.now()+(D.fz==="w"?25:5)*60000};render();return true}
+  if(D.fz){if(D.fz==="stop"){FZ=null;render()}else fzStart(D.fz);return true}
   const m={pushon:pushEnable,pushoff:pushDisable,csend:chatSend,tkadd:addTask,planrun:planRun,planok:planOk,plandel:planDel,adddn:addExam};
   if(m[id]){m[id]();return true}
   if(id==="admadd"){admRun("add");return true}
@@ -107,12 +111,12 @@ const liveNow=()=>S.status==="study"||S.status==="break";
 const clockMs=()=>liveNow()?curNet():total();
 const clockSub=()=>liveNow()?`${S.status==="break"?"☕ Mola · süre durdu":"⏱ Bu dersin süresi"} · Bugün toplam ${short(total())}`:"Bugünkü net çalışma süresi";
 let WL=null;
-async function wakeSync(){try{if(!("wakeLock" in navigator))return;if(S.status==="study"&&document.visibilityState==="visible"){if(!WL){WL=await navigator.wakeLock.request("screen");WL.addEventListener("release",()=>{WL=null})}}else if(WL){await WL.release();WL=null}}catch(e){WL=null}}
+async function wakeSync(){try{if(!("wakeLock" in navigator))return;if((S.status==="study"||FZ)&&document.visibilityState==="visible"){if(!WL){WL=await navigator.wakeLock.request("screen");WL.addEventListener("release",()=>{WL=null})}}else if(WL){await WL.release();WL=null}}catch(e){WL=null}}
 function clockTick(){
   const c=document.getElementById("clock");
   if(c&&ROLE==="student"&&view==="s"&&tab==="b"){c.textContent=dur(clockMs());const u=document.getElementById("clocksub");if(u)u.textContent=clockSub()}
   if(ROLE==="student"&&tab==="b"){const v=cdParts();v.forEach((x,i)=>{const e=document.getElementById("cd"+i);if(e)e.textContent=i?String(x).padStart(2,"0"):x})}
-  try{document.title=(S&&S.status==="study")?dur(curNet())+" · Karakış Takip":"Karakış Takip"}catch(e){}
+  try{document.title=FZ?"🍅 "+fzTxt()+" · Karakış Takip":(S&&S.status==="study")?dur(curNet())+" · Karakış Takip":"Karakış Takip"}catch(e){}
 }
 setInterval(()=>{clockTick();wakeSync()},1000);
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")wakeSync()});

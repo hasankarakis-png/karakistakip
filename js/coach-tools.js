@@ -99,7 +99,7 @@ function ktCoachCard(id){
   if(!(id in KTC)){KTC[id]=null;Promise.resolve(sb.from("topic_progress").select("done").eq("student_id",id).maybeSingle()).then(r=>{KTC[id]=new Set(r&&r.data&&Array.isArray(r.data.done)?r.data.done:[]);if(sel===id)render()},()=>{KTC[id]=new Set()})}
   const D=KTC[id];if(!D)return `<div class="card"><h2>Konu takibi</h2><p class="empty">Yükleniyor…</p></div>`;
   const blk=ex=>{let T=0,N=0;const rows=KT[ex].map((d,di)=>{const m=d.t.length;let n=0;d.t.forEach((_,ti)=>{if(D.has(ktId(ex,di,ti)))n++});T+=m;N+=n;const p=Math.round(n*100/m);return `<div class="ktc"><b>${esc(d.n)}</b><span class="ktpr"><i style="width:${p}%"></i></span><em>%${p}</em></div>`}).join("");return `<div class="subj"><span><b>${ex}</b></span><span>${N}/${T} konu · %${T?Math.round(N*100/T):0}</span></div>${rows}`};
-  return `<div class="card"><h2>Konu takibi</h2>${D.size?"":`<p class="empty" style="margin:0 0 6px">Öğrenci henüz konu işaretlememiş.</p>`}${blk("TYT")}<div style="height:10px"></div>${blk("AYT")}</div>`;
+  return tekrarCard(id,D)+`<div class="card"><h2>Konu takibi</h2>${D.size?"":`<p class="empty" style="margin:0 0 6px">Öğrenci henüz konu işaretlememiş.</p>`}${blk("TYT")}<div style="height:10px"></div>${blk("AYT")}</div>`;
 }
 function detailView(){
   const pr=STU.find(r=>r.id===sel);if(!pr){sel=null;return coachView()}
@@ -116,7 +116,7 @@ function detailView(){
   <div class="stats"><div class="stat"><b>${sn}</b><span>çözülen soru</span></div><div class="stat"><b>${sn?"%"+acc:"–"}</b><span>doğruluk</span></div><div class="stat"><b>${x.p>=1?"✓":"–"}</b><span>program</span></div></div>
   <div class="dcols">${past?"":`<div id="detail-history">${histCard(x.id,x)}</div>`+ktCoachCard(x.id)+(past?"":`${aiCard(x.id)+goalRoad(x.id)+netChartsCard(x.id)}`+targetForm(x.id,false))}<div class="card"><h2>Derslere göre sorular</h2>${Object.keys(by).length?Object.entries(by).map(([k,v])=>`<div class="subj"><span>${esc(k)}${v.k.length?" ("+esc(v.k.join(", "))+")":""}</span><span>${v.n} soru · ${v.c} doğru${v.b?" · "+v.b+" boş":""}</span></div>`).join(""):`<p class="empty">Henüz soru girişi yok.</p>`}</div>
   ${x.mood?`<div class="card"><h2>Gün puanı</h2><p class="empty" style="margin:0">${x.mood} / 5</p></div>`:""}
-  ${past?"":`<div id="detail-tasks">${trendCard(x)+coachCards(x,sn)+taskCard(x)}</div>`+`<details class="card fold"><summary>⚙️ Diğer işlemler (deneme ekle, veli özeti, hesap)</summary>${denemeCard(x)+parentCard(x)+adminCard(x)}</details>`}<div class="card"><h2>Günün akışı</h2>${x.L.length?`<ul class="tl">${x.L.slice().reverse().map(l=>`<li><time>${l.t}</time>${l.m}</li>`).join("")}</ul>`:`<p class="empty">${past?"Bu güne ait hareket kaydı yok.":"Bugün henüz bir hareket yok."}</p>`}</div></div>`;
+  ${past?"":`<div id="detail-tasks">${trendCard(x)+coachCards(x,sn)+taskCard(x)}</div>`+`<details class="card fold"><summary>⚙️ Diğer işlemler (deneme ekle, veli özeti, hesap)</summary>${denemeCard(x)+reportCard(x)+parentCard(x)+adminCard(x)}</details>`}<div class="card"><h2>Günün akışı</h2>${x.L.length?`<ul class="tl">${x.L.slice().reverse().map(l=>`<li><time>${l.t}</time>${l.m}</li>`).join("")}</ul>`:`<p class="empty">${past?"Bu güne ait hareket kaydı yok.":"Bugün henüz bir hareket yok."}</p>`}</div></div>`;
 }
 function render(){
     phEnsure();
