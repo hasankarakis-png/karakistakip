@@ -27,9 +27,10 @@ async function puRead(id){
   let im;try{im=pdf?{mime:"application/pdf",b64:await readB64(f)}:await prepImage(f)}catch(e){P.busy=false;P.msg="Dosya açılamadı.";P.err=true;render();return}
   let r=null;
   if(pdf){P.msg="Tablo okunuyor…";render();const L=await ppFromPdf(f);if(L&&L.gorevler.length>=3)r=L}
+  const why=PPWHY||"";
   if(!r)r=await callFn("plan-extract",{image:im.b64,mime:im.mime});
   P.busy=false;
-  if(r.error){P.msg=r.error;P.err=true;render();return}
+  if(r.error){P.msg=r.error+(pdf&&why?" (Yerel okuma: "+why+")":"");P.err=true;render();return}
   P.msg="";P.draft={week:puDefWeek(),skip:true,baslik:r.baslik||"",notlar:r.notlar||[],rows:(r.gorevler||[]).sort((a,b)=>a.gun-b.gun).map(g=>({...g,on:true}))};
   render();
 }
