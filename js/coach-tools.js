@@ -111,7 +111,7 @@ function detailView(){
   const head=past?`<button class="back" id="backhist">← Geçmişe dön</button><div class="card" style="border-color:var(--gold)"><b>📅 ${fd(selDay)}</b> · geçmiş gün</div>`:`<button class="back" id="back">← Tüm öğrenciler</button>`;
   if(PLV===sel&&!past)return planPage(x);
   return `${head}
-  <button class="btn full" style="margin:0 0 12px" data-plopen="1">📄 Program ver (PDF yükle)</button>
+  <div style="display:block;clear:both;margin:0 0 12px"><button class="btn full" style="width:100%" data-plopen="1">📄 Program ver (PDF yükle)</button></div>
   <section class="hero"><div class="st"><span class="dot ${DOT[x.st]}"></span>${LBL[x.st]}</div>
   <div class="big" style="font-size:34px;display:flex;align-items:center;gap:12px">${mav(x.id)}<span>${x.n}</span></div>
   <div class="sub">Net çalışma: ${Math.floor(x.m/60)} sa ${x.m%60} dk</div></section>
