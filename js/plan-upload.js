@@ -53,6 +53,7 @@ async function puAssign(id){
   WK[id]=0;await loadTasks(id);render();
 }
 function puAct(D,id){
+  if(D.plpick){const id=(document.getElementById("plsel")||{}).value;if(!id)return true;sel=id;selDay=null;PLV=id;render();window.scrollTo(0,0);Promise.all([loadHist(id),loadExams(id),loadTasks(id),loadTarget(id)]).then(()=>{if(sel===id)render()});return true}
   const sid=sel;if(!sid&&!D.pugo&&!D.puok)return false;
   if(D.plopen){PLV=sid;render();window.scrollTo(0,0);return true}
   if(D.plback){PLV=null;render();window.scrollTo(0,0);return true}
@@ -80,4 +81,8 @@ function weekGrid(x){
 let PLV=null;
 function planPage(x){
   return `<button class="back" data-plback="1">← ${esc(x.n)}</button><h1 class="pg" style="margin:6px 0 12px">📄 Program ver</h1>${planUploadCard(x)}${weekGrid(x)}`;
+}
+
+function planPickCard(all){
+  return `<div class="card" style="border-color:var(--acc)"><h2>📄 Program ver</h2><p class="empty" style="margin:0 0 8px;font-size:14px">Öğrenci seç, hazırladığın haftalık program PDF'ini yükle. Öğrenci yalnızca hangi gün ne yapacağını görür.</p><div class="row" style="margin-top:0"><select id="plsel" style="flex:1;min-width:0">${all.slice().sort((a,b)=>a.n.localeCompare(b.n,"tr")).map(x=>`<option value="${x.id}">${esc(x.n)}</option>`).join("")}</select><button class="btn" style="padding:11px 16px" data-plpick="1">Devam</button></div></div>`;
 }

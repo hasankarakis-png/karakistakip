@@ -49,7 +49,7 @@ function coachView(){
   <section id="coach-students" class="coach-section"><div class="section-heading"><div><div class="eyebrow">ÖĞRENCİ TAKİBİ</div><h2>Öğrenciler</h2></div><span class="count-pill">${all.length} kayıt</span></div>
   ${classCard()}<div class="grid">${all.map(x=>`<button class="s${x.live?" live":""}" data-i="${x.id}"><div class="h">${mav(x.id)}<span class="dot ${DOT[x.st]}"></span>${x.n}${flags(x.hist).length?" 🚩":""}</div><div class="sp">${LBL[x.st]}</div>
   <div class="n"><span>${Math.floor(x.m/60)} sa ${x.m%60} dk</span><span>${x.q} soru</span></div><div class="bar"><i style="width:${Math.round(x.p*100)}%"></i></div></button>`).join("")}</div></section>
-  <section id="coach-tasks" class="coach-section"><div class="section-heading"><div><div class="eyebrow">PLANLAMA</div><h2>Görev yönetimi</h2></div></div>${bulkCard()}${chCoachCard()}</section>
+  <section id="coach-tasks" class="coach-section"><div class="section-heading"><div><div class="eyebrow">PLANLAMA</div><h2>Görev yönetimi</h2></div></div>${planPickCard(all)}${bulkCard()}${chCoachCard()}</section>
   <section id="coach-tools" class="coach-section"><div class="section-heading"><div><div class="eyebrow">YÖNETİM</div><h2>Koç araçları</h2></div></div>${addStudentCard()}${backupCard()}${thCard()}</section>`;
 }
 let selDay=null,per="hw";const HIST={},DSTATE={};

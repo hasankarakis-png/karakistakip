@@ -60,7 +60,7 @@ function ui(t){
   if(id==="bkadd"){bulkAdd();return true}
   if(id==="pwa"){const p=document.getElementById("pt");window.open("https://wa.me/?text="+encodeURIComponent(p.value),"_blank","noopener");return true}
   if(id==="psh"){const p=document.getElementById("pt");if(navigator.share)navigator.share({text:p.value}).catch(()=>{});else{const c=document.getElementById("cp");if(c)c.click()}return true}
-  if((D.pugo||D.puok||D.pucancel||D.putog!=null||D.wk!=null||D.plopen||D.plback)&&puAct(D,id))return true;
+  if((D.pugo||D.puok||D.pucancel||D.putog!=null||D.wk!=null||D.plopen||D.plback||D.plpick)&&puAct(D,id))return true;
   if(D.rpt){rptRun(D.rpt);return true}
   if(id==='rptcp'){const e=document.getElementById('rpt');if(e&&navigator.clipboard)navigator.clipboard.writeText(e.value);return true}
   if(id==='rptwa'){const e=document.getElementById('rpt');if(e)window.open('https://wa.me/?text='+encodeURIComponent(e.value),'_blank','noopener');return true}
