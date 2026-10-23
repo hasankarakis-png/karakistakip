@@ -5,14 +5,14 @@ const puDefWeek=()=>{const w=(new Date().getDay()+6)%7;return w>=3?shift(monOf(d
 function puSync(id){const P=PU[id];if(!P||!P.draft)return;const e=document.getElementById("puwk");if(e&&e.value)P.draft.week=monOf(e.value);const s=document.getElementById("puskip");if(s)P.draft.skip=s.checked}
 function planUploadCard(x){
   const P=PU[x.id]||{};const dr=P.draft;
-  let body=`<p class="empty" style="margin:0 0 8px;font-size:14px">Hazırladığın haftalık program PDF'ini (veya fotoğrafını) yükle; yapay zekâ görevlere çevirsin. Atamadan önce sen kontrol edersin.</p><div class="row" style="margin-top:0"><input id="puf" type="file" accept="application/pdf,image/*" style="max-width:100%"><button class="btn" style="padding:11px 16px" data-pugo="${x.id}"${P.busy?" disabled":""}>${P.busy?"Okunuyor…":"Planı oku"}</button></div>`;
+  let body=`<p class="empty" style="margin:0 0 8px;font-size:14px">Hazırladığın haftalık program PDF’ini (veya fotoğrafını) yükle; görevlere çevrilsin. Atamadan önce sen kontrol edersin.</p><div class="row" style="margin-top:0"><input id="puf" type="file" accept="application/pdf,image/*" style="max-width:100%"><button class="btn" style="padding:11px 16px" data-pugo="${x.id}"${P.busy?" disabled":""}>${P.busy?"Okunuyor…":"Planı oku"}</button></div>`;
   if(P.msg)body+=`<p class="empty" style="margin:8px 0 0;font-size:14px;${P.err?"color:var(--warn)":""}">${esc(P.msg)}</p>`;
   if(dr){
     const by={};dr.rows.forEach((r,i)=>(by[r.gun]=by[r.gun]||[]).push([r,i]));
     const sel=dr.rows.filter(r=>r.on).length;
     body+=`<div class="card" style="border-color:var(--acc);margin:12px 0 0"><h2>Plan taslağı${dr.baslik?" · "+esc(dr.baslik):""}</h2>
     <div class="row" style="margin-top:0"><label>Haftanın pazartesisi<input id="puwk" type="date" value="${dr.week}" style="width:160px"></label><label style="flex-direction:row;align-items:center;gap:6px"><input id="puskip" type="checkbox"${dr.skip?" checked":""} style="width:auto"> Geçmiş günleri atla</label></div>
-    ${Object.keys(by).sort().map(g=>`<div class="tkd">${PDAY[g-1]} · ${fd(shift(dr.week,g-1))}</div>${by[g].map(([r,i])=>`<button class="ktt" data-putog="${i}" aria-pressed="${r.on}" style="margin:4px 0"><span class="ktck">${r.on?"✓":""}</span><span><b>${esc(r.konu)}</b><small style="display:block;color:var(--mut)">${esc([r.ders,r.sure,r.soru].filter(Boolean).join(" · "))}</small></span></button>`).join("")}`).join("")}
+    ${Object.keys(by).sort().map(g=>`<div class="tkd">${PDAY[g-1]} · ${fd(shift(dr.week,g-1))}</div>${by[g].map(([r,i])=>`<button class="ktt pu" data-putog="${i}" aria-pressed="${r.on}" style="margin:4px 0"><span class="ktck">${r.on?"✓":""}</span><span><b>${esc(r.konu)}</b><small style="display:block;color:var(--mut)">${esc([r.ders,r.kaynak,r.sure,r.soru].filter(Boolean).join(" · "))}</small></span></button>`).join("")}`).join("")}
     ${dr.notlar.length?`<p class="empty" style="font-size:13px;margin:10px 0 0">📝 Programdaki notlar (göreve çevrilmedi): ${dr.notlar.map(esc).join(" · ")}</p>`:""}
     <div class="row"><button class="btn" style="padding:11px 16px" data-puok="${x.id}"${P.busy?" disabled":""}>${sel} görevi ata</button><button class="chip" data-pucancel="${x.id}">Vazgeç</button></div></div>`;
   }
@@ -25,7 +25,9 @@ async function puRead(id){
   if(pdf&&f.size>6.5e6){P.msg="PDF çok büyük (en fazla yaklaşık 6 MB).";P.err=true;render();return}
   P.busy=true;P.msg="Okunuyor, 15-40 saniye sürebilir…";P.err=false;render();
   let im;try{im=pdf?{mime:"application/pdf",b64:await readB64(f)}:await prepImage(f)}catch(e){P.busy=false;P.msg="Dosya açılamadı.";P.err=true;render();return}
-  const r=await callFn("plan-extract",{image:im.b64,mime:im.mime});
+  let r=null;
+  if(pdf){P.msg="Tablo okunuyor…";render();const L=await ppFromPdf(f);if(L&&L.gorevler.length>=3)r=L}
+  if(!r)r=await callFn("plan-extract",{image:im.b64,mime:im.mime});
   P.busy=false;
   if(r.error){P.msg=r.error;P.err=true;render();return}
   P.msg="";P.draft={week:puDefWeek(),skip:true,baslik:r.baslik||"",notlar:r.notlar||[],rows:(r.gorevler||[]).sort((a,b)=>a.gun-b.gun).map(g=>({...g,on:true}))};
@@ -40,7 +42,7 @@ async function puAssign(id){
     if(dr.skip&&d<day()){skippedPast++;return}
     const subject=r.ders.slice(0,40),title=r.konu.slice(0,120);
     if(have.has(d+"|"+subject+"|"+title)){dup++;return}
-    rows.push({student_id:id,task_date:d,title,subject,amount:[r.sure,r.soru].filter(Boolean).join(" · ").slice(0,60)||null,source:"coach",created_by:ME});
+    rows.push({student_id:id,task_date:d,title,subject,amount:[r.kaynak,r.sure,r.soru].filter(Boolean).join(" · ").slice(0,60)||null,source:"coach",created_by:ME});
   });
   if(!rows.length){P.msg="Atanacak yeni görev yok"+(skippedPast?` (${skippedPast} geçmiş gün atlandı)`:"")+(dup?` (${dup} zaten var)`:"")+".";P.err=true;render();return}
   const nm=(STU.find(p=>p.id===id)||{}).name||"öğrenci";

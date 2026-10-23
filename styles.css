@@ -256,3 +256,5 @@ details.fold>summary{cursor:pointer;font-weight:800;font-size:16px}details.fold 
 .wg tbody th{text-align:left;font-weight:600;white-space:nowrap;padding-right:8px}
 .wg0{color:var(--mut);opacity:.5}.wgok{color:var(--acc);font-weight:800}.wgbad{color:var(--warn);font-weight:800}.wgw{color:var(--mut)}
 #who{cursor:pointer;text-decoration:underline dotted}
+.ktt.pu[aria-pressed="true"] span,.ktt.pu[aria-pressed="true"] b,.ktt.pu[aria-pressed="true"] small{text-decoration:none!important;opacity:1!important}.ktt.pu[aria-pressed="false"]{opacity:.55}
+.ktt.pu[aria-pressed="true"] b{color:var(--ink,#fff)!important}
