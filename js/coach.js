@@ -99,6 +99,7 @@ document.addEventListener("click",e=>{
   else if(t.id==="airun"){runInsights(t.dataset.sid||ME,t.dataset.force==="1"||t.dataset.sid===ME)}
   else if(t.id==="aiping")aiPing();
   else if(t.id==="login")doLogin();
+  else if(t.id==="lgeye"){const p=document.getElementById("lp");if(p){p.type=p.type==="password"?"text":"password";p.focus()}}
   else if(t.id==="out"){logout()}
   else if(t.id==="back"){PLV=null;sel=null;selDay=null;render()}
   else if(t.id==="backhist"){selDay=null;render()}
@@ -368,4 +369,13 @@ function aiCard(sid){
 const setSync=m=>{const e=document.getElementById("sync");if(e)e.textContent=m};
 const dbw=p=>Promise.resolve(p).then(r=>{if(r&&r.error)setSync("⚠️ "+r.error.message);return r},()=>setSync("⚠️ Bağlantı yok"));
 const busy=()=>/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||"");
-const loginView=msg=>`<div class="card" style="max-width:380px;margin:30px auto"><h2>Giriş</h2><div class="row" style="flex-direction:column;align-items:stretch"><label>Kullanıcı adı<input id="lu" autocomplete="username" autocapitalize="none" style="width:100%"></label><label>PIN / şifre<input id="lp" type="password" autocomplete="current-password" style="width:100%"></label><div id="ts"></div><button class="btn" id="login">Giriş yap</button></div>${msg?`<p class="empty" style="color:var(--warn)">${esc(msg)}</p>`:""}</div>`;
+const loginView=msg=>`<div class="lgx"><div class="lgx-bg"><i class="o1"></i><i class="o2"></i><i class="o3"></i><i class="gr"></i></div>
+<section class="lgx-in"><div class="lgx-left"><div class="lgx-brand lg-u1"><span class="lgx-k">K</span><div><b>KARAKIŞ <em>TAKİP</em></b><small>Eğitim &amp; Danışmanlık</small></div></div>
+<h1 class="lg-u2">Çalışmanın her gününü <em>görünür</em> kıl.</h1>
+<p class="lg-u3">Günlük çalışma süren, çözdüğün sorular, deneme analizlerin ve koçunun planı tek yerde. Potansiyelini keşfet, geleceğini şekillendir.</p></div>
+<div class="lgx-card lg-u3"><h2>Tekrar hoş geldin</h2><p class="lgx-sub">Hesabınla giriş yap, kaldığın yerden devam et.</p>
+<label for="lu">Kullanıcı adı</label><div class="lgx-f"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4 4-6 8-6s7.2 2 8 6"/></svg><input id="lu" autocomplete="username" autocapitalize="none" placeholder="kullanıcı adın"></div>
+<label for="lp">PIN / şifre</label><div class="lgx-f"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><input id="lp" type="password" autocomplete="current-password" placeholder="••••••"><button type="button" id="lgeye" aria-label="Şifreyi göster veya gizle"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+<div id="ts"></div><button class="lgx-go" id="login"><i class="sh"></i><span>Giriş yap</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+${msg?`<p class="lgx-msg" role="alert">${esc(msg)}</p>`:""}
+<div class="lgx-foot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.4 3.2 8 8 9 4.8-1 8-4.6 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg><span>Hesabın yok mu? Giriş bilgilerini koçundan alabilirsin.</span></div></div></section></div>`;
