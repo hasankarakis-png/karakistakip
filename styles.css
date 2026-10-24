@@ -366,3 +366,27 @@ body.stu .sh .av{border-radius:14px}
 body.stu .sh .fire{background:#1a1d10;border-color:rgba(217,242,74,.3);color:var(--acc)}
 body.stu .card{border-radius:22px}
 @media (prefers-reduced-motion:reduce){body.stu .hero .btn.full{animation:none}}
+
+/* Koç menüsü: arama, rozet, rapor kartı, daralt */
+.side-search{display:flex;align-items:center;gap:10px;height:44px;padding:0 14px;border-radius:12px;background:#111;border:1px solid #2a2a2a;margin-bottom:4px}
+.side-search svg{width:18px;height:18px;flex:none;fill:none;stroke:#7d7e72;stroke-width:2;stroke-linecap:round}
+.side-search input{flex:1;min-width:0;width:auto;background:transparent;border:0;outline:0;color:var(--ink);font:500 14px var(--fb);padding:0}
+.side-search:focus-within{border-color:#d9f24a}
+.side-nav .bd{margin-left:auto;min-width:22px;height:22px;padding:0 7px;border-radius:11px;background:#272727;color:#f3f3ee;font-size:12px;font-weight:700;display:grid;place-items:center}
+.side-nav .bd.warn{background:#3a2c0f;color:#ffb84d}
+.side-nav>button[aria-current=true] .bd{background:#12160a;color:#d9f24a}
+.side-rep{margin:auto 0 10px;padding:14px;border-radius:18px;background:linear-gradient(135deg,rgba(217,242,74,.16),rgba(217,242,74,.04));border:1px solid rgba(217,242,74,.28);display:flex;flex-direction:column;gap:6px}
+.side-rep b{font-size:14px}.side-rep span{font-size:12px;line-height:1.5;color:#b5b7a3}
+.side-rep button{height:38px;border:0;border-radius:11px;background:#d9f24a;color:#12160a;font:700 14px var(--fb);cursor:pointer;margin-top:4px}
+.side-rep+.side-foot{margin-top:0}
+.side-mini{margin-left:auto;width:34px;height:34px;border:1px solid #2a2a2a;border-radius:10px;background:#151515;color:#cfcfc8;display:grid;place-items:center;cursor:pointer;padding:0}
+.side-mini svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+@media (min-width:901px){
+body.coach.sbmini .side-nav{width:82px;padding-left:12px;padding-right:12px}
+body.coach.sbmini .side-nav .nav-label,body.coach.sbmini .side-nav .bd,body.coach.sbmini .side-label,body.coach.sbmini .side-search,body.coach.sbmini .side-rep,body.coach.sbmini .side-brand>div,body.coach.sbmini .side-foot>div{display:none}
+body.coach.sbmini .side-nav>button{justify-content:center;padding:10px 0}
+body.coach.sbmini .side-foot{flex-direction:column;padding:8px}
+body.coach.sbmini .side-mini{margin:0}
+body.coach.sbmini:has(.side-nav) .wrap{padding-left:128px}
+}
+@media (max-width:900px){.side-mini{display:none}}

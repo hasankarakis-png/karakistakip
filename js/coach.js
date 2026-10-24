@@ -83,6 +83,7 @@ function ui(t){
 document.addEventListener("click",e=>{
   const t=e.target.closest("button,[data-gohome],#who,#hdrhome");if(!t)return;
   rollover();
+  if(t.id==="sbmini"){e.stopPropagation();const m=document.body.classList.toggle("sbmini");try{localStorage.setItem("sbmini",m?"1":"")}catch(x){}return}
   if(t.id==="sbtog"){document.body.classList.add("sbopen");return}
   if(t.id==="sbov"||t.closest(".side-nav"))document.body.classList.remove("sbopen");
   if(t.id==="sbov")return;
@@ -382,3 +383,6 @@ const loginView=msg=>`<div class="lgx"><div class="lgx-bg"><i class="o1"></i><i 
 <div id="ts"></div><button class="lgx-go" id="login"><i class="lgsh"></i><span>Giriş yap</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
 ${msg?`<p class="lgx-msg" role="alert">${esc(msg)}</p>`:""}
 <div class="lgx-foot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.4 3.2 8 8 9 4.8-1 8-4.6 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg><span>Hesabın yok mu? Giriş bilgilerini koçundan alabilirsin.</span></div></div></section></div>`;
+
+try{if(localStorage.getItem("sbmini"))document.body.classList.add("sbmini")}catch(e){}
+document.addEventListener("input",e=>{if(e.target.id!=="sbq")return;const q=e.target.value.trim().toLocaleLowerCase("tr");document.querySelectorAll("#app .grid>button.s").forEach(b=>{b.style.display=!q||b.textContent.toLocaleLowerCase("tr").includes(q)?"":"none"})});
