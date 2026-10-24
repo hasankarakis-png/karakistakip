@@ -42,13 +42,16 @@ function coachView(){
   const order={study:0,break:1,awake:2,stopped:3,closed:4,idle:5};
   all.sort((a,b)=>order[a.st]-order[b.st]);
   const avg=all.length?Math.round(all.reduce((a,x)=>a+x.m,0)/all.length):0;
-  return `<section id="coach-overview" class="coach-section"><div class="sum">
-  <div class="stat"><b>${c(["study"])}</b><span>çalışıyor</span></div><div class="stat"><b>${c(["break"])}</b><span>molada</span></div>
-  <div class="stat"><b>${c(["idle"])}</b><span>başlamadı</span></div><div class="stat"><b>${c(["closed"])}</b><span>günü kapattı</span></div></div>
-  <div class="card"><div class="eyebrow">CANLI SINIF ÖZETİ</div><h2>Grup performansı</h2><p class="empty" style="margin:0">${Math.floor(avg/60)} sa ${avg%60} dk ortalama net çalışma · ${all.reduce((a,x)=>a+x.q,0)} soru · ${all.filter(x=>flags(x.hist).length).length} öğrencide uyarı</p></div></section>
-  <section id="coach-students" class="coach-section"><div class="section-heading"><div><div class="eyebrow">ÖĞRENCİ TAKİBİ</div><h2>Öğrenciler</h2></div><span class="count-pill">${all.length} kayıt</span></div>
-  ${classCard()}<div class="grid">${all.map(x=>`<button class="s${x.live?" live":""}" data-i="${x.id}"><div class="h">${mav(x.id)}<span class="dot ${DOT[x.st]}"></span>${x.n}${flags(x.hist).length?" 🚩":""}</div><div class="sp">${LBL[x.st]}</div>
-  <div class="n"><span>${Math.floor(x.m/60)} sa ${x.m%60} dk</span><span>${x.q} soru</span></div><div class="bar"><i style="width:${Math.round(x.p*100)}%"></i></div></button>`).join("")}</div></section>
+  const od=ODN!=null?ODN:all.reduce((a,x)=>a+overdue(x.id).length,0),warn=all.filter(x=>flags(x.hist).length).length,work=c(["study","break"]);
+  const dt=new Date().toLocaleDateString("tr-TR",{weekday:"long",day:"numeric",month:"long"});
+  return `<section id="coach-overview" class="coach-section"><div class="page-intro"><div><p>${esc(dt)}</p><h1>Genel bakış</h1></div><button class="cta" data-cnav="coach-tasks"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Program ver</button></div><div class="kst">
+  <div class="kc"><span>Bugün çalışan</span><b>${work}<em> / ${all.length}</em></b><div class="kbar"><i style="width:${all.length?Math.round(work/all.length*100):0}%"></i></div></div>
+  <div class="kc"><span>Ortalama net süre</span><b>${Math.floor(avg/60)}<em> sa </em>${avg%60}<em> dk</em></b><small>${all.reduce((a,x)=>a+x.q,0)} soru çözüldü</small></div>
+  <div class="kc"><span>Geciken görev</span><b>${od}</b><small class="${od?"w":""}">${od?"Tamamlanmayı bekliyor":"Hepsi güncel"}</small></div>
+  <div class="kc"><span>Dikkat gereken</span><b>${warn}</b><small class="${warn?"w":""}">${warn?"öğrencide uyarı var":"uyarı yok"}</small></div></div></section>
+  <section id="coach-students" class="coach-section"><div class="section-heading"><div><h2>Öğrencilerim</h2></div><span class="count-pill">${all.length} kayıt</span></div>${RPMODE?`<div class="rpban"><b>Rapor için bir öğrenci seç</b><button id="rpx">Vazgeç</button></div>`:""}
+  <div class="grid">${all.map(x=>{const pc=Math.round(x.p*100),col=x.st==="study"||x.st==="closed"?"":x.st==="break"?" w":"";return `<button class="s ocard${x.live?" live":""}" data-i="${x.id}"><span class="oav${col}">${PH[x.id]?`<img src="${PH[x.id]}" alt="">`:esc(initials(x.n))}<i class="dot ${DOT[x.st]}"></i></span><span class="oin"><b>${x.n}${flags(x.hist).length?" 🚩":""}</b><small>${LBL[x.st]} · ${Math.floor(x.m/60)} sa ${x.m%60} dk · ${x.q} soru</small><span class="kbar"><i style="width:${pc}%"></i></span></span><span class="opc">%${pc}</span></button>`}).join("")}</div></section>
+  <section id="coach-class" class="coach-section">${classCard()}</section>
   <section id="coach-tasks" class="coach-section"><div class="section-heading"><div><div class="eyebrow">PLANLAMA</div><h2>Görev yönetimi</h2></div></div>${planPickCard(all)}${bulkCard()}${chCoachCard()}</section>
   <section id="coach-tools" class="coach-section"><div class="section-heading"><div><div class="eyebrow">YÖNETİM</div><h2>Koç araçları</h2></div></div>${addStudentCard()}${backupCard()}${thCard()}</section>`;
 }
@@ -126,12 +129,35 @@ function detailView(){
   ${!past&&DTAB==="d"?`${denemeCard(x)+reportCard(x)+parentCard(x)+adminCard(x)}`:""}
   ${past||DTAB==="o"?`<div class="card"><h2>Günün akışı</h2>${x.L.length?`<ul class="tl">${x.L.slice().reverse().map(l=>`<li><time>${l.t}</time>${l.m}</li>`).join("")}</ul>`:`<p class="empty">${past?"Bu güne ait hareket kaydı yok.":"Bugün henüz bir hareket yok."}</p>`}</div>`:""}</div>`;
 }
+const SIC={
+ home:'<path d="M3 11 12 4l9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9Z"/>',
+ users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c2 .7 3.2 2.5 3.5 5.2"/>',
+ task:'<rect x="4" y="3" width="16" height="18" rx="3"/><path d="m8.5 9 1.5 1.5L13 7.5M8.5 15l1.5 1.5L13 13.5M15.5 9.5H17M15.5 15.5H17"/>',
+ bars:'<path d="M3 20h18M6 16V9M11 16V5M16 16v-5M21 16V8"/>',
+ cal:'<path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"/>',
+ gear:'<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.7a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.7a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2Z"/>',
+ bell:'<path d="M6 9a6 6 0 1 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9Z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+ spark:'<path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3Z"/>',
+ list:'<path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>',
+ back:'<path d="M15 5 8 12l7 7"/>'
+};
+const sic=n=>`<span><svg viewBox="0 0 24 24" aria-hidden="true">${SIC[n]}</svg></span>`;
+const initials=n=>String(n||"K").trim().split(/\s+/).map(w=>w[0]||"").slice(0,2).join("").toUpperCase()||"K";
+let RPMODE=false;
+function sideNav(){
+  const all=roster(),od=ODN!=null?ODN:all.reduce((a,x)=>a+overdue(x.id).length,0);
+  const top=`<div class="side-top"><div class="side-brand" data-gohome="1" style="cursor:pointer"><span class="brand-mark">K</span><div><b>KARAKIŞ <em>TAKİP</em></b><small>Koç paneli</small></div></div><button class="side-bell" data-cnav="coach-tasks" aria-label="Bildirimler">${sic("bell").replace("<span>","").replace("</span>","")}${od?'<i></i>':""}</button></div>`;
+  const foot=`<div class="side-rep"><b>${sic("spark").replace("<span>","").replace("</span>","")} Haftalık rapor</b><span>Öğrencilerin için yapay zekâ özeti ve veli mesajı taslağı hazırla.</span><button id="rpgo">Raporu hazırla</button></div><div class="side-foot" data-gohome="1" style="cursor:pointer"><span class="side-avatar">${esc(initials(NAME))}</span><div><b>${esc(NAME||"Koç")}</b><small>Koç</small></div><button id="sbmini" class="side-mini" aria-label="Menüyü daralt"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg></button></div>`;
+  const b=(ic,l,attr,extra="",on=false)=>`<button ${attr}${on?' aria-current="true"':""}>${sic(ic)}<span class="nav-label">${l}</span>${extra}</button>`;
+  if(sel)return `<nav class="side-nav coach-side" aria-label="Koç menüsü">${top}<div class="side-label">ÖĞRENCİ ÇALIŞMA ALANI</div>${b("back","Öğrenci listesi",'data-backnav="1"')}${b("home","Özet",'data-dt="o"',"",DTAB==="o")}${b("bars","Analiz",'data-dt="a"',"",DTAB==="a")}${b("task","Görevler",'data-dt="g"',"",DTAB==="g")}${b("cal","Program ver",'data-plopen="1"')}${b("list","Diğer",'data-dt="d"',"",DTAB==="d")}${foot}</nav>`;
+  return `<nav class="side-nav coach-side" aria-label="Koç menüsü">${top}<div class="side-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="sbq" type="search" placeholder="Öğrenci ara…" aria-label="Öğrenci ara" autocomplete="off"></div><div class="side-label">ANA MENÜ</div>${b("home","Genel bakış",'data-cnav="coach-overview"',"",true)}${b("users","Öğrenciler",'data-cnav="coach-students"',`<span class="bd">${all.length}</span>`)}${b("task","Görev yönetimi",'data-cnav="coach-tasks"',od?`<span class="bd warn">${od}</span>`:"")}${b("bars","Deneme analizi",'data-cnav="coach-class"')}<div class="side-label">AYARLAR</div>${b("cal","Program ver",'data-cnav="coach-tasks"')}${b("gear","Ayarlar",'data-cnav="coach-tools"')}${foot}</nav>`;
+}
 function render(){
     phEnsure();
     const app=document.getElementById("app");
     if(view==="s")app.innerHTML=studentView();
     else{
-      const nav=sel?`<nav class="side-nav coach-side" aria-label="Koç menüsü"><div class="side-brand" data-gohome="1" style="cursor:pointer"><span class="brand-mark">K</span><div><b>KARAKIŞ</b><small>KOÇ PANELİ</small></div></div><div class="side-label">ÖĞRENCİ ÇALIŞMA ALANI</div><button data-backnav="1"><span>👥</span><span class="nav-label">Öğrenci listesi</span></button><button data-dt="o"><span>📈</span><span class="nav-label">Özet</span></button><button data-dt="a"><span>🎯</span><span class="nav-label">Analiz</span></button><button data-dt="g"><span>✅</span><span class="nav-label">Görevler</span></button><button data-plopen="1"><span>📄</span><span class="nav-label">Program ver</span></button><button data-dt="d"><span>⚙️</span><span class="nav-label">Diğer</span></button><div class="side-foot" data-gohome="1" style="cursor:pointer"><span class="side-avatar">K</span><div><b>${esc(NAME||"Koç")}</b><small>Koç paneli</small></div></div></nav>`: `<nav class="side-nav coach-side" aria-label="Koç menüsü"><div class="side-brand" data-gohome="1" style="cursor:pointer"><span class="brand-mark">K</span><div><b>KARAKIŞ</b><small>KOÇ PANELİ</small></div></div><div class="side-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="sbq" type="search" placeholder="Öğrenci ara…" aria-label="Öğrenci ara" autocomplete="off"></div><div class="side-label">ANA MENÜ</div><button data-cnav="coach-overview" aria-current="true"><span>⌂</span><span class="nav-label">Genel bakış</span></button><button data-cnav="coach-students"><span>👥</span><span class="nav-label">Öğrenciler</span><span class="bd">${roster().length}</span></button><button data-cnav="coach-tasks"><span>✓</span><span class="nav-label">Görev yönetimi</span>${(()=>{const n=ODN!=null?ODN:roster().reduce((a,x)=>a+overdue(x.id).length,0);return n?`<span class="bd warn">${n}</span>`:""})()}</button><button data-cnav="coach-tools"><span>⚙</span><span class="nav-label">Koç araçları</span></button><div class="side-rep"><b>✨ Haftalık rapor</b><span>Öğrenci seç → Diğer sekmesinden yapay zekâ özeti ve veli mesajı hazırla.</span><button data-cnav="coach-students">Öğrenci seç</button></div><div class="side-foot" data-gohome="1" style="cursor:pointer"><span class="side-avatar">K</span><div><b>${esc(NAME||"Koç")}</b><small>Eğitim koçluğu</small></div><button id="sbmini" class="side-mini" aria-label="Menüyü daralt"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg></button></div></nav>`;
+      const nav=sideNav();
       app.innerHTML=`<div class="dashboard-shell"><button class="sbtog" id="sbtog" aria-label="Menüyü aç"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button><button class="sbov" id="sbov" aria-label="Menüyü kapat"></button>${nav}<div class="dashboard-main">${coachView()}</div></div>`;
     }
     const c=document.getElementById("chat");if(c)c.scrollTop=c.scrollHeight;

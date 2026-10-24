@@ -84,6 +84,8 @@ document.addEventListener("click",e=>{
   const t=e.target.closest("button,[data-gohome],#who,#hdrhome");if(!t)return;
   rollover();
   if(t.id==="sbmini"){e.stopPropagation();const m=document.body.classList.toggle("sbmini");try{localStorage.setItem("sbmini",m?"1":"")}catch(x){}return}
+  if(t.id==="rpgo"){RPMODE=true;render();const el=document.getElementById("coach-students");if(el)el.scrollIntoView({behavior:"smooth",block:"start"});return}
+  if(t.id==="rpx"){RPMODE=false;render();return}
   if(t.id==="sbtog"){document.body.classList.add("sbopen");return}
   if(t.id==="sbov"||t.closest(".side-nav"))document.body.classList.remove("sbopen");
   if(t.id==="sbov")return;
@@ -109,7 +111,7 @@ document.addEventListener("click",e=>{
   else if(t.id==="backhist"){selDay=null;render()}
   else if(t.dataset.per){per=t.dataset.per;render()}
   else if(t.dataset.d){selDay=t.dataset.d===day()?null:t.dataset.d;render();if(selDay&&!DSTATE[sel+"|"+selDay]){const id=sel,d=selDay;loadDay(id,d).then(()=>{if(sel===id&&selDay===d)render()})}}
-  else if(t.dataset.i){sel=t.dataset.i;selDay=null;DTAB="o";PLV=null;render();const id=sel;Promise.all([loadHist(id),loadExams(id),loadReport(id),loadTarget(id),loadTasks(id),loadPlan(id)]).then(()=>{if(sel===id)render()})}
+  else if(t.dataset.i){sel=t.dataset.i;selDay=null;DTAB=RPMODE?"d":"o";RPMODE=false;PLV=null;render();const id=sel;Promise.all([loadHist(id),loadExams(id),loadReport(id),loadTarget(id),loadTasks(id),loadPlan(id)]).then(()=>{if(sel===id)render()})}
   else if(t.id==="addq")addQ();
   else if(t.id==="reset"){if(confirm("Bugünün verisi silinsin mi?")){S=fresh();save();render()}}
   else if(t.dataset.s){subj=t.dataset.s;render()}
@@ -376,7 +378,7 @@ const busy=()=>/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName
 const loginView=msg=>`<div class="lgx"><div class="lgx-bg"><i class="o1"></i><i class="o2"></i><i class="o3"></i><i class="gr"></i></div>
 <section class="lgx-in"><div class="lgx-left"><div class="lgx-brand lg-u1"><span class="lgx-k">K</span><div><b>KARAKIŞ <em>TAKİP</em></b><small>Eğitim &amp; Danışmanlık</small></div></div>
 <h1 class="lg-u2">Çalışmanın her gününü <em>görünür</em> kıl.</h1>
-<p class="lg-u3">Günlük çalışma süren, çözdüğün sorular, deneme analizlerin ve koçunun planı tek yerde. Potansiyelini keşfet, geleceğini şekillendir.</p></div>
+<p class="lg-u3">Günlük çalışma süren, çözdüğün sorular, deneme analizlerin ve koçunun planı tek yerde. Potansiyelini keşfet, geleceğini şekillendir.</p><div class="lgx-wd"><div class="lgx-w lgx-w1"><span class="wi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg></span><div><small>Bugünkü net çalışma</small><b>04:20:36</b></div></div><div class="lgx-w lgx-w2"><span class="pg"><i></i></span><div><small>12 gün seri</small><b>Bu hafta %86 görev tamam</b></div></div></div></div>
 <div class="lgx-card lg-u3"><h2>Tekrar hoş geldin</h2><p class="lgx-sub">Hesabınla giriş yap, kaldığın yerden devam et.</p>
 <label for="lu">Kullanıcı adı</label><div class="lgx-f"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4 4-6 8-6s7.2 2 8 6"/></svg><input id="lu" autocomplete="username" autocapitalize="none" placeholder="kullanıcı adın"></div>
 <label for="lp">PIN / şifre</label><div class="lgx-f"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><input id="lp" type="password" autocomplete="current-password" placeholder="••••••"><button type="button" id="lgeye" aria-label="Şifreyi göster veya gizle"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
