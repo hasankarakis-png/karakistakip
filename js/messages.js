@@ -1,11 +1,12 @@
 // Koç ↔ öğrenci mesajlaşma
-const MSG={},MU={};let MSEL=null,MV=false,MERR="",MLOAD=false,MSENDING=false;
+const MSG={},MU={};let MNEW=null;let MSEL=null,MV=false,MERR="",MLOAD=false,MSENDING=false;
 const mtime=t=>{const d=new Date(t),n=new Date(),same=d.toDateString()===n.toDateString();return same?d.toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}):d.toLocaleDateString("tr-TR",{day:"numeric",month:"short"})+" "+d.toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"})};
 async function loadMsgs(id){try{const {data,error}=await sb.from("messages").select("id,from_coach,body,created_at,read_at").eq("student_id",id).order("created_at",{ascending:false}).limit(100);if(error)throw error;MSG[id]=(data||[]).reverse()}catch(e){MSG[id]=MSG[id]||[]}}
 async function loadUnr(){try{
-  if(ROLE==="coach"){const {data,error}=await sb.from("messages").select("student_id").eq("from_coach",false).is("read_at",null).limit(1000);if(error)throw error;Object.keys(MU).forEach(k=>delete MU[k]);(data||[]).forEach(r=>MU[r.student_id]=(MU[r.student_id]||0)+1)}
+  if(ROLE==="coach"){const {data,error}=await sb.from("messages").select("student_id,created_at").eq("from_coach",false).is("read_at",null).limit(1000);if(error)throw error;Object.keys(MU).forEach(k=>delete MU[k]);MNEW=null;(data||[]).forEach(r=>{MU[r.student_id]=(MU[r.student_id]||0)+1;if(!MNEW||r.created_at>MNEW)MNEW=r.created_at})}
   else{const {data,error}=await sb.from("messages").select("id").eq("student_id",ME).eq("from_coach",true).is("read_at",null).limit(200);if(error)throw error;MU[ME]=(data||[]).length}
 }catch(e){}}
+const ago=t=>{if(!t)return "";const m=Math.max(0,Math.round((Date.now()-new Date(t))/60000));return m<1?"az önce":m<60?m+" dk önce":m<1440?Math.floor(m/60)+" sa önce":Math.floor(m/1440)+" gün önce"};
 const unrTotal=()=>Object.values(MU).reduce((a,n)=>a+n,0);
 async function msgMarkRead(id){try{await sb.rpc("msg_read",{p_student:id});MU[id]=0}catch(e){}}
 async function msgOpen(id){MSEL=id;MERR="";await loadMsgs(id);await msgMarkRead(id);render();const c=document.getElementById("mth");if(c)c.scrollTop=c.scrollHeight}

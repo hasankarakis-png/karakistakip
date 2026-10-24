@@ -35,8 +35,8 @@ function taskList(L,coach){
 }
 
 /* geciken görevler */
-let ODN=null;
-async function loadOD(){try{const r=await sb.from("weekly_tasks").select("id").lt("task_date",day()).eq("done",false).limit(1000);ODN=r.error?null:(r.data||[]).length}catch(e){ODN=null}}
+let ODN=null,ODS=0;
+async function loadOD(){try{const r=await sb.from("weekly_tasks").select("student_id").lt("task_date",day()).eq("done",false).limit(1000);if(r.error){ODN=null;ODS=0}else{const L=r.data||[];ODN=L.length;ODS=new Set(L.map(x=>x.student_id)).size}}catch(e){ODN=null;ODS=0}}
 const overdue=id=>(TK[id]||[]).filter(t=>t.task_date<day()&&!t.done);
 function overdueCard(id,coach){
   const L=overdue(id);if(!L.length)return"";

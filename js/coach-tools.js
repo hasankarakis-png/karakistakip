@@ -57,8 +57,8 @@ function coachView(){
   return `<section id="coach-overview" class="coach-section">${hd("Genel bakış",esc(dt),`<button class="cta" data-cp="p"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Program ver</button>`)}<div class="kst">
   <div class="kc"><span>Bugün çalışan</span><b>${work}<em> / ${all.length}</em></b><div class="kbar"><i style="width:${all.length?Math.round(work/all.length*100):0}%"></i></div></div>
   <div class="kc"><span>Ortalama net süre</span><b>${Math.floor(avg/60)}<em> sa </em>${avg%60}<em> dk</em></b><small>${all.reduce((a,x)=>a+x.q,0)} soru çözüldü</small></div>
-  <button class="kc" data-cp="t"><span>Geciken görev</span><b>${od}</b><small class="${od?"w":""}">${od?"Tamamlanmayı bekliyor":"Hepsi güncel"}</small></button>
-  <button class="kc" data-msgnav="1"><span>Okunmamış mesaj</span><b>${unrTotal()}</b><small class="${unrTotal()?"w":""}">${unrTotal()?"Yanıt bekliyor":"Hepsi okundu"}</small></button>
+  <button class="kc" data-cp="t"><span>Geciken görev</span><b>${od}</b><small class="${od?"w":""}">${od?(ODS?ODS+" öğrencide yoğunlaşıyor":"Tamamlanmayı bekliyor"):"Hepsi güncel"}</small></button>
+  <button class="kc" data-msgnav="1"><span>Okunmamış mesaj</span><b>${unrTotal()}</b><small class="${unrTotal()?"w":""}">${unrTotal()?"En yeni: "+ago(MNEW):"Hepsi okundu"}</small></button>
   <div class="kc"><span>Dikkat gereken</span><b>${warn}</b><small class="${warn?"w":""}">${warn?"öğrencide uyarı var":"uyarı yok"}</small></div></div>
   <div class="section-heading"><div><h2>Öğrencilerim</h2></div>${all.length>6?`<button class="link" data-cp="s">Tümünü gör (${all.length})</button>`:""}</div>${rp}${grid(top)}</section>`;
 }
