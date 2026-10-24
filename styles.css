@@ -475,3 +475,64 @@ button.kc{text-align:left;font:inherit;color:inherit;cursor:pointer}
 .mrow textarea{flex:1;min-width:0;width:auto;resize:none;max-height:120px;font:500 16px var(--fb);padding:12px 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--cream);color:var(--ink)}
 .mrow .cta{height:46px;padding:0 20px}
 @media (max-width:900px){.mgrid{grid-template-columns:1fr}.mlist{max-height:200px}}
+
+
+/* PDF design alignment: Karakış Takip clean white/navy/blue theme */
+:root[data-theme="light"]{
+  --cream:#F5F7FB;
+  --card:#FFFFFF;
+  --line:#E3E9F2;
+  --ink:#1B2A4A;
+  --mute:#71809A;
+  --acc:#356FE0;
+  --acc-ink:#FFFFFF;
+  --navy2:#1B2A4A;
+  --goldsoft:#EAF1FF;
+  --hero-bg:linear-gradient(135deg,#1B2A4A 0%,#263F70 100%);
+  --hero-ink:#FFFFFF;
+  --hero-sub:#D3DDF0;
+  --hbtn:#356FE0;
+  --hbtn-ink:#FFFFFF;
+  --press:#1B2A4A;
+  --press-ink:#FFFFFF;
+  --ok:#27845D;
+  --warn:#B66A12;
+  --glow:0 8px 20px rgba(53,111,224,.16);
+  --fb:"Nunito",system-ui,sans-serif;
+  --fd:"Nunito",system-ui,sans-serif;
+}
+:root[data-theme="light"] body{background:#F5F7FB;color:#1B2A4A}
+:root[data-theme="light"] .card,
+:root[data-theme="light"] .stat,
+:root[data-theme="light"] .tabs{background:#FFFFFF;border-color:#E3E9F2;box-shadow:0 2px 10px rgba(27,42,74,.035)}
+:root[data-theme="light"] .btn{background:#356FE0;color:#FFFFFF}
+:root[data-theme="light"] .chip[aria-pressed="true"]{background:#1B2A4A;color:#FFFFFF;border-color:#356FE0}
+:root[data-theme="light"] input,
+:root[data-theme="light"] select,
+:root[data-theme="light"] textarea{background:#FFFFFF;border-color:#DCE4F0;color:#1B2A4A}
+/* Match the PDF's wide coach workspace and pale sidebar */
+:root[data-theme="light"] body.coach{background:#F5F7FB;color:#1B2A4A}
+:root[data-theme="light"] body.coach .side-nav,
+:root[data-theme="light"] body.coach .sidebar,
+:root[data-theme="light"] body.coach .side{background:#FFFFFF;color:#1B2A4A;border-color:#E3E9F2}
+:root[data-theme="light"] body.coach .side-nav a,
+:root[data-theme="light"] body.coach .side-nav button,
+:root[data-theme="light"] body.coach .side a,
+:root[data-theme="light"] body.coach .side button{color:#52627D}
+:root[data-theme="light"] body.coach .side-nav a:hover,
+:root[data-theme="light"] body.coach .side-nav button:hover,
+:root[data-theme="light"] body.coach .side a:hover,
+:root[data-theme="light"] body.coach .side button:hover{background:#EEF3FC;color:#1B2A4A}
+:root[data-theme="light"] body.coach .side-nav .active,
+:root[data-theme="light"] body.coach .side-nav [aria-current="page"],
+:root[data-theme="light"] body.coach .side .active{background:#EAF1FF;color:#285EC5}
+:root[data-theme="light"] body.coach .kc,
+:root[data-theme="light"] body.coach .card{background:#FFFFFF;border-color:#E3E9F2;box-shadow:0 2px 10px rgba(27,42,74,.035)}
+:root[data-theme="light"] body.coach .side-acts button{background:#FFFFFF;color:#52627D;border-color:#E3E9F2}
+:root[data-theme="light"] body.coach .mli:hover{background:#F1F5FC}
+:root[data-theme="light"] body.coach .mli.on{background:#EAF1FF}
+:root[data-theme="light"] body.coach .mli .oav{background:#EAF1FF;color:#285EC5}
+:root[data-theme="light"] body.coach .mli .bd{background:#356FE0;color:#FFFFFF}
+@media (min-width:901px){
+  body.coach .coach-layout,body.coach .app-layout{max-width:none}
+}
