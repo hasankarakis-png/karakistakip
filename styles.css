@@ -356,3 +356,13 @@ body.coach:has(.side-nav) .wrap{padding:14px 14px 40px}
 .pill .pn[aria-current=true]{background:var(--acc);color:var(--acc-ink);font-weight:700;box-shadow:0 8px 20px color-mix(in srgb,var(--acc) 28%,transparent)}
 .pill .fab{width:60px;height:60px;margin-top:-26px;font-size:36px}
 :root[data-theme="light"] .pill{background:rgba(255,255,255,.88);border-color:#e3e6d2}
+
+/* Öğrenci ana sayfa: önizleme tasarımına yaklaştırma */
+body.stu .hero{border-radius:28px;padding:24px 20px;border:1px solid #2c3016;background:linear-gradient(160deg,#1b1f10,#121212)}
+body.stu .hero .big{font-size:clamp(48px,15vw,66px);letter-spacing:.01em}
+body.stu .hero .btn.full{animation:lgPulse 2.4s infinite}
+@keyframes lgPulse{0%{box-shadow:0 0 0 0 rgba(217,242,74,.45)}100%{box-shadow:0 0 0 16px rgba(217,242,74,0)}}
+body.stu .sh .av{border-radius:14px}
+body.stu .sh .fire{background:#1a1d10;border-color:rgba(217,242,74,.3);color:var(--acc)}
+body.stu .card{border-radius:22px}
+@media (prefers-reduced-motion:reduce){body.stu .hero .btn.full{animation:none}}
