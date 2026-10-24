@@ -326,3 +326,24 @@ body.coach .side-foot{padding:10px;border:1px solid #262626;border-radius:14px;b
 body.coach .side-avatar{background:#272727;color:#d9f24a}
 body.coach:has(.side-nav) .wrap{padding-left:310px}
 }
+
+/* Telefonda yana açılan koç menüsü */
+.sbtog,.sbov{display:none}
+@media (max-width:900px){
+body.coach .sbtog{display:grid;place-items:center;position:fixed;z-index:45;left:12px;bottom:calc(86px + env(safe-area-inset-bottom));width:52px;height:52px;border:1px solid #3a4016;border-radius:18px;background:#d9f24a;color:#12160a;box-shadow:0 12px 28px rgba(0,0,0,.5),0 0 22px rgba(217,242,74,.3);cursor:pointer;padding:0}
+body.coach .sbtog svg{width:24px;height:24px;fill:none;stroke:#12160a;stroke-width:2.4;stroke-linecap:round}
+body.coach .sbov{position:fixed;inset:0;z-index:58;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);border:0;opacity:0;pointer-events:none;transition:opacity .25s;padding:0}
+body.coach.sbopen .sbov{display:block;opacity:1;pointer-events:auto}
+body.coach .side-nav{position:fixed;z-index:60;left:10px;top:10px;bottom:10px;right:auto;width:min(300px,84vw);height:auto;padding:20px 14px 16px;border-radius:24px;border:1px solid #2a2a2a;background:linear-gradient(180deg,rgba(28,30,22,.97),rgba(16,16,16,.97));box-shadow:0 30px 70px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.06);flex-direction:column;align-items:stretch;justify-content:flex-start;gap:4px;transform:translateX(-120%);transition:transform .3s cubic-bezier(.2,.8,.2,1);overflow:auto;backdrop-filter:none}
+body.coach.sbopen .side-nav{transform:none}
+body.coach .side-brand,body.coach .side-label,body.coach .side-foot{display:flex}
+body.coach .side-label{display:block}
+body.coach .side-nav>button{flex:none;flex-direction:row;justify-content:flex-start;min-height:46px;padding:10px 13px;font-size:15px;gap:12px;border-radius:12px}
+body.coach .side-nav>button>span:first-child{font-size:18px;width:22px}
+body.coach .side-nav .nav-label{font-size:15px;text-align:left;flex:1;white-space:normal}
+body.coach .side-nav>button[aria-current=true]{background:#d9f24a;color:#12160a;font-weight:700}
+body.coach .brand-mark{background:#d9f24a;color:#12160a}
+body.coach .side-foot{margin-top:auto;padding:10px;border:1px solid #262626;border-radius:14px;background:rgba(255,255,255,.04)}
+body.coach .side-avatar{background:#272727;color:#d9f24a}
+body.coach:has(.side-nav) .wrap{padding:14px 14px 40px}
+}

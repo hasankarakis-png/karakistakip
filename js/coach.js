@@ -83,6 +83,9 @@ function ui(t){
 document.addEventListener("click",e=>{
   const t=e.target.closest("button,[data-gohome],#who,#hdrhome");if(!t)return;
   rollover();
+  if(t.id==="sbtog"){document.body.classList.add("sbopen");return}
+  if(t.id==="sbov"||t.closest(".side-nav"))document.body.classList.remove("sbopen");
+  if(t.id==="sbov")return;
   if(ui(t))return;
   if(t.id==="t1"){view="s";render()}else if(t.id==="t2"){view="c";sel=null;render()}
   else if(t.dataset.cnav){const el=document.getElementById(t.dataset.cnav);if(el)el.scrollIntoView({behavior:"smooth",block:"start"});document.querySelectorAll(".side-nav [data-cnav]").forEach(b=>b.setAttribute("aria-current",String(b===t)))}else if(t.dataset.backnav){sel=null;selDay=null;render()}else if(t.dataset.me){meth=t.dataset.me;render()}
