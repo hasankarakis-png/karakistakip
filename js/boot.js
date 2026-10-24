@@ -47,7 +47,7 @@ async function pullCoach(){
   EXALL=e.data||[];TKALL=w.data||[];
 }
 let rt;
-const refresh=()=>{clearTimeout(rt);rt=setTimeout(async()=>{if(!ME||busy()||PX||AIBUSY||PLANBUSY||CHATBUSY)return;try{if(ROLE==="coach"){await pullCoach();if(sel)await Promise.all([loadHist(sel),loadTasks(sel),loadExams(sel)])}else await Promise.all([pullStudent(),loadTasks(ME)]);render();setSync("Güncellendi "+hm(Date.now()))}catch(e){}},2500)};
+const refresh=()=>{clearTimeout(rt);rt=setTimeout(async()=>{if(!ME||busy()||PX||AIBUSY||PLANBUSY||CHATBUSY)return;try{if(ROLE==="coach"){await pullCoach();await loadOD();if(sel)await Promise.all([loadHist(sel),loadTasks(sel),loadExams(sel)])}else await Promise.all([pullStudent(),loadTasks(ME)]);render();setSync("Güncellendi "+hm(Date.now()))}catch(e){}},2500)};
 async function start(){
   const app=document.getElementById("app");
   const {data:{session}}=await sb.auth.getSession();
@@ -58,7 +58,7 @@ async function start(){
   if(!p){await sb.auth.signOut();ME=null;showLogin("Profil bulunamadı, koçuna haber ver.");return}
   NAME=p.name;ROLE=p.role;view=ROLE==="coach"?"c":"s";
   document.getElementById("who").textContent=NAME+" · ";document.getElementById("out").hidden=false;document.getElementById("reset").hidden=ROLE==="coach";document.body.classList.toggle("stu",ROLE==="student");document.body.classList.toggle("coach",ROLE==="coach");if(ROLE==="student")setTimeout(()=>{try{tcInit()}catch(e){}},4500);
-  if(ROLE==="coach"){await pullCoach();["daily","goals","notes","exam_results","weekly_tasks"].reduce((ch,t)=>ch.on("postgres_changes",{event:"*",schema:"public",table:t},refresh),sb.channel("koc")).subscribe();setInterval(refresh,60000)}
+  if(ROLE==="coach"){await pullCoach();await loadOD();["daily","goals","notes","exam_results","weekly_tasks"].reduce((ch,t)=>ch.on("postgres_changes",{event:"*",schema:"public",table:t},refresh),sb.channel("koc")).subscribe();setInterval(refresh,60000)}
   else{await loadStudent();setInterval(refresh,45000);setInterval(()=>{if(rollover()){save();render()}},30000);pushState().then(()=>{if(tab==='h')render()})}
   render();
 }
