@@ -405,7 +405,7 @@ body.coach.sbmini:has(.side-nav) .wrap{padding-left:128px}
 .side-rep b svg{width:18px;height:18px;fill:none;stroke:#d9f24a;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .side-avatar{font-size:13px}
 .coach-section .page-intro{align-items:flex-end;margin:0 0 24px}
-.coach-section .page-intro p{font-size:14px;margin-bottom:6px;text-transform:capitalize}
+.coach-section .page-intro p{font-size:14px;margin-bottom:6px}
 .coach-section .page-intro h1{font-size:clamp(30px,4vw,38px);letter-spacing:-.02em;margin:0}
 .cta{display:flex;align-items:center;gap:10px;height:48px;padding:0 22px;border:0;border-radius:14px;background:#d9f24a;color:#12160a;font:700 15px var(--fb);cursor:pointer;transition:transform .15s,box-shadow .2s;white-space:nowrap}
 .cta:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(217,242,74,.28)}

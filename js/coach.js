@@ -29,7 +29,7 @@ function classCard(){
 }
 function ui(t){
   const D=t.dataset,id=t.id;
-  if(id==="who"||id==="hdrhome"||D.gohome){PLV=null;if(ROLE==="coach"){sel=null;selDay=null;render()}else{tab="b";QA=false;render()}window.scrollTo(0,0);return true}
+  if(id==="who"||id==="hdrhome"||D.gohome){PLV=null;CPG="o";MV=false;if(ROLE==="coach"){sel=null;selDay=null;render()}else{tab="b";QA=false;render()}window.scrollTo(0,0);return true}
   if(D.tab){tab=D.tab;QA=false;render();window.scrollTo(0,0);return true}
   if(id==="phdel"){phDel();return true}
   if(id==="taask"){taAsk();return true}
@@ -85,11 +85,12 @@ document.addEventListener("click",e=>{
   rollover();
   if(t.id==="sbmini"){e.stopPropagation();const m=document.body.classList.toggle("sbmini");try{localStorage.setItem("sbmini",m?"1":"")}catch(x){}return}
   if(t.dataset.proxy){const el=document.getElementById(t.dataset.proxy);if(el)el.click();return}
+  if(t.dataset.cp){CPG=t.dataset.cp;MV=false;MSEL=null;sel=null;PLV=null;render();window.scrollTo(0,0);return}
   if(t.dataset.msgnav){MV=true;sel=null;PLV=null;loadUnr().then(()=>{render();window.scrollTo(0,0)});render();return}
-  if(MV&&(t.dataset.cnav||t.dataset.gohome||t.dataset.i||t.id==="who"||t.id==="hdrhome")){MV=false;MSEL=null;render()}
+  if(MV&&(t.dataset.cnav||t.dataset.gohome||t.dataset.i||t.id==="who"||t.id==="hdrhome")){MV=false;MSEL=null;if(t.dataset.gohome||t.id==="who"||t.id==="hdrhome")CPG="o";render()}
   if(t.dataset.mo){msgOpen(t.dataset.mo);return}
   if(t.id==="msend"){msgSend(ROLE==="coach"?MSEL:ME);return}
-  if(t.id==="rpgo"){RPMODE=true;render();const el=document.getElementById("coach-students");if(el)el.scrollIntoView({behavior:"smooth",block:"start"});return}
+  if(t.id==="rpgo"){RPMODE=true;CPG="s";MV=false;sel=null;render();window.scrollTo(0,0);return}
   if(t.id==="rpx"){RPMODE=false;render();return}
   if(t.id==="sbtog"){document.body.classList.add("sbopen");return}
   if(t.id==="sbov"||t.closest(".side-nav"))document.body.classList.remove("sbopen");
