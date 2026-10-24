@@ -258,3 +258,4 @@ details.fold>summary{cursor:pointer;font-weight:800;font-size:16px}details.fold 
 #who{cursor:pointer;text-decoration:underline dotted}
 .ktt.pu[aria-pressed="true"] span,.ktt.pu[aria-pressed="true"] b,.ktt.pu[aria-pressed="true"] small{text-decoration:none!important;opacity:1!important}.ktt.pu[aria-pressed="false"]{opacity:.55}
 .ktt.pu[aria-pressed="true"] b{color:var(--ink,#fff)!important}
+.dtseg{margin:12px 0}.dtseg button{flex:1}

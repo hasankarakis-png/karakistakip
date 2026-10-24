@@ -83,9 +83,9 @@ function todayTab(){
   ${quoteCard()}<section class="hero"><div class="st"><span class="dot ${DOT[st]}"></span>${LBL[st]}</div>
   <div class="big" id="clock">${dur(clockMs())}</div><div class="sub" id="clocksub">${clockSub()}</div>
   ${st!=="closed"?`<div class="acts">${b}</div>`:""}${live?pomoChip():""}</section>
-  ${picker}${overdueCard(ME,false)}${tasksRing()}${(ktLoad(),tekrarCard(ME,KTS.done,3))}${countdownCard()}${chHomeCard()}<button class="card tr" data-tab="c" aria-label="Konu takibini aç"><span class="rg" style="--p:0"><span style="font-size:30px">📚</span></span><span><h2>Konu Takibi</h2><p style="font-size:15px">Bitirdiğin konuları işaretle</p></span></button><button class="card tr" data-tab="t" aria-label="Tercih robotunu aç"><span class="rg" style="--p:0"><span style="font-size:30px">🎓</span></span><span><h2>Tercih Robotu</h2><p style="font-size:15px">Sıranla bölümleri karşılaştır</p></span></button>
+  ${picker}${overdueCard(ME,false)}${tasksRing()}${countdownCard()}${chHomeCard()}<button class="card tr" data-tab="c" aria-label="Konu takibini aç"><span class="rg" style="--p:0"><span style="font-size:30px">📚</span></span><span><h2>Konu Takibi</h2><p style="font-size:15px">Bitirdiğin konuları işaretle</p></span></button><button class="card tr" data-tab="t" aria-label="Tercih robotunu aç"><span class="rg" style="--p:0"><span style="font-size:30px">🎓</span></span><span><h2>Tercih Robotu</h2><p style="font-size:15px">Sıranla bölümleri karşılaştır</p></span></button>
   <div class="stats"><div class="stat"><b>${solvedT}</b><span>çözülen soru</span></div><div class="stat"><b>${solvedT?"%"+acc:"–"}</b><span>doğruluk</span></div><div class="stat"><b>${S.prog?"✓":"–"}</b><span>program</span></div></div>
-  ${goalRoad(ME)}${coachForMe()}${streakCard()}${(TK[ME]||[]).some(t=>t.task_date===day())?todayTasks():""}
+  ${coachForMe()}${streakCard()}${(TK[ME]||[]).some(t=>t.task_date===day())?todayTasks():""}
   ${qa?`<div class="card" id="qcard"><h2>Soru girişi</h2><div class="row">
   <label>Ders<select id="qs">${SUBJ.map(x=>`<option${x===subj?" selected":""}>${x}</option>`).join("")}</select></label>
   <label>Çözülen<input id="qn" type="number" min="1" inputmode="numeric"></label>

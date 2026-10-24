@@ -56,7 +56,7 @@ async function puAssign(id){
   WK[id]=0;await loadTasks(id);render();
 }
 function puAct(D,id){
-  if(D.plpick){const id=(document.getElementById("plsel")||{}).value;if(!id)return true;sel=id;selDay=null;PLV=id;render();window.scrollTo(0,0);Promise.all([loadHist(id),loadExams(id),loadTasks(id),loadTarget(id)]).then(()=>{if(sel===id)render()});return true}
+  if(D.plpick){const id=(document.getElementById("plsel")||{}).value;if(!id)return true;sel=id;selDay=null;DTAB="g";PLV=id;render();window.scrollTo(0,0);Promise.all([loadHist(id),loadExams(id),loadTasks(id),loadTarget(id)]).then(()=>{if(sel===id)render()});return true}
   const sid=sel||ME;if(!sid&&!D.pugo&&!D.puok)return false;
   if(D.plopen){PLV=sid;render();window.scrollTo(0,0);return true}
   if(D.plback){PLV=null;render();window.scrollTo(0,0);return true}

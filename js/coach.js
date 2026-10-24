@@ -61,6 +61,8 @@ function ui(t){
   if(id==="pwa"){const p=document.getElementById("pt");window.open("https://wa.me/?text="+encodeURIComponent(p.value),"_blank","noopener");return true}
   if(id==="psh"){const p=document.getElementById("pt");if(navigator.share)navigator.share({text:p.value}).catch(()=>{});else{const c=document.getElementById("cp");if(c)c.click()}return true}
   if((D.pugo||D.puok||D.pucancel||D.putog!=null||D.wk!=null||D.plopen||D.plback||D.plpick||D.boost||D.bmadd||D.selfdel)&&puAct(D,id))return true;
+  if(D.ant){ANT=D.ant;render();window.scrollTo(0,0);return true}
+  if(D.dt){DTAB=D.dt;PLV=null;render();window.scrollTo(0,0);return true}
   if(D.rpt){rptRun(D.rpt);return true}
   if(id==='rptcp'){const e=document.getElementById('rpt');if(e&&navigator.clipboard)navigator.clipboard.writeText(e.value);return true}
   if(id==='rptwa'){const e=document.getElementById('rpt');if(e)window.open('https://wa.me/?text='+encodeURIComponent(e.value),'_blank','noopener');return true}
@@ -102,7 +104,7 @@ document.addEventListener("click",e=>{
   else if(t.id==="backhist"){selDay=null;render()}
   else if(t.dataset.per){per=t.dataset.per;render()}
   else if(t.dataset.d){selDay=t.dataset.d===day()?null:t.dataset.d;render();if(selDay&&!DSTATE[sel+"|"+selDay]){const id=sel,d=selDay;loadDay(id,d).then(()=>{if(sel===id&&selDay===d)render()})}}
-  else if(t.dataset.i){sel=t.dataset.i;selDay=null;render();const id=sel;Promise.all([loadHist(id),loadExams(id),loadReport(id),loadTarget(id),loadTasks(id),loadPlan(id)]).then(()=>{if(sel===id)render()})}
+  else if(t.dataset.i){sel=t.dataset.i;selDay=null;DTAB="o";PLV=null;render();const id=sel;Promise.all([loadHist(id),loadExams(id),loadReport(id),loadTarget(id),loadTasks(id),loadPlan(id)]).then(()=>{if(sel===id)render()})}
   else if(t.id==="addq")addQ();
   else if(t.id==="reset"){if(confirm("Bugünün verisi silinsin mi?")){S=fresh();save();render()}}
   else if(t.dataset.s){subj=t.dataset.s;render()}

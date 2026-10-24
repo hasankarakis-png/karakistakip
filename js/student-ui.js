@@ -54,3 +54,10 @@ function qaSheet(){
   ${it("🎓","Tercih Robotu","Sıranla bölümleri karşılaştır","t")}
   ${it("🤖","Çalışma Asistanı","Plan ve motivasyon için sor","k")}</div>`;
 }
+
+let ANT="o";
+function analizTab(){
+  const seg=`<div class="ktseg" role="tablist" style="margin:0 0 12px">${[["o","Özet"],["n","Denemeler"],["t","Hedef ve tekrar"]].map(([k,n])=>`<button data-ant="${k}" aria-pressed="${ANT===k}">${n}</button>`).join("")}</div>`;
+  const b=ANT==="n"?examCard()+netChartsCard(ME):ANT==="t"?goalRoad(ME)+(ktLoad(),tekrarCard(ME,KTS.done,6))+`<button class="card tr" data-tab="c" aria-label="Konu takibini aç"><span class="rg" style="--p:0"><span style="font-size:30px">📚</span></span><span><h2>Konu Takibi</h2><p style="font-size:15px">Bitirdiğin konuları işaretle</p></span></button>`:dailyActivityCard()+heatCard();
+  return `<h1 class="pg">Analiz</h1>${seg}${b}`;
+}
