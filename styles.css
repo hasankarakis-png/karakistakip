@@ -449,3 +449,29 @@ button.s.ocard{display:flex;align-items:center;gap:14px;padding:16px 18px;text-a
 @media (max-width:700px){.lgx-wd{height:120px}.lgx-w2{left:40px}}
 @media (min-width:901px){body.coach.sbmini .side-top .side-brand>div,body.coach.sbmini .side-bell{display:none}}
 @media (max-width:900px){.kst{grid-template-columns:1fr 1fr}.kc{padding:16px}.kc>b{font-size:30px}.coach-section .page-intro{flex-wrap:wrap}}
+
+/* Mesajlar + başlık çubuğunun menüye taşınması */
+body.coach:has(.side-nav) header{display:none}
+.side-acts{display:flex;gap:8px;margin:0 0 8px}
+.side-acts button{flex:1;height:36px;border:1px solid #2a2a2a;border-radius:10px;background:#151515;color:#cfcfc8;font:600 13px var(--fb);cursor:pointer}
+.side-acts button:hover{color:#d9f24a;border-color:#3a3a3a}
+button.kc{text-align:left;font:inherit;color:inherit;cursor:pointer}
+@media (min-width:901px){body.coach.sbmini .side-acts{display:none}}
+.mgrid{display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start}
+.mlist{padding:10px;max-height:70vh;overflow:auto}
+.mli{display:flex;align-items:center;gap:12px;width:100%;padding:10px;border:0;border-radius:12px;background:transparent;color:var(--ink);font:600 15px var(--fb);cursor:pointer;text-align:left}
+.mli:hover{background:rgba(255,255,255,.05)}.mli.on{background:var(--goldsoft)}
+.mli b{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mli .oav{width:38px;height:38px;border-radius:50%;background:#1f2410;color:#d9f24a;display:grid;place-items:center;font-size:13px;font-weight:700;flex:none}
+.mli .oav img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.mli .bd{min-width:22px;height:22px;padding:0 7px;border-radius:11px;background:#d9f24a;color:#12160a;font-size:12px;font-weight:800;display:grid;place-items:center}
+.mpane{display:flex;flex-direction:column;min-height:360px}
+.mth{display:flex;flex-direction:column;gap:8px;height:min(46vh,420px);overflow:auto;padding:6px 2px}
+.mb{max-width:80%;padding:10px 14px;border-radius:16px;font-size:15px;line-height:1.45;word-break:break-word}
+.mb small{display:block;margin-top:4px;font-size:11px;opacity:.65}
+.mb.me{align-self:flex-end;background:#d9f24a;color:#12160a;border-bottom-right-radius:5px}
+.mb.ot{align-self:flex-start;background:#1f1f1f;color:var(--ink);border-bottom-left-radius:5px}
+.mrow{display:flex;gap:10px;margin-top:12px;align-items:flex-end}
+.mrow textarea{flex:1;min-width:0;width:auto;resize:none;max-height:120px;font:500 16px var(--fb);padding:12px 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--cream);color:var(--ink)}
+.mrow .cta{height:46px;padding:0 20px}
+@media (max-width:900px){.mgrid{grid-template-columns:1fr}.mlist{max-height:200px}}

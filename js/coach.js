@@ -84,6 +84,11 @@ document.addEventListener("click",e=>{
   const t=e.target.closest("button,[data-gohome],#who,#hdrhome");if(!t)return;
   rollover();
   if(t.id==="sbmini"){e.stopPropagation();const m=document.body.classList.toggle("sbmini");try{localStorage.setItem("sbmini",m?"1":"")}catch(x){}return}
+  if(t.dataset.proxy){const el=document.getElementById(t.dataset.proxy);if(el)el.click();return}
+  if(t.dataset.msgnav){MV=true;sel=null;PLV=null;loadUnr().then(()=>{render();window.scrollTo(0,0)});render();return}
+  if(MV&&(t.dataset.cnav||t.dataset.gohome||t.dataset.i||t.id==="who"||t.id==="hdrhome")){MV=false;MSEL=null;render()}
+  if(t.dataset.mo){msgOpen(t.dataset.mo);return}
+  if(t.id==="msend"){msgSend(ROLE==="coach"?MSEL:ME);return}
   if(t.id==="rpgo"){RPMODE=true;render();const el=document.getElementById("coach-students");if(el)el.scrollIntoView({behavior:"smooth",block:"start"});return}
   if(t.id==="rpx"){RPMODE=false;render();return}
   if(t.id==="sbtog"){document.body.classList.add("sbopen");return}

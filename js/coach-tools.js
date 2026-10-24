@@ -36,6 +36,7 @@ async function bulkAdd(){
 }
 let sel=null;
 function coachView(){
+  if(MV&&!sel)return msgView();
   if(sel)return detailView();
   const all=roster();
   const c=k=>all.filter(x=>k.includes(x.st)).length;
@@ -48,6 +49,7 @@ function coachView(){
   <div class="kc"><span>Bugün çalışan</span><b>${work}<em> / ${all.length}</em></b><div class="kbar"><i style="width:${all.length?Math.round(work/all.length*100):0}%"></i></div></div>
   <div class="kc"><span>Ortalama net süre</span><b>${Math.floor(avg/60)}<em> sa </em>${avg%60}<em> dk</em></b><small>${all.reduce((a,x)=>a+x.q,0)} soru çözüldü</small></div>
   <div class="kc"><span>Geciken görev</span><b>${od}</b><small class="${od?"w":""}">${od?"Tamamlanmayı bekliyor":"Hepsi güncel"}</small></div>
+  <button class="kc" data-msgnav="1"><span>Okunmamış mesaj</span><b>${unrTotal()}</b><small class="${unrTotal()?"w":""}">${unrTotal()?"Yanıt bekliyor":"Hepsi okundu"}</small></button>
   <div class="kc"><span>Dikkat gereken</span><b>${warn}</b><small class="${warn?"w":""}">${warn?"öğrencide uyarı var":"uyarı yok"}</small></div></div></section>
   <section id="coach-students" class="coach-section"><div class="section-heading"><div><h2>Öğrencilerim</h2></div><span class="count-pill">${all.length} kayıt</span></div>${RPMODE?`<div class="rpban"><b>Rapor için bir öğrenci seç</b><button id="rpx">Vazgeç</button></div>`:""}
   <div class="grid">${all.map(x=>{const pc=Math.round(x.p*100),col=x.st==="study"||x.st==="closed"?"":x.st==="break"?" w":"";return `<button class="s ocard${x.live?" live":""}" data-i="${x.id}"><span class="oav${col}">${PH[x.id]?`<img src="${PH[x.id]}" alt="">`:esc(initials(x.n))}<i class="dot ${DOT[x.st]}"></i></span><span class="oin"><b>${x.n}${flags(x.hist).length?" 🚩":""}</b><small>${LBL[x.st]} · ${Math.floor(x.m/60)} sa ${x.m%60} dk · ${x.q} soru</small><span class="kbar"><i style="width:${pc}%"></i></span></span><span class="opc">%${pc}</span></button>`}).join("")}</div></section>
@@ -136,6 +138,7 @@ const SIC={
  bars:'<path d="M3 20h18M6 16V9M11 16V5M16 16v-5M21 16V8"/>',
  cal:'<path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"/>',
  gear:'<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.7a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.7a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2Z"/>',
+ chat:'<path d="M4 5h16v11H9l-5 4V5Z"/>',
  bell:'<path d="M6 9a6 6 0 1 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9Z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
  spark:'<path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3Z"/>',
  list:'<path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>',
@@ -147,10 +150,10 @@ let RPMODE=false;
 function sideNav(){
   const all=roster(),od=ODN!=null?ODN:all.reduce((a,x)=>a+overdue(x.id).length,0);
   const top=`<div class="side-top"><div class="side-brand" data-gohome="1" style="cursor:pointer"><span class="brand-mark">K</span><div><b>KARAKIŞ <em>TAKİP</em></b><small>Koç paneli</small></div></div><button class="side-bell" data-cnav="coach-tasks" aria-label="Bildirimler">${sic("bell").replace("<span>","").replace("</span>","")}${od?'<i></i>':""}</button></div>`;
-  const foot=`<div class="side-rep"><b>${sic("spark").replace("<span>","").replace("</span>","")} Haftalık rapor</b><span>Öğrencilerin için yapay zekâ özeti ve veli mesajı taslağı hazırla.</span><button id="rpgo">Raporu hazırla</button></div><div class="side-foot" data-gohome="1" style="cursor:pointer"><span class="side-avatar">${esc(initials(NAME))}</span><div><b>${esc(NAME||"Koç")}</b><small>Koç</small></div><button id="sbmini" class="side-mini" aria-label="Menüyü daralt"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg></button></div>`;
+  const foot=`<div class="side-rep"><b>${sic("spark").replace("<span>","").replace("</span>","")} Haftalık rapor</b><span>Öğrencilerin için yapay zekâ özeti ve veli mesajı taslağı hazırla.</span><button id="rpgo">Raporu hazırla</button></div><div class="side-acts"><button data-proxy="theme">Tema</button><button data-proxy="out">Çıkış</button></div><div class="side-foot" data-gohome="1" style="cursor:pointer"><span class="side-avatar">${esc(initials(NAME))}</span><div><b>${esc(NAME||"Koç")}</b><small>Koç</small></div><button id="sbmini" class="side-mini" aria-label="Menüyü daralt"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg></button></div>`;
   const b=(ic,l,attr,extra="",on=false)=>`<button ${attr}${on?' aria-current="true"':""}>${sic(ic)}<span class="nav-label">${l}</span>${extra}</button>`;
   if(sel)return `<nav class="side-nav coach-side" aria-label="Koç menüsü">${top}<div class="side-label">ÖĞRENCİ ÇALIŞMA ALANI</div>${b("back","Öğrenci listesi",'data-backnav="1"')}${b("home","Özet",'data-dt="o"',"",DTAB==="o")}${b("bars","Analiz",'data-dt="a"',"",DTAB==="a")}${b("task","Görevler",'data-dt="g"',"",DTAB==="g")}${b("cal","Program ver",'data-plopen="1"')}${b("list","Diğer",'data-dt="d"',"",DTAB==="d")}${foot}</nav>`;
-  return `<nav class="side-nav coach-side" aria-label="Koç menüsü">${top}<div class="side-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="sbq" type="search" placeholder="Öğrenci ara…" aria-label="Öğrenci ara" autocomplete="off"></div><div class="side-label">ANA MENÜ</div>${b("home","Genel bakış",'data-cnav="coach-overview"',"",true)}${b("users","Öğrenciler",'data-cnav="coach-students"',`<span class="bd">${all.length}</span>`)}${b("task","Görev yönetimi",'data-cnav="coach-tasks"',od?`<span class="bd warn">${od}</span>`:"")}${b("bars","Deneme analizi",'data-cnav="coach-class"')}<div class="side-label">AYARLAR</div>${b("cal","Program ver",'data-cnav="coach-tasks"')}${b("gear","Ayarlar",'data-cnav="coach-tools"')}${foot}</nav>`;
+  return `<nav class="side-nav coach-side" aria-label="Koç menüsü">${top}<div class="side-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="sbq" type="search" placeholder="Öğrenci ara…" aria-label="Öğrenci ara" autocomplete="off"></div><div class="side-label">ANA MENÜ</div>${b("home","Genel bakış",'data-cnav="coach-overview"',"",!MV)}${b("users","Öğrenciler",'data-cnav="coach-students"',`<span class="bd">${all.length}</span>`)}${b("task","Görev yönetimi",'data-cnav="coach-tasks"',od?`<span class="bd warn">${od}</span>`:"")}${b("bars","Deneme analizi",'data-cnav="coach-class"')}${b("chat","Mesajlar",'data-msgnav="1"',unrTotal()?`<span class="bd">${unrTotal()}</span>`:"",MV)}<div class="side-label">AYARLAR</div>${b("cal","Program ver",'data-cnav="coach-tasks"')}${b("gear","Ayarlar",'data-cnav="coach-tools"')}${foot}</nav>`;
 }
 function render(){
     phEnsure();
