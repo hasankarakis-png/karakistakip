@@ -305,7 +305,7 @@ details.fold>summary{cursor:pointer;font-weight:800;font-size:16px}details.fold 
 .lgx-go:active{transform:scale(.98)}
 .lgx-go svg{width:20px;height:20px;fill:none;stroke:#12160a;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;position:relative}
 .lgx-go span{position:relative}
-.lgx-go .sh{position:absolute;top:0;bottom:0;left:0;width:60px;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);animation:lgSh 3.4s ease-in-out infinite}
+.lgx-go .lgsh{position:absolute;top:0;bottom:0;left:0;width:60px;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);animation:lgSh 3.4s ease-in-out infinite}
 .lgx-msg{margin:14px 0 0;padding:10px 12px;border-radius:12px;background:rgba(255,184,77,.1);border:1px solid rgba(255,184,77,.35);color:#ffb84d;font-size:14px}
 .lgx-foot{margin-top:24px;padding-top:18px;border-top:1px solid #262626;display:flex;align-items:center;gap:10px;color:#8b8d7a;font-size:13px;line-height:1.5}
 .lgx-foot svg{width:18px;height:18px;flex:none;fill:none;stroke:#d9f24a;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
@@ -347,3 +347,12 @@ body.coach .side-foot{margin-top:auto;padding:10px;border:1px solid #262626;bord
 body.coach .side-avatar{background:#272727;color:#d9f24a}
 body.coach:has(.side-nav) .wrap{padding:14px 14px 40px}
 }
+
+/* Öğrenci alt menüsü: cam görünüm + etiketli, aktif olan limon dolgulu */
+.pill{height:72px;border-radius:26px;background:rgba(24,24,24,.82);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border:1px solid #2c2c2c;box-shadow:0 20px 40px rgba(0,0,0,.5);padding:0 6px;gap:2px}
+.pill .pn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:56px;margin:auto 0;border-radius:18px;font:600 11px var(--fb);transition:background .2s,color .2s}
+.pill .pn svg{width:23px;height:23px}
+.pill .pn span{line-height:1}
+.pill .pn[aria-current=true]{background:var(--acc);color:var(--acc-ink);font-weight:700;box-shadow:0 8px 20px color-mix(in srgb,var(--acc) 28%,transparent)}
+.pill .fab{width:60px;height:60px;margin-top:-26px;font-size:36px}
+:root[data-theme="light"] .pill{background:rgba(255,255,255,.88);border-color:#e3e6d2}

@@ -113,7 +113,7 @@ function studentView(){
   const first=esc((NAME||"").trim().split(/\s+/)[0]||"Öğrenci"),st=streakInfo();
   const body=tab==="g"?tasksTab():tab==="d"?analizTab():tab==="h"?`<h1 class="pg">Profilim</h1>${profileCard()}${goalRoad(ME)}${targetForm(ME,true)}${badgeCard()}${pushCard()}${accountCard()}`:tab==="k"?chatTab():tab==="t"?tercihTab():tab==="c"?konuTab():tab==="y"?yarisTab():todayTab();
   const head=tab==="b"?`<div class="sh"><span class="av">${avIn(ME,NAME)}</span><div><h1>Merhaba, ${first}</h1><p>Odaklan ve ilerlemeye devam et.</p></div><span class="fire" aria-label="${st.cur} gün seri">🔥 ${st.cur}</span></div>`:tab==="g"?`<h1 class="pg">Görevlerim</h1>`:tab==="k"?`<h1 class="pg">Asistan</h1>`:"";
-  const nb=(k,ic,l)=>`<button class="pn" data-tab="${k}" aria-current="${tab===k}" aria-label="${l}">${IC[ic]}</button>`;
+  const nb=(k,ic,l)=>`<button class="pn" data-tab="${k}" aria-current="${tab===k}" aria-label="${l}">${IC[ic]}<span>${l.replace("Ana sayfa","Bugün")}</span></button>`;
   return `<div class="stu-main">${head}${body}</div><nav class="pill" aria-label="Öğrenci sekmeleri">${nb("b","home","Ana sayfa")}${nb("g","cal","Görevler")}<button class="fab" id="qaopen" aria-label="Hızlı işlemler">+</button>${nb("d","bars","Analiz")}${nb("h","user","Profil")}</nav>${QA?qaSheet():""}`;
 }
 
