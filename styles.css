@@ -475,3 +475,14 @@ button.kc{text-align:left;font:inherit;color:inherit;cursor:pointer}
 .mrow textarea{flex:1;min-width:0;width:auto;resize:none;max-height:120px;font:500 16px var(--fb);padding:12px 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--cream);color:var(--ink)}
 .mrow .cta{height:46px;padding:0 20px}
 @media (max-width:900px){.mgrid{grid-template-columns:1fr}.mlist{max-height:200px}}
+
+/* Haftalık sekmeler */
+.wtabs{display:flex;gap:10px;overflow-x:auto;padding:2px 0 8px;margin:0 0 12px;scrollbar-width:none}
+.wtabs::-webkit-scrollbar{display:none}
+.wtab{flex:none;display:flex;flex-direction:column;gap:2px;align-items:flex-start;min-width:140px;max-width:220px;padding:10px 14px;border-radius:16px;border:1px solid var(--line);background:var(--card);color:var(--mute);cursor:pointer;text-align:left;font:inherit;transition:background .2s,border-color .2s}
+.wtab b{font-size:14px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.wtab small{font-size:12px}
+.wtab:hover{border-color:var(--acc)}
+.wtab.on{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}
+.wtab.on b{color:var(--acc-ink)}
+.wtab.add{border-style:dashed;background:transparent;color:var(--acc)}.wtab.add b{color:var(--acc)}

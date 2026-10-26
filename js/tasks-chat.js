@@ -23,7 +23,7 @@ async function logout(){
   sb.auth.signOut().then(()=>location.reload(),()=>location.reload());
 }
 const shift=(s,k)=>{const[y,m,d]=s.split("-").map(Number);return ymd(new Date(y,m-1,d+k))};
-async function loadTasks(id){try{const {data,error}=await sb.from("weekly_tasks").select("*").eq("student_id",id).gte("task_date",dayN(-7)).lte("task_date",dayN(14)).order("task_date").order("id");if(error)throw error;TK[id]=data||[]}catch(e){TK[id]=TK[id]||[]}}
+async function loadTasks(id){try{const {data,error}=await sb.from("weekly_tasks").select("*").eq("student_id",id).gte("task_date",dayN(-98)).lte("task_date",dayN(28)).order("task_date").order("id");if(error)throw error;TK[id]=data||[]}catch(e){TK[id]=TK[id]||[]}}
 async function loadPlan(id){try{const {data}=await sb.from("plan_drafts").select("*").eq("student_id",id).maybeSingle();PD[id]=data||null}catch(e){PD[id]=null}}
 function taskRow(t,coach){
   const sub=[t.subject,t.amount].filter(Boolean).map(esc).join(" · ")+(t.source==="ai"?" · 🤖 plan":t.source==="student"?" · ✍️ ben ekledim":"");
@@ -36,8 +36,8 @@ function taskList(L,coach){
 
 /* geciken görevler */
 let ODN=null,ODS=0;
-async function loadOD(){try{const r=await sb.from("weekly_tasks").select("student_id").lt("task_date",day()).eq("done",false).limit(1000);if(r.error){ODN=null;ODS=0}else{const L=r.data||[];ODN=L.length;ODS=new Set(L.map(x=>x.student_id)).size}}catch(e){ODN=null;ODS=0}}
-const overdue=id=>(TK[id]||[]).filter(t=>t.task_date<day()&&!t.done);
+async function loadOD(){try{const r=await sb.from("weekly_tasks").select("student_id").lt("task_date",day()).gte("task_date",dayN(-7)).eq("done",false).limit(1000);if(r.error){ODN=null;ODS=0}else{const L=r.data||[];ODN=L.length;ODS=new Set(L.map(x=>x.student_id)).size}}catch(e){ODN=null;ODS=0}}
+const overdue=id=>(TK[id]||[]).filter(t=>t.task_date<day()&&t.task_date>=dayN(-7)&&!t.done);
 function overdueCard(id,coach){
   const L=overdue(id);if(!L.length)return"";
   return `<div class="card" style="border-color:var(--warn)"><h2>⏰ Geciken görevler (${L.length})</h2>${taskList(L,coach)}<div class="row"><button class="btn" style="padding:11px 16px" data-rs="${dayN(1)}" data-rsid="${id}">Yarına kaydır</button><button class="chip" data-rs="${day()}" data-rsid="${id}">Bugüne al</button></div></div>`;
@@ -59,9 +59,9 @@ async function addTask(){
   await loadTasks(sel);render();
 }
 function taskCard(x){
-  const L=(TK[x.id]||[]).filter(t=>t.task_date>=dayN(-3)),d=L.filter(t=>t.done).length,p=PD[x.id];
+  const L=selWeek(x.id).L,d=L.filter(t=>t.done).length,p=PD[x.id];
   const plan=p&&p.content?`<div class="card" style="border-color:var(--acc);margin:12px 0 0"><h2>🤖 Plan taslağı</h2><p class="empty" style="margin:0 0 6px">${esc(p.content.ozet||"")}</p>${p.content.notlar?`<p class="empty" style="margin:0 0 6px;font-size:14px">${esc(p.content.notlar)}</p>`:""}${taskList((p.content.gorevler||[]).map(g=>({...g,id:0,done:false,source:"ai"})),true).replace(/<button[^>]*data-tkdel[^>]*>.*?<\/button>/g,"")}<p class="empty" style="font-size:13px;margin:8px 0">Taslak öğrenciye henüz görünmez. İncele, uygunsa onayla.</p><div class="row"><button class="btn" style="padding:11px 16px" id="planok">Onayla ve öğrenciye ata</button><button class="chip" id="plandel">Taslağı sil</button></div></div>`:"";
-  return overdueCard(x.id,true)+`<div class="card"><h2>Haftalık görevler</h2>${L.length?`<p class="empty" style="margin:0 0 8px">${d}/${L.length} tamamlandı · %${Math.round(d/L.length*100)}</p><div class="bar"><i style="width:${Math.round(d/L.length*100)}%"></i></div>${taskList(L,true)}`:`<p class="empty">Bu öğrenciye atanmış görev yok.</p>`}
+  return overdueCard(x.id,true)+`<div class="card"><h2>Haftanın görevleri</h2>${L.length?`<p class="empty" style="margin:0 0 8px">${d}/${L.length} tamamlandı · %${Math.round(d/L.length*100)}</p><div class="bar"><i style="width:${Math.round(d/L.length*100)}%"></i></div>${taskList(L,true)}`:`<p class="empty">Bu öğrenciye atanmış görev yok.</p>`}
   <div class="row"><label>Tarih<input id="tkd" type="date" value="${day()}" style="width:150px"></label><label>Ders<select id="tks"><option value="">Ders</option>${SUBJ.map(s=>`<option>${s}</option>`).join("")}</select></label><label>Görev<input id="tkt" type="text" maxlength="120" style="width:170px"></label><label>Miktar<input id="tka" type="text" maxlength="60" placeholder="60 soru" style="width:100px"></label><button class="btn" style="padding:11px 16px" id="tkadd">Ekle</button></div>
   <div class="row"><button class="chip" id="planrun"${PLANBUSY?" disabled":""}>🤖 Yapay zekâyla haftalık plan taslağı üret</button></div>
   <p class="empty" style="font-size:14px;margin:6px 0 0">${PLANBUSY===x.id?"Plan hazırlanıyor, yarım dakika sürebilir…":esc(PLANMSG)}</p>${plan}</div>`;
@@ -139,8 +139,8 @@ function todayTasks(){
   return `<div class="card"><h2>Bugünün görevleri · ${L.filter(t=>t.done).length}/${L.length}</h2>${L.map(t=>taskRow(t,false)).join("")}</div>`;
 }
 function tasksTab(){
-  const L=(TK[ME]||[]).filter(t=>t.task_date>=dayN(-3)),d=L.filter(t=>t.done).length;
-  return overdueCard(ME,false)+`<div class="card"><h2>Haftalık görevlerim</h2>${L.length?`<p class="empty" style="margin:0 0 8px">${d}/${L.length} tamamlandı</p><div class="bar"><i style="width:${Math.round(d/L.length*100)}%"></i></div>${taskList(L,false)}`:`<p class="empty">Koçun henüz görev atamadı.</p>`}</div>${weekGrid({id:ME})}${boostCard(ME,false)}${focusCard()}`;
+  const W=selWeek(ME),L=W.L,d=L.filter(t=>t.done).length;
+  return overdueCard(ME,false)+weekTabs(ME,false)+`<div class="card"><h2>${esc(weekName(W))}</h2><p class="empty" style="margin:0 0 8px">${weekName(W)!==wkRange(W.mon)?wkRange(W.mon)+(L.length?" · ":""):""}${L.length?`${d}/${L.length} tamamlandı · %${Math.round(d/L.length*100)}`:""}</p>${L.length?`<div class="bar"><i style="width:${Math.round(d/L.length*100)}%"></i></div>${taskList(L,false)}`:`<p class="empty">Bu hafta için görev yok.</p>`}</div>${weekGrid({id:ME,notabs:true})}${boostCard(ME,false)}${focusCard()}`;
 }
 function chatTab(){
   return `<div class="card"><h2>Yapay zekâ asistanın</h2><p class="empty" style="margin:0 0 10px;font-size:14px">Çalışma planı, deneme ve motivasyon konusunda sor. Deneme verilerine bakarak cevap verir. Resmî karar yerine geçmez; önemli konularda koçuna danış.</p>

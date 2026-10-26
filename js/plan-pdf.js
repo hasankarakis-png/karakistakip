@@ -47,7 +47,10 @@ function ppParse0(items){
     const t=it.filter(i=>i!==l&&i.x>areaLeft-2&&Math.abs(i.y-l.y)<=7).sort((a,b)=>a.x-b.x).map(i=>i.s).join(" ").trim();
     if(t)notlar.push(ppTc(l.s)+": "+t.slice(0,140));
   });
-  return {baslik:"",gorevler:out.slice(0,150),notlar};
+  let tar="";const tl=it.find(i=>/^tarih\s*:/.test(ppL(i.s)));
+  if(tl){tar=ppTc(tl.s.replace(/^\s*tarih\s*:?/i,"").trim())||it.filter(i=>i!==tl&&Math.abs(i.y-tl.y)<=3&&i.x>tl.x&&!/pazartesi|salı|çarşamba|perşembe|cuma|cumartesi|pazar/i.test(i.s)).sort((a,b)=>a.x-b.x).map(i=>i.s).join(" ").trim()}
+  if(!/\d/.test(tar))tar="";
+  return {baslik:"",tarih:tar.slice(0,40),gorevler:out.slice(0,150),notlar};
 }
 let PPJS=null;
 async function ppFromPdf(file){
