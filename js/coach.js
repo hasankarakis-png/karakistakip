@@ -139,7 +139,7 @@ function clockTick(){
 setInterval(()=>{clockTick();wakeSync()},1000);
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")wakeSync()});
 let ME=null,ROLE=null,NAME="",STU=[],ROWS=[];
-let EXMSG="",PX=null,AIBUSY=null;const EX={},AIR={},TG={},TGSEL={},ROADSEL={},ROADSEEN={};let BUMP=null;const GT=["TYT","AYT","LGS"];
+let EXMSG="",PX=null,AIBUSY=null;const EX={},EXERR={},AIR={},TG={},TGSEL={},ROADSEL={},ROADSEEN={};let BUMP=null;const GT=["TYT","AYT","LGS"];
 const setEx=m=>{EXMSG=m;const e=document.getElementById("exmsg");if(e)e.textContent=m};
 async function callFn(n,body){
   try{
@@ -149,7 +149,7 @@ async function callFn(n,body){
     return r.ok?j:{error:j.error||("Sunucu hatası ("+r.status+")")};
   }catch(e){return {error:"Bağlantı kurulamadı."}}
 }
-async function loadExams(id){try{const {data,error}=await sb.from("exam_results").select("*").eq("student_id",id).order("exam_date",{ascending:true,nullsFirst:true}).order("created_at",{ascending:true});if(error)throw error;EX[id]=data||[]}catch(e){EX[id]=EX[id]||[]}}
+async function loadExams(id){try{const {data,error}=await sb.from("exam_results").select("*").eq("student_id",id).order("exam_date",{ascending:true,nullsFirst:true}).order("created_at",{ascending:true});if(error)throw error;EX[id]=data||[];EXERR[id]=""}catch(e){EXERR[id]="Deneme kayıtları yüklenemedi. Bağlantını veya erişim iznini kontrol edip tekrar dene.";if(!(id in EX))EX[id]=[]}}
 async function loadTarget(id){try{const {data,error}=await sb.from("exam_targets").select("*").eq("student_id",id).order("exam_type");if(error)throw error;TG[id]=data||[]}catch(e){if(!(id in TG))TG[id]=[]}}
 const tgOf=(sid,tur)=>(TG[sid]||[]).find(g=>g.exam_type===tur)||null;
 // Yapay zekâ ile aynı seçim: son denemenin türüne uyan hedef, yoksa ilk hedef.
@@ -421,6 +421,7 @@ function examCard(){
   <p class="empty" style="margin:0 0 10px">Deneme sonuç görselini ya da PDF'ini yükle, yapay zekâ okusun. Sen kontrol edip onaylarsın. PDF genelde daha hızlı ve net okunur.</p>
   <div class="row" style="margin-top:0"><input id="exf" type="file" accept="image/*,application/pdf,.pdf" style="width:100%"><button class="btn" style="padding:11px 16px" id="exgo">Dosyayı oku</button></div>
   <p class="empty" id="exmsg" style="margin:8px 0 0;font-size:14px">${esc(EXMSG)}</p>
+  ${EXERR[ME]?`<p role="alert" style="color:var(--warn)">${esc(EXERR[ME])}</p>`:""}
   ${L.length?`<div style="margin-top:10px">${examRows(L,"own")}</div><div class="row"><button class="chip" id="airun" data-sid="${ME}">📈 Gelişim analizimi yenile</button></div>`:""}</div>${hataMatrisiCard(ME)}${aiReportCard(ME)}`;
 }
 function aiCard(sid){
@@ -428,7 +429,7 @@ function aiCard(sid){
   const M=L.map(x=>x.extraction_meta).filter(Boolean),tot=M.reduce((a,m)=>a+num(m.okunan),0),fix=M.reduce((a,m)=>a+num(m.duzeltilen),0);
   const acc=tot?`<p class="empty" style="font-size:13px;margin:8px 0 0">Yapay zekâ okuma doğruluğu: %${Math.round((tot-fix)/tot*100)} (${tot} alandan ${fix} tanesi öğrenci tarafından düzeltildi)</p>`:"";
   return `<div class="card"><h2>Deneme sonuçları ve yapay zekâ</h2>${L.length?examRows(L,"coach"):`<p class="empty">Öğrenci henüz deneme sonucu yüklemedi.</p>`}
-  ${acc}<p class="empty" id="exmsg" style="margin:8px 0 0;font-size:14px">${esc(EXMSG)}</p>
+  ${acc}${EXERR[sid]?`<p role="alert" style="color:var(--warn)">${esc(EXERR[sid])}</p>`:""}<p class="empty" id="exmsg" style="margin:8px 0 0;font-size:14px">${esc(EXMSG)}</p>
   ${L.length?`<div class="row"><button class="chip" id="airun" data-sid="${sid}" data-force="1">🤖 Yapay zekâ koç raporunu üret</button></div>`:""}</div>${hataMatrisiCard(sid)}${aiReportCard(sid,"Yapay zekâ koç raporu")}`;
 }
 
