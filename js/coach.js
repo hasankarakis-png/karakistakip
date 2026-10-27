@@ -64,6 +64,7 @@ function ui(t){
   if(D.ant){ANT=D.ant;render();window.scrollTo(0,0);return true}
   if(D.dt){DTAB=D.dt;PLV=null;render();window.scrollTo(0,0);return true}
   if(D.rpt){rptRun(D.rpt);return true}
+  if(D.rpdf){pdfReport(D.rpdf);return true}
   if(id==='rptcp'){const e=document.getElementById('rpt');if(e&&navigator.clipboard)navigator.clipboard.writeText(e.value);return true}
   if(id==='rptwa'){const e=document.getElementById('rpt');if(e)window.open('https://wa.me/?text='+encodeURIComponent(e.value),'_blank','noopener');return true}
   if(D.rs){reschedule(D.rsid||ME,D.rs);return true}
