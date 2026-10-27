@@ -78,6 +78,7 @@ export async function handler(req: Request): Promise<Response> {
   let body: any;
   try { body = await req.json(); } catch { return J({ error: "Geçersiz istek." }, 400); }
   const mime = String(body?.mime ?? ""), data = String(body?.image ?? "");
+  const freeKey = FREE_KEY || OR_KEY;
   if (!MIMES.includes(mime)) return J({ error: "Yalnızca PDF veya JPG/PNG/WEBP görsel yüklenebilir." }, 400);
   if (!data || data.length > MAX_B64 || !/^[A-Za-z0-9+/=]+$/.test(data)) return J({ error: "Dosya geçersiz veya çok büyük (en fazla ~6 MB)." }, 400);
   if (mime === "application/pdf" && !data.startsWith("JVBERi")) return J({ error: "Bu dosya geçerli bir PDF değil." }, 400);
