@@ -10,11 +10,11 @@ const CORS = {
 };
 const J = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...CORS, "Content-Type": "application/json" } });
 const MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
-const FREE_KEY = (Deno.env.get("FREE_AI_KEY") ?? "").replace(/[\\s"']/g, "");
-const OR_KEY = (Deno.env.get("OPENROUTER_API_KEY") ?? "").replace(/[\\s"']/g, "");
+const FREE_KEY = (Deno.env.get("FREE_AI_KEY") ?? "").replace(/[\s"']/g, "");
+const OR_KEY = (Deno.env.get("OPENROUTER_API_KEY") ?? "").replace(/[\s"']/g, "");
 const FREE_BASE = (() => {
-  const configured = (Deno.env.get("FREE_AI_BASE") ?? "").trim().replace(/\\/+$/, "");
-  if (/^https:\\/\\/(api\\.mistral\\.ai\\/v1|api\\.groq\\.com\\/openai\\/v1|openrouter\\.ai\\/api\\/v1)$/.test(configured)) return configured;
+  const configured = (Deno.env.get("FREE_AI_BASE") ?? "").trim().replace(/\/+$/, "");
+  if (/^https:\/\/(api\.mistral\.ai\/v1|api\.groq\.com\/openai\/v1|openrouter\.ai\/api\/v1)$/.test(configured)) return configured;
   return OR_KEY && !FREE_KEY ? "https://openrouter.ai/api/v1" : "https://api.mistral.ai/v1";
 })();
 const FREE_MODEL = (Deno.env.get("FREE_AI_MODEL") ?? (FREE_BASE.includes("openrouter.ai") ? "mistralai/mistral-small-3.2-24b-instruct:free" : "mistral-small-latest")).trim();
@@ -109,7 +109,7 @@ export async function handler(req: Request): Promise<Response> {
       if ([400, 422].includes(r.status)) r = await request({ type: "json_object" });
       for (let i = 0; i < 2 && [500, 502, 503, 529].includes(r.status); i++) { await new Promise((res) => setTimeout(res, 1500 * (i + 1))); r = await request({ type: "json_object" }); }
       if (!r.ok) throw new Error(`Ücretsiz yapay zekâ hizmeti hata verdi (${r.status}).` + await errDetail(r));
-      const j = await r.json(), t = String(j?.choices?.[0]?.message?.content ?? "").replace(/^\`\`\`(?:json)?\\s*|\\s*\`\`\`$/g, "").trim();
+      const j = await r.json(), t = String(j?.choices?.[0]?.message?.content ?? "").trim().replace(/^\x60\x60\x60(?:json)?\s*/i, "").replace(/\s*\x60\x60\x60$/, "");
       try { return JSON.parse(t); } catch { throw new Error("Ücretsiz yapay zekâ yanıtı okunamadı."); }
     };
     let o: any = null, model = "";
