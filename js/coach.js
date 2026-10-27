@@ -258,6 +258,21 @@ async function prepImage(file){
   }
 }
 const readB64=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(",")[1]||"");r.onerror=rej;r.readAsDataURL(f)});
+let EXJS=null;
+// PDF sayfalarını JPEG görsele çevirir (en fazla 8 sayfa); böylece her görsel okuyan model PDF'i de okuyabilir.
+async function pdfPages(file){
+  if(!EXJS){EXJS=await import("/js/vendor/pdf.min.mjs");EXJS.GlobalWorkerOptions.workerSrc="/js/vendor/pdf.worker.min.mjs"}
+  const doc=await EXJS.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;
+  const n=Math.min(doc.numPages,8),out=[];let total=0;
+  for(let i=1;i<=n;i++){
+    const pg=await doc.getPage(i),v0=pg.getViewport({scale:1}),sc=Math.min(2.2,1900/Math.max(v0.width,v0.height));
+    const v=pg.getViewport({scale:sc}),c=document.createElement("canvas");c.width=Math.round(v.width);c.height=Math.round(v.height);
+    await pg.render({canvasContext:c.getContext("2d"),viewport:v}).promise;
+    const b=c.toDataURL("image/jpeg",.85).split(",")[1];total+=b.length;
+    if(total>8.5e6)break;out.push(b);
+  }
+  return out;
+}
 async function examExtract(){
   const f=document.getElementById("exf").files[0];
   if(!f){setEx("Önce bir görsel veya PDF seç.");return}
@@ -265,8 +280,13 @@ async function examExtract(){
   if(pdf){
     if(f.size>6.5e6){setEx("PDF çok büyük (en fazla yaklaşık 6 MB). Sayfa sayısını azaltıp tekrar dene.");return}
     setEx("PDF okunuyor, 15-30 saniye sürebilir…");
-    let b64;try{b64=await readB64(f)}catch(e){setEx("PDF açılamadı.");return}
-    const r=await callFn("exam-extract",{image:b64,mime:"application/pdf"});
+    let pages;try{pages=await pdfPages(f)}catch(e){pages=null}
+    let r;
+    if(pages&&pages.length){r=await callFn("exam-extract",{images:pages,mime:"image/jpeg"})}
+    else{
+      let b64;try{b64=await readB64(f)}catch(e){setEx("PDF açılamadı.");return}
+      r=await callFn("exam-extract",{image:b64,mime:"application/pdf"});
+    }
     if(r.error){setEx(r.error);return}
     PX={exam:r.exam,uyarilar:r.uyarilar||[]};setEx("");render();return;
   }

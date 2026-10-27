@@ -182,6 +182,7 @@ export function validate(raw: any) {
   };
 }
 
+type F = { b64: string; mime: string };
 let RESOLVED: string | null = null;
 // Gemini taban adresi: varsayılan Google; istenirse Cloudflare AI Gateway adresi GEMINI_BASE ile verilir.
 // Güvenlik: anahtar yalnızca bilinen iki sunucudan birine gönderilir, başka adres yok sayılır.
@@ -207,10 +208,10 @@ async function errDetail(r: Response): Promise<string> {
   try { const m = String(JSON.parse(await r.text())?.error?.message ?? "").replace(/[\u0000-\u001f<>]/g, " ").slice(0, 160); return m ? " " + m : ""; } catch { return ""; }
 }
 
-async function gemini(key: string, b64: string, mime: string, schema: unknown, prompt: string, maxTok: number, salvage = false) {
+async function gemini(key: string, fs: F[], mime: string, schema: unknown, prompt: string, maxTok: number, salvage = false) {
   const payload = JSON.stringify({
     systemInstruction: { parts: [{ text: SYSTEM }] },
-    contents: [{ role: "user", parts: [{ text: prompt }, { inline_data: { mime_type: mime, data: b64 } }] }],
+    contents: [{ role: "user", parts: [{ text: prompt }, ...fs.map((f) => ({ inline_data: { mime_type: f.mime, data: f.b64 } }))] }],
     generationConfig: { responseMimeType: "application/json", responseSchema: schema, temperature: 0.1, maxOutputTokens: maxTok },
   });
   const send = (m: string) => fetch(GURL(m), { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: payload });
@@ -246,16 +247,15 @@ function toJsonSchema(s: any): any {
   return o;
 }
 
-async function claude(key: string, b64: string, mime: string, schema: unknown, prompt: string, maxTok: number) {
-  const isPdf = mime === "application/pdf";
-  const file = isPdf
-    ? { type: "document", source: { type: "base64", media_type: mime, data: b64 } }
-    : { type: "image", source: { type: "base64", media_type: mime, data: b64 } };
+async function claude(key: string, fs: F[], mime: string, schema: unknown, prompt: string, maxTok: number) {
+  const files = fs.map((f) => f.mime === "application/pdf"
+    ? { type: "document", source: { type: "base64", media_type: f.mime, data: f.b64 } }
+    : { type: "image", source: { type: "base64", media_type: f.mime, data: f.b64 } });
   const payload = JSON.stringify({
     model: CMODEL, max_tokens: maxTok, temperature: 0.1, system: SYSTEM,
     tools: [{ name: "kaydet", description: "Okunan sonuç belgesi verisini kaydet.", input_schema: toJsonSchema(schema) }],
     tool_choice: { type: "tool", name: "kaydet" },
-    messages: [{ role: "user", content: [file, { type: "text", text: prompt }] }],
+    messages: [{ role: "user", content: [...files, { type: "text", text: prompt }] }],
   });
   const send = () => fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" }, body: payload });
   let r = await send();
@@ -275,11 +275,11 @@ const FBASE = (() => {
 })();
 const FMODEL = (Deno.env.get("FREE_AI_MODEL") ?? "mistral-small-latest").trim();
 
-async function freeai(key: string, b64: string, mime: string, schema: unknown, prompt: string, maxTok: number, salvage = false) {
+async function freeai(key: string, fs: F[], mime: string, schema: unknown, prompt: string, maxTok: number, salvage = false) {
   const js = toJsonSchema(schema);
   const mk = (rf: unknown, extra: string) => JSON.stringify({
     model: FMODEL, temperature: 0.1, max_tokens: Math.min(maxTok, 16000), response_format: rf,
-    messages: [{ role: "system", content: SYSTEM }, { role: "user", content: [{ type: "text", text: prompt + extra }, { type: "image_url", image_url: { url: `data:${mime};base64,${b64}` } }] }],
+    messages: [{ role: "system", content: SYSTEM }, { role: "user", content: [{ type: "text", text: prompt + extra }, ...fs.map((f) => ({ type: "image_url", image_url: { url: `data:${f.mime};base64,${f.b64}` } }))] }],
   });
   const send = (body: string) => fetch(FBASE + "/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + key }, body });
   let r = await send(mk({ type: "json_schema", json_schema: { name: "sonuc", schema: js } }, ""));
@@ -311,12 +311,24 @@ export async function handler(req: Request): Promise<Response> {
 
   let body: any;
   try { body = await req.json(); } catch { return J({ error: "Geçersiz istek." }, 400); }
-  const mime = String(body?.mime ?? ""), image = String(body?.image ?? "");
+  const mime = String(body?.mime ?? "");
   if (!MIMES.includes(mime)) return J({ error: "Yalnızca JPG, PNG, WEBP görsel veya PDF yüklenebilir." }, 400);
   const isPdf = mime === "application/pdf";
-  if (!image || image.length > (isPdf ? MAX_PDF_B64 : MAX_B64) || !/^[A-Za-z0-9+/=]+$/.test(image)) return J({ error: isPdf ? "PDF geçersiz veya çok büyük (en fazla yaklaşık 6 MB)." : "Görsel geçersiz veya çok büyük." }, 400);
-  if (isPdf && !image.startsWith(PDF_MAGIC)) return J({ error: "Bu dosya geçerli bir PDF değil." }, 400);
-  if (isPdf && !ak && !gk) return J({ error: "Bu yapay zekâ PDF okuyamaz, lütfen belgenin ekran görüntüsünü yükle." }, 400);
+  const b64ok = (x: unknown) => typeof x === "string" && /^[A-Za-z0-9+/=]+$/.test(x);
+  let fs: F[];
+  if (Array.isArray(body?.images)) {
+    // PDF sayfaları istemcide görsele çevrilip gönderilir (en fazla 8 sayfa, toplam ≈6,5 MB).
+    const im = body.images.slice(0, 8);
+    if (!im.length || mime === "application/pdf" || !im.every(b64ok) || im.reduce((a: number, x: string) => a + x.length, 0) > MAX_PDF_B64) return J({ error: "Sayfa görselleri geçersiz veya çok büyük." }, 400);
+    fs = im.map((x: string) => ({ b64: x, mime }));
+  } else {
+    const image = String(body?.image ?? "");
+    if (!image || image.length > (isPdf ? MAX_PDF_B64 : MAX_B64) || !b64ok(image)) return J({ error: isPdf ? "PDF geçersiz veya çok büyük (en fazla yaklaşık 6 MB)." : "Görsel geçersiz veya çok büyük." }, 400);
+    if (isPdf && !image.startsWith(PDF_MAGIC)) return J({ error: "Bu dosya geçerli bir PDF değil." }, 400);
+    fs = [{ b64: image, mime }];
+  }
+  const noImg = fs.some((f) => f.mime === "application/pdf");
+  if (noImg && !ak && !gk) return J({ error: "Bu yapay zekâ PDF'i doğrudan okuyamaz; sayfalar görsel olarak gönderilmelidir." }, 400);
 
   // Kota atomik ve yalnızca sunucuda artırılır; Gemini hata verirse hak iade edilir.
   const { data: okQ, error: qErr } = await adm.rpc("bump_usage", { p_student: user.id, p_kind: "extract", p_limit: LIMIT });
@@ -325,10 +337,10 @@ export async function handler(req: Request): Promise<Response> {
 
   try {
     const ai = ak
-      ? (sc: unknown, pr: string, mt: number, _sv = false) => claude(ak, image, mime, sc, pr, Math.min(mt, 16000))
-      : fk && !isPdf
-        ? (sc: unknown, pr: string, mt: number, sv = false) => freeai(fk, image, mime, sc, pr, mt, sv)
-        : (sc: unknown, pr: string, mt: number, sv = false) => gemini(gk, image, mime, sc, pr, mt, sv);
+      ? (sc: unknown, pr: string, mt: number, _sv = false) => claude(ak, fs, mime, sc, pr, Math.min(mt, 16000))
+      : fk && !noImg
+        ? (sc: unknown, pr: string, mt: number, sv = false) => freeai(fk, fs, mime, sc, pr, mt, sv)
+        : (sc: unknown, pr: string, mt: number, sv = false) => gemini(gk, fs, mime, sc, pr, mt, sv);
     const [head, q] = await Promise.all([
       ai(SCHEMA, "Bu deneme sonuç belgesinden yalnızca üst bilgileri ve DERSLER özet tablosunu çıkar. Soru bazlı kazanım satırlarını bu çağrıda çıkarma.", 6000),
       ai(Q_SCHEMA, "SADECE_SORULAR: Bu deneme sonuç belgesindeki tüm ders tablolarında yer alan soru bazlı kazanım satırlarını sorular listesine çıkar. Başka alan üretme.", 20000, true).catch((e: any) => ({ __hata: e })),
@@ -336,7 +348,7 @@ export async function handler(req: Request): Promise<Response> {
     if (head?.sinav_gorseli_mi === false) { await refund(); return J({ error: "Bu dosya bir deneme sonuç belgesine benzemiyor." }, 422); }
     const out = validate({ ...head, sorular: Array.isArray(q?.sorular) ? q.sorular : [] });
     if (q?.__hata) out.uyarilar.push("Soru bazlı konu detayı okunamadı, yalnızca ders tablosu kaydedilecek. Konu analizi için görseli tekrar yüklemeyi deneyebilirsin.");
-    return J({ ...out, model: ak ? CMODEL : fk && !isPdf ? FMODEL : (RESOLVED ?? MODEL) });
+    return J({ ...out, model: ak ? CMODEL : fk && !noImg ? FMODEL : (RESOLVED ?? MODEL) });
   } catch (e: any) {
     await refund();
     return J({ error: e?.msg ?? "Beklenmeyen hata." }, e?.code ?? 500);
