@@ -75,7 +75,6 @@ async function puAssign(id){
   for(let i=0;i<rows.length;i+=50){const r=await dbw(sb.from("weekly_tasks").insert(rows.slice(i,i+50)));if(r&&r.error){err=r.error.message;break}}
   P.busy=false;
   if(err){P.msg="Atanamadı: "+err;P.err=true;render();return}
-  try{await dbw(sb.from("weekly_tasks").update({week_title:wt}).eq("student_id",id).gte("task_date",dr.week).lte("task_date",shift(dr.week,6)))}catch(e){}
   WSEL[id]=dr.week;P.draft=null;P.err=false;P.msg=rows.length+" görev atandı ✓"+(skippedPast?` · ${skippedPast} geçmiş gün atlandı`:"")+(dup?` · ${dup} zaten vardı`:"");
   WK[id]=0;await loadTasks(id);render();
 }
