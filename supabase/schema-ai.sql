@@ -37,7 +37,7 @@ alter table public.exam_results enable row level security;
 alter table public.ai_reports   enable row level security;
 alter table public.ai_usage     enable row level security;
 
--- Deneme sonuçları: öğrenci kendi sonucunu ekler/okur, koç hepsini okur ve silebilir
+-- Deneme sonuçları: öğrenci kendi sonucunu ekler/okur/düzenler/siler; koç hepsini okur ve silebilir
 create policy "exam_student_select" on public.exam_results for select using (student_id = auth.uid());
 create policy "exam_student_insert" on public.exam_results for insert with check (student_id = auth.uid());
 create policy "exam_student_update" on public.exam_results for update using (student_id = auth.uid()) with check (student_id = auth.uid());
