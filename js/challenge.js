@@ -10,7 +10,7 @@ async function chBoardLoad(){
 async function chLoad(force){
   if(CH.busy||(CH.st!=="idle"&&!force))return;CH.busy=true;CH.st="load";
   try{
-    const r=await sb.from("challenges").select("id,title,metric,start_day,end_day,notified_at,chat_open").order("id",{ascending:false}).limit(8);
+    const r=await sb.from("challenges").select("id,title,metric,start_day,end_day,notified_at,chat_open").order("id",{ascending:false}).limit(40);
     CH.list=r&&Array.isArray(r.data)?r.data:[];
     if(!CH.list.find(x=>x.id===CH.sel)){const a=CH.list.find(chActive);CH.sel=(a||CH.list[0]||{}).id||null}
     await chBoardLoad();
@@ -82,15 +82,16 @@ function yarisTab(){
 }
 function chCoachCard(){
   chLoad();
-  const rows=CH.list.map(c=>`<div class="chr${c.id===CH.sel?" me":""}" data-chsel="${c.id}" style="cursor:pointer"><span class="chn"><b>${esc(c.title)}</b><small style="display:block;color:var(--mute)">${chInfo(c)}</small></span><span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${c.notified_at?`<span class="bd g">duyuruldu</span>`:`<button class="chip" data-chnot="${c.id}">📣 Duyur</button>`}<button class="chip" data-chdel="${c.id}">Sil</button></span></div>`).join("");
+  const board=c=>`<div class="chdet"><h3 style="margin:4px 0 6px">${esc(c.title)} · sıralama</h3>${chBoardHTML(c)}<div class="row"><button class="chip" data-chtog="${c.id}">${c.chat_open===false?"💬 Sohbeti aç":"🔒 Sohbeti kapat"}</button></div>${chatBox(c)}</div>`;
+  const rows=CH.list.map(c=>`<div class="chr${c.id===CH.sel?" me":""}"><button class="chsel" data-chsel="${c.id}" aria-expanded="${c.id===CH.sel}"><span class="chn"><b>${esc(c.title)}</b><small style="display:block;color:var(--mute)">${chInfo(c)}</small></span></button><span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${c.notified_at?`<span class="bd g">duyuruldu</span>`:`<button class="chip" data-chnot="${c.id}">📣 Duyur</button>`}<button class="chip" data-chdel="${c.id}">Sil</button></span></div>`+(c.id===CH.sel?board(c):"")).join("")
   const sel=CH.list.find(x=>x.id===CH.sel);
   return `<details class="card"${CH.msg||CH.list.length?" open":""}><summary style="cursor:pointer;font-weight:700">🏆 Yarışmalar</summary>
-  <div class="row"><label>Başlık<input id="cht" type="text" maxlength="80" placeholder="Hafta şampiyonu" style="width:170px"></label><label>Ölçüt<select id="chm"><option value="minutes">Çalışma süresi</option><option value="questions">Çözülen soru</option></select></label><label>Başlangıç<input id="chs" type="date" value="${day()}" style="width:150px"></label><label>Bitiş<input id="che" type="date" value="${dayN(6)}" style="width:150px"></label><button class="btn" style="padding:11px 16px" id="chmk">Oluştur ve duyur</button></div>
+  <div class="row"><label>Başlık<input id="cht" type="text" maxlength="80" placeholder="Hafta şampiyonu" style="width:170px"></label><label>Ölçüt<select id="chmet"><option value="minutes">Çalışma süresi</option><option value="questions">Çözülen soru</option></select></label><label>Başlangıç<input id="chs" type="date" value="${day()}" style="width:150px"></label><label>Bitiş<input id="che" type="date" value="${dayN(6)}" style="width:150px"></label><button class="btn" style="padding:11px 16px" id="chmk">Oluştur ve duyur</button></div>
   <p class="empty" style="font-size:13px;margin:6px 0 0">${CH.msg?esc(CH.msg):"Oluşturunca tüm öğrencilere bildirim gider. En fazla 60 gün."}</p>
-  ${rows?`<div style="margin-top:10px">${rows}</div>`:""}${sel?`<h3 style="margin:14px 0 6px">${esc(sel.title)} · sıralama</h3>${chBoardHTML(sel)}<div class="row"><button class="chip" data-chtog="${sel.id}">${sel.chat_open===false?"💬 Sohbeti aç":"🔒 Sohbeti kapat"}</button></div>${chatBox(sel)}`:""}</details>`;
+  ${rows?`<div style="margin-top:10px">${rows}</div>`:""}</details>`;
 }
 async function chCreate(){
-  const g=i=>document.getElementById(i).value,title=g("cht").trim().slice(0,80),m=g("chm"),a=g("chs"),b=g("che");
+  const g=i=>document.getElementById(i).value,title=g("cht").trim().slice(0,80),m=g("chmet"),a=g("chs"),b=g("che");
   if(title.length<3){CH.msg="Başlık en az 3 harf olmalı.";render();return}
   if(!a||!b||b<a||chDays(a,b)>60){CH.msg="Tarihleri kontrol et (bitiş başlangıçtan önce olamaz, en fazla 60 gün).";render();return}
   if(!confirm("“"+title+"” yarışması oluşturulsun ve tüm öğrencilere bildirim gitsin mi?"))return;
