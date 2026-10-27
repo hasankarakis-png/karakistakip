@@ -58,13 +58,51 @@ async function addTask(){
   await dbw(sb.from("weekly_tasks").insert({student_id:sel,task_date:g("tkd")||day(),title,subject:g("tks")||null,amount:g("tka").trim().slice(0,60)||null,source:"coach",created_by:ME}));
   await loadTasks(sel);render();
 }
+/* Veriye dayalı, koç onaylı haftalık plan uyarlama önerileri */
+function adaptivePlanCard(sid,L,coach){
+  const all=(TK[sid]||[]),from=dayN(-6),week=all.filter(t=>t.task_date>=from&&t.task_date<=day());
+  const overdue=week.filter(t=>t.task_date<day()&&!t.done),done=week.filter(t=>t.done).length;
+  const rate=week.length?Math.round(done/week.length*100):null;
+  const exams=(EX[sid]||[]).filter(e=>e&&e.total_net!=null&&Number.isFinite(Number(e.total_net)));
+  const latest=exams.length?exams[exams.length-1]:null;
+  const same=latest?exams.filter(e=>e.exam_type===latest.exam_type):[];
+  const trend=same.length>=2?Number(same[same.length-1].total_net)-Number(same[same.length-2].total_net):null;
+  const topics=new Map();
+  exams.slice(-3).forEach(e=>(Array.isArray(e.topics)?e.topics:[]).forEach(t=>{
+    const subject=String(t.ders||"").trim(),topic=String(t.konu||"").trim();
+    const wrong=Number(t.yanlis)||0,blank=Number(t.bos)||0;
+    if(!subject||!topic||wrong+blank===0)return;
+    const key=(subject+"|"+topic).toLocaleLowerCase("tr");
+    const v=topics.get(key)||{subject,topic,wrong:0,blank:0,exams:new Set()};
+    v.wrong+=wrong;v.blank+=blank;v.exams.add(String(e.id??e.exam_date??e.exam_name));topics.set(key,v);
+  }));
+  const recurring=[...topics.values()].filter(t=>t.exams.size>=2||t.wrong>=4).sort((a,b)=>(b.exams.size-a.exams.size)||(b.wrong-a.wrong)).slice(0,2);
+  const suggestions=[];
+  if(week.length>=4&&rate<50)suggestions.push({title:"Görev yükünü sadeleştir",why:"Son 7 günde görev tamamlama %"+rate+" ("+done+"/"+week.length+").",action:"Gelecek hafta görev sayısını azaltıp her görevi 25–40 dakikalık parçalara böl."});
+  if(overdue.length)suggestions.push({title:"Önce gecikenleri toparla",why:"Son 7 günde "+overdue.length+" gecikmiş görev var.",action:"Yeni yük eklemeden önce en önemli 1–2 görevi seç; kalanları koçla birlikte yeniden tarihle."});
+  if(trend!==null&&trend<=-2)suggestions.push({title:"Deneme düşüşünü incele",why:"Aynı sınav türündeki son iki deneme "+(trend<0?"":"+")+trend.toFixed(2)+" net değişti.",action:"Bir sonraki planda tekrar ve yanlış analizi için kısa oturumlar ayır; tek denemeden kesin sonuç çıkarma."});
+  if(recurring.length)suggestions.push({title:"Tekrarlayan konu eksiklerine öncelik ver",why:recurring.map(t=>t.subject+" · "+t.topic+" ("+t.exams.size+" denemede, "+t.wrong+" yanlış)").join("; "),action:"Bu konuları haftanın ilk yarısına yerleştir; konu tekrarı sonrası mini test ekle."});
+  if(!suggestions.length){
+    if(week.length<3)suggestions.push({title:"Önce düzenli veri topla",why:"Son 7 günde karşılaştırma için yeterli görev verisi yok.",action:"Bir hafta boyunca görevleri ve çalışma sürelerini düzenli kaydet; sonra planı daha güvenilir uyarlayabiliriz."});
+    else suggestions.push({title:"Mevcut ritmi koru",why:"Son 7 günlük görev verisinde belirgin bir risk kuralı tetiklenmedi.",action:"Mevcut yükü koru; deneme ve konu verileri geldikçe öncelikleri güncelle."});
+  }
+  const netNote=latest?("Son deneme: "+String(latest.exam_type||"Deneme")+" · "+Number(latest.total_net).toFixed(2)+" net"):"Henüz deneme neti bulunmuyor; net eğilimi hakkında çıkarım yapılmadı.";
+  return `<div class="card adaptive-card" style="border-color:var(--acc)">
+  <div class="eyebrow" style="color:var(--acc)">AKILLI PLAN UYARLAMA</div><h2>Bu haftayı veriye göre düzenle</h2>
+  <p class="empty" style="margin:0 0 10px;font-size:13px">Öneriler kayıtlı görev ve deneme verilerinden çıkarılır. Sistem planı kendiliğinden öğrenciye atamaz.</p>
+  <div class="subj"><span>Son 7 gün görev tamamlama</span><b>${rate===null?"Veri yok":"%"+rate+" · "+done+"/"+week.length}</b></div>
+  <div class="subj"><span>Geciken görev</span><b>${overdue.length}</b></div>
+  <div class="subj"><span>Deneme verisi</span><b>${esc(netNote)}</b></div>
+  ${suggestions.map(s=>`<div class="adaptive-tip"><b>${esc(s.title)}</b><p>${esc(s.action)}</p><small><strong>Neden?</strong> ${esc(s.why)}</small></div>`).join("")}
+  ${coach?`<div class="row"><button class="btn" style="padding:11px 16px" id="planrun"${PLANBUSY===sid?" disabled":""}>🤖 Bu verilere göre haftalık taslak oluştur</button></div><p class="empty" style="font-size:13px;margin:6px 0 0">${PLANBUSY===sid?"Taslak hazırlanıyor…":esc(PLANMSG)}</p>`:""}
+  </div>`;
+}
 function taskCard(x){
   const L=selWeek(x.id).L,d=L.filter(t=>t.done).length,p=PD[x.id];
   const plan=p&&p.content?`<div class="card" style="border-color:var(--acc);margin:12px 0 0"><h2>🤖 Plan taslağı</h2><p class="empty" style="margin:0 0 6px">${esc(p.content.ozet||"")}</p>${p.content.notlar?`<p class="empty" style="margin:0 0 6px;font-size:14px">${esc(p.content.notlar)}</p>`:""}${taskList((p.content.gorevler||[]).map(g=>({...g,id:0,done:false,source:"ai"})),true).replace(/<button[^>]*data-tkdel[^>]*>.*?<\/button>/g,"")}<p class="empty" style="font-size:13px;margin:8px 0">Taslak öğrenciye henüz görünmez. İncele, uygunsa onayla.</p><div class="row"><button class="btn" style="padding:11px 16px" id="planok">Onayla ve öğrenciye ata</button><button class="chip" id="plandel">Taslağı sil</button></div></div>`:"";
-  return overdueCard(x.id,true)+`<div class="card"><h2>Haftanın görevleri</h2>${L.length?`<p class="empty" style="margin:0 0 8px">${d}/${L.length} tamamlandı · %${Math.round(d/L.length*100)}</p><div class="bar"><i style="width:${Math.round(d/L.length*100)}%"></i></div>${taskList(L,true)}`:`<p class="empty">Bu öğrenciye atanmış görev yok.</p>`}
+  return adaptivePlanCard(x.id,L,true)+overdueCard(x.id,true)+`<div class="card"><h2>Haftanın görevleri</h2>${L.length?`<p class="empty" style="margin:0 0 8px">${d}/${L.length} tamamlandı · %${Math.round(d/L.length*100)}</p><div class="bar"><i style="width:${Math.round(d/L.length*100)}%"></i></div>${taskList(L,true)}`:`<p class="empty">Bu öğrenciye atanmış görev yok.</p>`}
   <div class="row"><label>Tarih<input id="tkd" type="date" value="${day()}" style="width:150px"></label><label>Ders<select id="tks"><option value="">Ders</option>${SUBJ.map(s=>`<option>${s}</option>`).join("")}</select></label><label>Görev<input id="tkt" type="text" maxlength="120" style="width:170px"></label><label>Miktar<input id="tka" type="text" maxlength="60" placeholder="60 soru" style="width:100px"></label><button class="btn" style="padding:11px 16px" id="tkadd">Ekle</button></div>
-  <div class="row"><button class="chip" id="planrun"${PLANBUSY?" disabled":""}>🤖 Yapay zekâyla haftalık plan taslağı üret</button></div>
-  <p class="empty" style="font-size:14px;margin:6px 0 0">${PLANBUSY===x.id?"Plan hazırlanıyor, yarım dakika sürebilir…":esc(PLANMSG)}</p>${plan}</div>`;
+  ${plan}</div>`;
 }
 async function planRun(){
   const sid=sel;if(!sid||PLANBUSY)return;PLANBUSY=sid;PLANMSG="";render();
@@ -140,7 +178,7 @@ function todayTasks(){
 }
 function tasksTab(){
   const W=selWeek(ME),L=W.L,d=L.filter(t=>t.done).length;
-  return overdueCard(ME,false)+weekTabs(ME,false)+`<div class="card"><h2>${esc(weekName(W))}</h2><p class="empty" style="margin:0 0 8px">${weekName(W)!==wkRange(W.mon)?wkRange(W.mon)+(L.length?" · ":""):""}${L.length?`${d}/${L.length} tamamlandı · %${Math.round(d/L.length*100)}`:""}</p>${L.length?`<div class="bar"><i style="width:${Math.round(d/L.length*100)}%"></i></div>${taskList(L,false)}`:`<p class="empty">Bu hafta için görev yok.</p>`}</div>${weekGrid({id:ME,notabs:true})}${boostCard(ME,false)}${focusCard()}`;
+  return adaptivePlanCard(ME,L,false)+overdueCard(ME,false)+weekTabs(ME,false)+`<div class="card"><h2>${esc(weekName(W))}</h2><p class="empty" style="margin:0 0 8px">${weekName(W)!==wkRange(W.mon)?wkRange(W.mon)+(L.length?" · ":""):""}${L.length?`${d}/${L.length} tamamlandı · %${Math.round(d/L.length*100)}`:""}</p>${L.length?`<div class="bar"><i style="width:${Math.round(d/L.length*100)}%"></i></div>${taskList(L,false)}`:`<p class="empty">Bu hafta için görev yok.</p>`}</div>${weekGrid({id:ME,notabs:true})}${boostCard(ME,false)}${focusCard()}`;
 }
 function chatTab(){
   return `<div class="card"><h2>Yapay zekâ asistanın</h2><p class="empty" style="margin:0 0 10px;font-size:14px">Çalışma planı, deneme ve motivasyon konusunda sor. Deneme verilerine bakarak cevap verir. Resmî karar yerine geçmez; önemli konularda koçuna danış.</p>

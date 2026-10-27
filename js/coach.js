@@ -48,7 +48,7 @@ function ui(t){
   if(D.tctr!=null){TC.tr=D.tctr;TC.lim=40;render();return true}
   if(D.tclv){TC.lv=D.tclv;TC.pt=D.tclv==="O"?"TYT":"SAY";TC.il="";TC.tur="";TC.flt="";TC.lim=40;const o=tcLoadList();o.lv=TC.lv;o.pt=TC.pt;tcSave(o);render();return true}
   if(id==="tcmore"){TC.lim+=40;render();return true}
-  if(id==="tccopy"){const o=tcLoadList(),by=Object.fromEntries((TC.data.p||[]).map(p=>[p.kod,p]));const t=(o.l||[]).map((k,i)=>by[k]?`${i+1}. ${by[k].uni} - ${by[k].b} (${k})`:"").filter(Boolean).join("\n");try{navigator.clipboard.writeText(tx).then(()=>{t.textContent="Kopyalandı ✓"},()=>{t.textContent="Kopyalanamadı"})}catch(e){t.textContent="Kopyalanamadı"}return true}
+  if(id==="tccopy"){const o=tcLoadList(),by=Object.fromEntries((TC.data.p||[]).map(p=>[p.kod,p]));const text=(o.l||[]).map((k,i)=>by[k]?`${i+1}. ${by[k].uni} - ${by[k].b} (${k})`:"").filter(Boolean).join("\n");const btn=document.getElementById("tccopy");if(!text){if(btn)btn.textContent="Liste boş";return true}(async()=>{try{if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(text)}else{const ta=document.createElement("textarea");ta.value=text;ta.setAttribute("readonly","");ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();const ok=document.execCommand("copy");ta.remove();if(!ok)throw new Error("Kopyalama desteklenmiyor")}if(btn)btn.textContent="Kopyalandı ✓"}catch(e){if(btn)btn.textContent="Kopyalanamadı; listeyi seçip kopyala"}})();return true}
   if(id==="theme2"){document.getElementById("theme").click();setTimeout(render,30);return true}
   if(id==="out2"){logout();return true}
   if(id==="guideok"){try{localStorage.setItem(GK(),"1")}catch(e){}render();return true}
@@ -139,7 +139,7 @@ function clockTick(){
 setInterval(()=>{clockTick();wakeSync()},1000);
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")wakeSync()});
 let ME=null,ROLE=null,NAME="",STU=[],ROWS=[];
-let EXMSG="",PX=null,AIBUSY=null;const EX={},AIR={},TG={},TGSEL={},ROADSEL={},ROADSEEN={};let BUMP=null;const GT=["TYT","AYT","LGS"];
+let EXMSG="",PX=null,AIBUSY=null;const EX={},EXERR={},AIR={},TG={},TGSEL={},ROADSEL={},ROADSEEN={};let BUMP=null;const GT=["TYT","AYT","LGS"];
 const setEx=m=>{EXMSG=m;const e=document.getElementById("exmsg");if(e)e.textContent=m};
 async function callFn(n,body){
   try{
@@ -149,7 +149,7 @@ async function callFn(n,body){
     return r.ok?j:{error:j.error||("Sunucu hatası ("+r.status+")")};
   }catch(e){return {error:"Bağlantı kurulamadı."}}
 }
-async function loadExams(id){try{const {data,error}=await sb.from("exam_results").select("*").eq("student_id",id).order("exam_date",{ascending:true,nullsFirst:true}).order("created_at",{ascending:true});if(error)throw error;EX[id]=data||[]}catch(e){EX[id]=EX[id]||[]}}
+async function loadExams(id){try{const {data,error}=await sb.from("exam_results").select("*").eq("student_id",id).order("exam_date",{ascending:true,nullsFirst:true}).order("created_at",{ascending:true});if(error)throw error;EX[id]=data||[];EXERR[id]=""}catch(e){EXERR[id]="Deneme kayıtları yüklenemedi. Bağlantını veya erişim iznini kontrol edip tekrar dene.";if(!(id in EX))EX[id]=[]}}
 async function loadTarget(id){try{const {data,error}=await sb.from("exam_targets").select("*").eq("student_id",id).order("exam_type");if(error)throw error;TG[id]=data||[]}catch(e){if(!(id in TG))TG[id]=[]}}
 const tgOf=(sid,tur)=>(TG[sid]||[]).find(g=>g.exam_type===tur)||null;
 // Yapay zekâ ile aynı seçim: son denemenin türüne uyan hedef, yoksa ilk hedef.
@@ -275,6 +275,8 @@ async function pdfPages(file){
   return out;
 }
 async function examExtract(){
+  const sid=ROLE==="coach"?sel:ME;
+  if(!sid){setEx("Önce öğrenci seç.");return}
   const f=document.getElementById("exf").files[0];
   if(!f){setEx("Önce bir görsel veya PDF seç.");return}
   const pdf=f.type==="application/pdf"||/\.pdf$/i.test(f.name||"");
@@ -289,14 +291,14 @@ async function examExtract(){
       r=await callFn("exam-extract",{image:b64,mime:"application/pdf"});
     }
     if(r.error){setEx(r.error);return}
-    PX={exam:r.exam,uyarilar:r.uyarilar||[]};setEx("");render();return;
+    PX={studentId:sid,exam:r.exam,uyarilar:r.uyarilar||[]};setEx("");render();return;
   }
   if(f.size>15e6){setEx("Görsel çok büyük (en fazla 15 MB).");return}
   setEx("Görsel okunuyor, 10-20 saniye sürebilir…");
   let im;try{im=await prepImage(f)}catch(e){setEx("Görsel açılamadı.");return}
   const r=await callFn("exam-extract",{image:im.b64,mime:im.mime});
   if(r.error){setEx(r.error);return}
-  PX={exam:r.exam,uyarilar:r.uyarilar||[]};setEx("");render();
+  PX={studentId:sid,exam:r.exam,uyarilar:r.uyarilar||[]};setEx("");render();
 }
 const netOf=(d,y,k)=>Math.round((d-y/k)*100)/100;
 function recalcExam(){
@@ -322,24 +324,31 @@ function examForm(){
   <div class="row"><button class="btn" id="exsave">Onayla ve kaydet</button><button class="chip" id="excancel">İptal</button></div></div>`;
 }
 async function examSave(){
-  const err=m=>{document.getElementById("exerr").textContent=m};
+  const err=m=>{const el=document.getElementById("exerr");if(el)el.textContent=m;else setEx(m)};
+  if(!PX||!PX.exam){err("Deneme verisi bulunamadı. Lütfen yeniden yükle.");return}
+  const sid=PX.studentId||(ROLE==="coach"?sel:ME);
+  if(!sid){err("Öğrenci seçimi bulunamadı. Lütfen yeniden dene.");return}
   const e=PX.exam,tur=document.getElementById("ext").value,name=document.getElementById("exn").value.trim().slice(0,120),date=document.getElementById("exd").value;
-  if(!tur||!name){err("Deneme adı ve türü gerekli.");return}
-  if(!e.dersler.length){err("Kaydedilecek ders satırı yok.");return}
+  if(!["TYT","AYT","LGS","BRANS"].includes(tur)||!name){err("Deneme adı ve geçerli sınav türü gerekli.");return}
+  if(date&&!/^\d{4}-\d{2}-\d{2}$/.test(date)){err("Geçerli bir sınav tarihi seç.");return}
+  if(!Array.isArray(e.dersler)||!e.dersler.length){err("Kaydedilecek ders satırı yok.");return}
   const k=tur==="LGS"?3:4,subs=[];let okc=0,fixc=0,missc=0;
   for(let i=0;i<e.dersler.length;i++){
-    const v=[0,1,2].map(j=>document.querySelector('[data-rx="'+i+'"][data-c="'+j+'"]').value);
-    if(v.some(x=>x===""||+x<0)){err("Boş kalan doğru, yanlış ve boş alanlarını doldur.");return}
+    const v=[0,1,2].map(j=>{const el=document.querySelector('[data-rx="'+i+'"][data-c="'+j+'"]');return el?el.value:""});
+    if(v.some(x=>x===""||!Number.isFinite(Number(x))||Number(x)<0)){err("Boş kalan doğru, yanlış ve boş alanlarını doldur.");return}
     const [d,y,b]=v.map(Number);
+    if(d+y+b>500){err("Bir ders için doğru, yanlış ve boş toplamı geçersiz.");return}
     [d,y,b].forEach((x,j)=>{const a=e.dersler[i][["dogru","yanlis","bos"][j]];if(a==null)missc++;else if(a===x)okc++;else fixc++});
-    subs.push({ders:e.dersler[i].ders,dogru:d,yanlis:y,bos:b,net:netOf(d,y,k),ogrenci_yuzde:e.dersler[i].ogrenci_yuzde??null,kurum_yuzde:e.dersler[i].kurum_yuzde??null});
+    subs.push({ders:String(e.dersler[i].ders||"Ders").slice(0,60),dogru:d,yanlis:y,bos:b,net:netOf(d,y,k),ogrenci_yuzde:e.dersler[i].ogrenci_yuzde??null,kurum_yuzde:e.dersler[i].kurum_yuzde??null});
   }
-  if(!PX.editId&&(EX[ME]||[]).some(x=>x.exam_name===name&&(x.exam_date||"")===date)&&!confirm("Aynı adla bir deneme zaten kayıtlı. Yine de kaydedilsin mi?"))return;
+  if(!PX.editId&&(EX[sid]||[]).some(x=>x.exam_name===name&&(x.exam_date||"")===date)&&!confirm("Aynı adla bir deneme zaten kayıtlı. Yine de kaydedilsin mi?"))return;
   const total=Math.round(subs.reduce((a,s)=>a+s.net,0)*100)/100;
-  const rec={exam_name:name,exam_date:date||null,exam_type:tur,total_net:total,score:e.puan,rank:e.siralama,subjects:subs,topics:e.konular||[]};
-  const {error}=PX.editId?await sb.from("exam_results").update(rec).eq("id",PX.editId).eq("student_id",ME):await sb.from("exam_results").insert({student_id:ME,...rec,source:"ai_image",verified:true,extraction_meta:{okunan:okc+fixc,dogru_okunan:okc,duzeltilen:fixc,okunamayan:missc,uyari:PX.uyarilar.length,soru_satiri:e.soru_satiri||0}});
-  if(error){err("Kaydedilemedi: "+error.message);return}
-  PX=null;await loadExams(ME);setEx("Kaydedildi ✓ Analiz hazırlanıyor…");render();runInsights(ME,true);
+  const rec={exam_name:name,exam_date:date||null,exam_type:tur,total_net:total,score:e.puan??null,rank:e.siralama??null,subjects:subs,topics:Array.isArray(e.konular)?e.konular:[]};
+  try{
+    const {error}=PX.editId?await sb.from("exam_results").update(rec).eq("id",PX.editId).eq("student_id",sid):await sb.from("exam_results").insert({student_id:sid,...rec,source:"ai_image",verified:true,extraction_meta:{okunan:okc+fixc,dogru_okunan:okc,duzeltilen:fixc,okunamayan:missc,uyari:(PX.uyarilar||[]).length,soru_satiri:e.soru_satiri||0}});
+    if(error){err("Kaydedilemedi. "+error.message);return}
+  }catch(e){err("Kaydedilirken bağlantı hatası oluştu. İnternetini kontrol edip tekrar dene.");return}
+  PX=null;await loadExams(sid);setEx("Kaydedildi ✓ Analiz hazırlanıyor…");render();runInsights(sid,true);
 }
 async function runInsights(sid,force){
   AIBUSY=sid;render();
@@ -381,6 +390,30 @@ function aiReportCard(sid,title){
   return AIR[sid]?reportHTML(AIR[sid],title,sid):"";
 }
 function examRows(L,mode){return L.slice().reverse().slice(0,mode?12:8).map(e=>`<div class="subj"><span>${esc(e.exam_name)} · ${esc(e.exam_type)}</span><span>${e.total_net==null?"–":num(e.total_net)+" net"}${e.exam_date?" · "+fd(String(e.exam_date)):""}${mode?` <button class="chip" data-exdel="${e.id}" aria-label="Denemeyi sil">Sil</button>`+(mode==="own"?` <button class="chip" data-exedit="${e.id}" aria-label="Denemeyi düzelt">Düzelt</button>`:""):""}</span></div>`).join("")}
+function hataMatrisiCard(sid){
+  const exams=(EX[sid]||[]).slice(-3),agg=new Map();
+  exams.forEach(e=>{
+    (Array.isArray(e.topics)?e.topics:[]).forEach(t=>{
+      const ders=String(t?.ders||"").trim(),konu=String(t?.konu||"").trim();
+      const d=num(t?.dogru),y=num(t?.yanlis),b=num(t?.bos);
+      if(!ders||!konu||d+y+b<=0)return;
+      const key=(ders+"|"+konu).toLocaleLowerCase("tr");
+      const a=agg.get(key)||{ders,konu,d:0,y:0,b:0,exams:new Set()};
+      a.d+=d;a.y+=y;a.b+=b;a.exams.add(String(e.id??(e.exam_date+"|"+e.exam_name)));
+      agg.set(key,a);
+    });
+  });
+  const rank={"Öncelik yüksek":0,"Tekrar et":1,"İyi gidiyor":2};
+  const rows=[...agg.values()].map(a=>{
+    const total=a.d+a.y+a.b,rate=Math.round(a.d/total*100);
+    const priority=(a.exams.size>=2&&rate<60)||a.y>=5?"Öncelik yüksek":rate<75||a.y>=2?"Tekrar et":"İyi gidiyor";
+    return {...a,total,rate,priority};
+  }).sort((a,b)=>rank[a.priority]-rank[b.priority]||b.exams.size-a.exams.size||b.y-a.y).slice(0,10);
+  if(!rows.length)return `<div class="card"><h2>🧩 Hata matrisi</h2><p class="empty">Konu bazlı doğru/yanlış verisi olan deneme eklendikçe burada öncelikli konular görünür.</p></div>`;
+  return `<div class="card"><h2>🧩 Hata matrisi</h2><p class="empty" style="margin:0 0 8px;font-size:13px">Son ${exams.length} denemeden konu bazlı özet. Öncelik; tekrar sayısı, yanlış sayısı ve doğru oranına göre belirlenir.</p>
+  ${rows.map(a=>`<div class="subj"><span><b>${esc(a.ders)} · ${esc(a.konu)}</b><small style="display:block;color:var(--mute)">${a.exams.size} deneme · ${a.d} doğru / ${a.y} yanlış / ${a.b} boş</small></span><span style="text-align:right;white-space:nowrap"><b>%${a.rate}</b><small style="display:block;color:${a.priority==="Öncelik yüksek"?"var(--warn)":a.priority==="Tekrar et"?"var(--gold)":"var(--acc)"}">${a.priority}</small></span></div>`).join("")}
+  </div>`;
+}
 function examCard(){
   if(PX)return examForm();
   const L=EX[ME]||[];
@@ -388,15 +421,16 @@ function examCard(){
   <p class="empty" style="margin:0 0 10px">Deneme sonuç görselini ya da PDF'ini yükle, yapay zekâ okusun. Sen kontrol edip onaylarsın. PDF genelde daha hızlı ve net okunur.</p>
   <div class="row" style="margin-top:0"><input id="exf" type="file" accept="image/*,application/pdf,.pdf" style="width:100%"><button class="btn" style="padding:11px 16px" id="exgo">Dosyayı oku</button></div>
   <p class="empty" id="exmsg" style="margin:8px 0 0;font-size:14px">${esc(EXMSG)}</p>
-  ${L.length?`<div style="margin-top:10px">${examRows(L,"own")}</div><div class="row"><button class="chip" id="airun" data-sid="${ME}">📈 Gelişim analizimi yenile</button></div>`:""}</div>${aiReportCard(ME)}`;
+  ${EXERR[ME]?`<p role="alert" style="color:var(--warn)">${esc(EXERR[ME])}</p>`:""}
+  ${L.length?`<div style="margin-top:10px">${examRows(L,"own")}</div><div class="row"><button class="chip" id="airun" data-sid="${ME}">📈 Gelişim analizimi yenile</button></div>`:""}</div>${hataMatrisiCard(ME)}${aiReportCard(ME)}`;
 }
 function aiCard(sid){
   const L=EX[sid]||[];
   const M=L.map(x=>x.extraction_meta).filter(Boolean),tot=M.reduce((a,m)=>a+num(m.okunan),0),fix=M.reduce((a,m)=>a+num(m.duzeltilen),0);
   const acc=tot?`<p class="empty" style="font-size:13px;margin:8px 0 0">Yapay zekâ okuma doğruluğu: %${Math.round((tot-fix)/tot*100)} (${tot} alandan ${fix} tanesi öğrenci tarafından düzeltildi)</p>`:"";
   return `<div class="card"><h2>Deneme sonuçları ve yapay zekâ</h2>${L.length?examRows(L,"coach"):`<p class="empty">Öğrenci henüz deneme sonucu yüklemedi.</p>`}
-  ${acc}<p class="empty" id="exmsg" style="margin:8px 0 0;font-size:14px">${esc(EXMSG)}</p>
-  ${L.length?`<div class="row"><button class="chip" id="airun" data-sid="${sid}" data-force="1">🤖 Yapay zekâ koç raporunu üret</button></div>`:""}</div>${aiReportCard(sid,"Yapay zekâ koç raporu")}`;
+  ${acc}${EXERR[sid]?`<p role="alert" style="color:var(--warn)">${esc(EXERR[sid])}</p>`:""}<p class="empty" id="exmsg" style="margin:8px 0 0;font-size:14px">${esc(EXMSG)}</p>
+  ${L.length?`<div class="row"><button class="chip" id="airun" data-sid="${sid}" data-force="1">🤖 Yapay zekâ koç raporunu üret</button></div>`:""}</div>${hataMatrisiCard(sid)}${aiReportCard(sid,"Yapay zekâ koç raporu")}`;
 }
 
 const setSync=m=>{const e=document.getElementById("sync");if(e)e.textContent=m};

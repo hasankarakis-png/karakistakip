@@ -37,9 +37,11 @@ alter table public.exam_results enable row level security;
 alter table public.ai_reports   enable row level security;
 alter table public.ai_usage     enable row level security;
 
--- Deneme sonuçları: öğrenci kendi sonucunu ekler/okur, koç hepsini okur ve silebilir
+-- Deneme sonuçları: öğrenci kendi sonucunu ekler/okur/düzenler/siler; koç hepsini okur ve silebilir
 create policy "exam_student_select" on public.exam_results for select using (student_id = auth.uid());
 create policy "exam_student_insert" on public.exam_results for insert with check (student_id = auth.uid());
+create policy "exam_student_update" on public.exam_results for update using (student_id = auth.uid()) with check (student_id = auth.uid());
+create policy "exam_student_delete" on public.exam_results for delete using (student_id = auth.uid());
 create policy "exam_coach_select"   on public.exam_results for select using (public.is_coach());
 create policy "exam_coach_delete"   on public.exam_results for delete using (public.is_coach());
 
@@ -131,9 +133,10 @@ create table if not exists public.weekly_tasks(
   title text not null check (char_length(title) between 1 and 120),
   subject text check (char_length(subject) <= 40),
   amount text check (char_length(amount) <= 60),
+  week_title text check (char_length(week_title) <= 40),
   done boolean not null default false,
   done_at timestamptz,
-  source text not null default 'coach' check (source in ('coach','ai')),
+  source text not null default 'coach' check (source in ('coach','ai','student')),
   created_by uuid,
   created_at timestamptz not null default now());
 create index if not exists weekly_tasks_student_idx on public.weekly_tasks(student_id, task_date);
@@ -147,9 +150,14 @@ create policy tasks_student_update on public.weekly_tasks for update to authenti
 create or replace function public.tasks_guard() returns trigger language plpgsql set search_path to 'public' as $$
 begin
   if not public.is_coach() then
-    if new.student_id <> old.student_id or new.task_date <> old.task_date or new.title <> old.title
-       or new.subject is distinct from old.subject or new.amount is distinct from old.amount
-       or new.source <> old.source or new.created_by is distinct from old.created_by then
+    if new.student_id <> old.student_id
+       or (new.task_date <> old.task_date and coalesce(current_setting('app.resched', true), '') <> '1')
+       or new.title <> old.title
+       or new.subject is distinct from old.subject
+       or new.amount is distinct from old.amount
+       or new.week_title is distinct from old.week_title
+       or new.source <> old.source
+       or new.created_by is distinct from old.created_by then
       raise exception 'Öğrenci yalnızca tamamlandı durumunu değiştirebilir';
     end if;
     new.done_at := case when new.done then coalesce(old.done_at, now()) else null end;

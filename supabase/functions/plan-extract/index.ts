@@ -10,6 +10,14 @@ const CORS = {
 };
 const J = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...CORS, "Content-Type": "application/json" } });
 const MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
+const FREE_KEY = (Deno.env.get("FREE_AI_KEY") ?? "").replace(/[\s"']/g, "");
+const OR_KEY = (Deno.env.get("OPENROUTER_API_KEY") ?? "").replace(/[\s"']/g, "");
+const FREE_BASE = (() => {
+  const configured = (Deno.env.get("FREE_AI_BASE") ?? "").trim().replace(/\/+$/, "");
+  if (/^https:\/\/(api\.mistral\.ai\/v1|api\.groq\.com\/openai\/v1|openrouter\.ai\/api\/v1)$/.test(configured)) return configured;
+  return OR_KEY && !FREE_KEY ? "https://openrouter.ai/api/v1" : "https://api.mistral.ai/v1";
+})();
+const FREE_MODEL = (Deno.env.get("FREE_AI_MODEL") ?? (FREE_BASE.includes("openrouter.ai") ? "mistralai/mistral-small-3.2-24b-instruct:free" : "mistral-small-latest")).trim();
 const MIMES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 const MAX_B64 = 9_000_000;
 const GBASE = (() => {
@@ -70,26 +78,49 @@ export async function handler(req: Request): Promise<Response> {
   let body: any;
   try { body = await req.json(); } catch { return J({ error: "Geçersiz istek." }, 400); }
   const mime = String(body?.mime ?? ""), data = String(body?.image ?? "");
+  const freeKey = FREE_KEY || OR_KEY;
   if (!MIMES.includes(mime)) return J({ error: "Yalnızca PDF veya JPG/PNG/WEBP görsel yüklenebilir." }, 400);
   if (!data || data.length > MAX_B64 || !/^[A-Za-z0-9+/=]+$/.test(data)) return J({ error: "Dosya geçersiz veya çok büyük (en fazla ~6 MB)." }, 400);
   if (mime === "application/pdf" && !data.startsWith("JVBERi")) return J({ error: "Bu dosya geçerli bir PDF değil." }, 400);
 
+  if (mime === "application/pdf" && !gk) return J({ error: "PDF'i doğrudan okumak için Gemini anahtarı gerekli. PDF'i sayfa görsellerine çevirerek tekrar dene." }, 400);
   const payload = JSON.stringify({
     systemInstruction: { parts: [{ text: SYSTEM }] },
     contents: [{ role: "user", parts: [{ text: "Bu haftalık çalışma programındaki tüm dolu hücreleri görev olarak çıkar." }, { inline_data: { mime_type: mime, data } }] }],
     generationConfig: { responseMimeType: "application/json", responseSchema: SCHEMA, temperature: 0.1, maxOutputTokens: 16000 },
   });
   try {
-    const send = (m: string = RESOLVED ?? MODEL) => fetch(`${GBASE}/models/${m}:generateContent`, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": gk }, body: payload });
-    let r = await send();
-    if (r.status === 404 && !RESOLVED) { const alt = await pickModel(gk); if (alt && alt !== MODEL) { RESOLVED = alt; r = await send(alt); } }
-    for (let i = 0; i < 2 && (r.status === 503 || r.status === 500); i++) { await new Promise((res) => setTimeout(res, 1500 * (i + 1))); r = await send(); }
-    if (r.status === 429) return J({ error: "Yapay zekâ kotası doldu, biraz sonra tekrar dene." }, 429);
-    if (!r.ok) return J({ error: `Yapay zekâ hizmeti hata verdi (${r.status}).` + await errDetail(r) }, 502);
-    const j = await r.json();
-    const t = (j?.candidates?.[0]?.content?.parts ?? []).map((p: any) => p?.text ?? "").join("");
-    let o: any = null;
-    try { o = JSON.parse(t); } catch { const i = t.lastIndexOf("}"); if (i > 0) { try { o = JSON.parse(t.slice(0, i + 1) + "]}"); } catch { /* */ } } }
+    const geminiRead = async () => {
+      const send = (m: string = RESOLVED ?? MODEL) => fetch(`${GBASE}/models/${m}:generateContent`, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": gk }, body: payload });
+      let r = await send();
+      if (r.status === 404 && !RESOLVED) { const alt = await pickModel(gk); if (alt && alt !== MODEL) { RESOLVED = alt; r = await send(alt); } }
+      for (let i = 0; i < 2 && [500, 503].includes(r.status); i++) { await new Promise((res) => setTimeout(res, 1500 * (i + 1))); r = await send(); }
+      if (r.status === 429) throw new Error("Yapay zekâ kotası doldu, biraz sonra tekrar dene.");
+      if (!r.ok) throw new Error(`Gemini hizmeti hata verdi (${r.status}).` + await errDetail(r));
+      const j = await r.json();
+      const t = (j?.candidates?.[0]?.content?.parts ?? []).map((p: any) => p?.text ?? "").join("");
+      try { return JSON.parse(t); } catch { const i = t.lastIndexOf("}"); if (i > 0) { try { return JSON.parse(t.slice(0, i + 1) + "]}"); } catch { /* */ } } }
+      throw new Error("Gemini yanıtı okunamadı.");
+    };
+    const freeRead = async () => {
+      const schema = { type: "object", properties: { program_mi: { type: "boolean" }, baslik: { type: ["string", "null"] }, gorevler: { type: "array", items: { type: "object", properties: { gun: { type: "integer" }, ders: { type: "string" }, konu: { type: "string" }, sure: { type: ["string", "null"] }, soru: { type: ["string", "null"] }, kaynak: { type: ["string", "null"] } }, required: ["gun", "ders", "konu"] } }, notlar: { type: "array", items: { type: "string" } } }, required: ["program_mi", "gorevler", "notlar"] };
+      const key = FREE_KEY || OR_KEY;
+      const request = (format: unknown) => fetch(FREE_BASE + "/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + key }, body: JSON.stringify({ model: FREE_MODEL, temperature: 0.1, max_tokens: 12000, response_format: format, messages: [{ role: "system", content: SYSTEM }, { role: "user", content: [{ type: "text", text: "Bu haftalık çalışma programındaki tüm dolu hücreleri JSON görevlerine çevir. Yalnızca açıkça görünen verileri kullan." }, { type: "image_url", image_url: { url: `data:${mime};base64,${data}` } }] }] }) });
+      let r = await request({ type: "json_schema", json_schema: { name: "program", strict: false, schema } });
+      if ([400, 422].includes(r.status)) r = await request({ type: "json_object" });
+      for (let i = 0; i < 2 && [500, 502, 503, 529].includes(r.status); i++) { await new Promise((res) => setTimeout(res, 1500 * (i + 1))); r = await request({ type: "json_object" }); }
+      if (!r.ok) throw new Error(`Ücretsiz yapay zekâ hizmeti hata verdi (${r.status}).` + await errDetail(r));
+      const j = await r.json(), t = String(j?.choices?.[0]?.message?.content ?? "").trim().replace(/^\x60\x60\x60(?:json)?\s*/i, "").replace(/\s*\x60\x60\x60$/, "");
+      try { return JSON.parse(t); } catch { throw new Error("Ücretsiz yapay zekâ yanıtı okunamadı."); }
+    };
+    let o: any = null, model = "";
+    if (mime !== "application/pdf" && freeKey) {
+      try { o = await freeRead(); model = FREE_MODEL; }
+      catch (freeError) {
+        if (!gk) throw freeError;
+        o = await geminiRead(); model = RESOLVED ?? MODEL;
+      }
+    } else { o = await geminiRead(); model = RESOLVED ?? MODEL; }
     if (!o) return J({ error: "Yapay zekâ yanıtı okunamadı, tekrar dene." }, 502);
     if (o.program_mi === false) return J({ error: "Bu dosya bir haftalık çalışma programına benzemiyor." }, 422);
     const seen = new Set<string>();
@@ -101,7 +132,7 @@ export async function handler(req: Request): Promise<Response> {
     }).filter(Boolean);
     if (!gorevler.length) return J({ error: "Programdan görev çıkarılamadı. Dosyanın okunaklı olduğundan emin ol." }, 422);
     const notlar = (Array.isArray(o.notlar) ? o.notlar : []).slice(0, 8).map((s: unknown) => txt(s, 160)).filter(Boolean);
-    return J({ baslik: txt(o.baslik, 80), gorevler, notlar });
+    return J({ baslik: txt(o.baslik, 80), gorevler, notlar, model });
   } catch (_e) {
     return J({ error: "Beklenmeyen hata, tekrar dene." }, 500);
   }

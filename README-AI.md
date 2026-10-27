@@ -12,17 +12,23 @@ Gemini anahtarı yalnızca Supabase Edge Function'larında (sunucuda) durur. Tar
 ## 1. Tabloları ekle
 Supabase → SQL Editor → New query → `supabase/schema-ai.sql` içeriğini yapıştır → Run. (schema.sql daha önce çalıştırılmış olmalı.)
 
-## 2. İki fonksiyonu yükle
+## 2. Edge Functions'ı yükle
 Supabase → Edge Functions → Deploy a new function → **Via Editor**.
 1. Adı tam olarak `exam-extract` yaz. `supabase/functions/exam-extract/index.ts` içeriğini yapıştır → Deploy.
 2. Aynısını `exam-insights` için yap (`supabase/functions/exam-insights/index.ts`).
-3. Her fonksiyonun ayarlarında **"Verify JWT"** seçeneği varsa kapat. Fonksiyonlar kullanıcı oturumunu kendileri doğrular ve girişsiz isteği reddeder.
+3. Haftalık program PDF/görsel okuma için `plan-extract` fonksiyonunu da dağıt (`supabase/functions/plan-extract/index.ts`).
+4. Her fonksiyonun ayarlarında **"Verify JWT"** seçeneği varsa kapat. Fonksiyonlar kullanıcı oturumunu kendileri doğrular ve girişsiz isteği reddeder.
 
 ## 3. Gizli değerleri (Secrets) ekle
 Edge Functions → Secrets (ya da Project Settings → Edge Functions → Secrets):
 - `GEMINI_API_KEY` = Google AI Studio'dan aldığın yeni anahtar
 - `APP_PUBLISHABLE_KEY` = index.html içindeki `sb_publishable_...` anahtarı (aynısı)
 - İsteğe bağlı `GEMINI_MODEL` = model adı. Boş bırakırsan `gemini-2.5-flash` kullanılır. Model adı yanlışsa ya da kapatılmışsa burayı değiştirmen yeter, kod değişmez.
+- İsteğe bağlı `FREE_AI_KEY` = Mistral/Groq/OpenRouter uyumlu sağlayıcı anahtarı. Bu anahtar yalnızca Edge Function içinde tutulur.
+- İsteğe bağlı `FREE_AI_BASE` = sağlayıcı API adresi. Desteklenen değerler: `https://api.mistral.ai/v1`, `https://api.groq.com/openai/v1`, `https://openrouter.ai/api/v1`.
+- İsteğe bağlı `FREE_AI_MODEL` = seçilen sağlayıcının desteklediği görsel model kimliği. OpenRouter kullanırken model kimliği sağlayıcının istediği biçimde olmalıdır.
+- Alternatif olarak `OPENROUTER_API_KEY` kullanılabilir. `FREE_AI_KEY` ve `FREE_AI_BASE` ayrıca ayarlanmamışsa OpenRouter seçilir. Ücretsiz model erişimi ve kotası sağlayıcıya göre değişir; sıfır maliyet garantisi yoktur.
+- `plan-extract` görsellerde ücretsiz sağlayıcıyı önce dener, başarısızsa Gemini'ye geçer. Doğrudan PDF okuma için Gemini gerekir; uygulama önce PDF'i tarayıcıda okumayı/görsele çevirmeyi dener. `exam-extract` ise yapılandırılmış sırayla Claude → ücretsiz sağlayıcı → Gemini kullanır (PDF'in doğrudan gönderildiği durumda ücretsiz görsel sağlayıcısı atlanır).
 
 ## 4. Bağlantıyı test et
 Siteye koç olarak gir → ⚙️ Uyarı eşikleri → **Yapay zekâ bağlantısını test et**.

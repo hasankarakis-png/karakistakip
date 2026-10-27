@@ -270,10 +270,11 @@ async function claude(key: string, fs: F[], mime: string, schema: unknown, promp
 
 // Ücretsiz sağlayıcı (OpenAI uyumlu): Mistral / Groq / OpenRouter. Yalnızca görsel okur (PDF desteklenmez).
 const FBASE = (() => {
-  const d = "https://api.mistral.ai/v1", v = (Deno.env.get("FREE_AI_BASE") ?? "").trim().replace(/\/+$/, "");
-  return /^https:\/\/(api\.mistral\.ai\/v1|api\.groq\.com\/openai\/v1|openrouter\.ai\/api\/v1)$/.test(v) ? v : d;
+  const v = (Deno.env.get("FREE_AI_BASE") ?? "").trim().replace(/\/+$/, "");
+  if (/^https:\/\/(api\.mistral\.ai\/v1|api\.groq\.com\/openai\/v1|openrouter\.ai\/api\/v1)$/.test(v)) return v;
+  return Deno.env.get("OPENROUTER_API_KEY") && !Deno.env.get("FREE_AI_KEY") ? "https://openrouter.ai/api/v1" : "https://api.mistral.ai/v1";
 })();
-const FMODEL = (Deno.env.get("FREE_AI_MODEL") ?? "mistral-small-latest").trim();
+const FMODEL = (Deno.env.get("FREE_AI_MODEL") ?? (FBASE.includes("openrouter.ai") ? "mistralai/mistral-small-3.2-24b-instruct:free" : "mistral-small-latest")).trim();
 
 async function freeai(key: string, fs: F[], mime: string, schema: unknown, prompt: string, maxTok: number, salvage = false) {
   const js = toJsonSchema(schema);
@@ -304,7 +305,7 @@ async function freeai(key: string, fs: F[], mime: string, schema: unknown, promp
 export async function handler(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return J({ error: "Yalnızca POST kabul edilir." }, 405);
-  const url = Deno.env.get("SUPABASE_URL"), pk = Deno.env.get("APP_PUBLISHABLE_KEY"), sk = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"), gk = (Deno.env.get("GEMINI_API_KEY") ?? "").replace(/[\s"']/g, ""), ak = (Deno.env.get("ANTHROPIC_API_KEY") ?? "").replace(/[\s"']/g, ""), fk = (Deno.env.get("FREE_AI_KEY") ?? "").replace(/[\s"']/g, "");
+  const url = Deno.env.get("SUPABASE_URL"), pk = Deno.env.get("APP_PUBLISHABLE_KEY"), sk = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"), gk = (Deno.env.get("GEMINI_API_KEY") ?? "").replace(/[\s"']/g, ""), ak = (Deno.env.get("ANTHROPIC_API_KEY") ?? "").replace(/[\s"']/g, ""), fk = (Deno.env.get("FREE_AI_KEY") ?? Deno.env.get("OPENROUTER_API_KEY") ?? "").replace(/[\s"']/g, "");
   if (!url || !pk || !sk || (!gk && !ak && !fk)) return J({ error: "Sunucu yapılandırması eksik." }, 500);
   const auth = req.headers.get("Authorization") ?? "";
   const sb = createClient(url, pk, { global: { headers: { Authorization: auth } }, auth: { persistSession: false } });
@@ -345,19 +346,31 @@ export async function handler(req: Request): Promise<Response> {
   const refund = () => adm.rpc("refund_usage", { p_student: user.id, p_kind: "extract" }).then(() => {}, () => {});
 
   try {
-    const primary = ak
-      ? (sc: unknown, pr: string, mt: number, _sv = false) => claude(ak, fs, mime, sc, pr, Math.min(mt, 16000))
-      : fk && !noImg
-        ? (sc: unknown, pr: string, mt: number, sv = false) => freeai(fk, fs, mime, sc, pr, mt, sv)
-        : (sc: unknown, pr: string, mt: number, sv = false) => gemini(gk, fs, mime, sc, pr, mt, sv);
-    let fellBack = false;
-    // Ücretsiz sağlayıcı kotaya takılırsa (ve Gemini anahtarı varsa) otomatik Gemini'ye geçer.
+    // Sağlayıcı sırası: PDF için Claude → Gemini; görseller için Claude → ücretsiz sağlayıcı → Gemini.
+    // Bir sağlayıcı kota/servis/yanıt hatası verirse sıradaki kullanılabilir sağlayıcı denenir.
+    const providers: Array<{ name: string; run: (sc: unknown, pr: string, mt: number, sv: boolean) => Promise<any> }> = [];
+    if (ak) providers.push({ name: CMODEL, run: (sc, pr, mt) => claude(ak, fs, mime, sc, pr, Math.min(mt, 16000)) });
+    if (!noImg && fk) providers.push({ name: FMODEL, run: (sc, pr, mt, sv) => freeai(fk, fs, mime, sc, pr, mt, sv) });
+    if (gk) providers.push({ name: RESOLVED ?? MODEL, run: (sc, pr, mt, sv) => gemini(gk, fs, mime, sc, pr, mt, sv) });
+    const usedProviders = new Set<string>();
     const ai = async (sc: unknown, pr: string, mt: number, sv = false, delay = 0) => {
       if (delay) await new Promise((res) => setTimeout(res, delay));
-      try { return await primary(sc, pr, mt, sv); } catch (e: any) {
-        if (!ak && fk && !noImg && gk && (e?.code === 429 || e?.code === 502)) { fellBack = true; return await gemini(gk, fs, mime, sc, pr, mt, sv); }
-        throw e;
+      let last: any = null;
+      for (const provider of providers) {
+        try {
+          const result = await provider.run(sc, pr, mt, sv);
+          usedProviders.add(provider.name === MODEL ? (RESOLVED ?? MODEL) : provider.name);
+          return result;
+        } catch (e: any) {
+          // Network exceptions (TypeError), timeouts and provider HTTP errors must not
+          // prevent trying the next configured provider. Keep a safe, user-facing message.
+          last = e?.msg
+            ? { code: Number(e?.code) || 502, msg: String(e.msg).slice(0, 240) }
+            : { code: 502, msg: provider.name + " sağlayıcısına ulaşılamadı; diğer sağlayıcı deneniyor." };
+          continue;
+        }
       }
+      throw last ?? { code: 500, msg: "Kullanılabilir yapay zekâ sağlayıcısı bulunamadı." };
     };
     const [head, q] = await Promise.all([
       ai(SCHEMA, "Bu deneme sonuç belgesinden yalnızca üst bilgileri ve DERSLER özet tablosunu çıkar. Soru bazlı kazanım satırlarını bu çağrıda çıkarma.", 6000),
@@ -366,7 +379,7 @@ export async function handler(req: Request): Promise<Response> {
     if (head?.sinav_gorseli_mi === false) { return J({ error: "Bu dosya bir deneme sonuç belgesine benzemiyor." }, 422); }
     const out = validate({ ...head, sorular: Array.isArray(q?.sorular) ? q.sorular : [] });
     if (q?.__hata) out.uyarilar.push("Soru bazlı konu detayı okunamadı, yalnızca ders tablosu kaydedilecek. Konu analizi için görseli tekrar yüklemeyi deneyebilirsin.");
-    return J({ ...out, model: ak ? CMODEL : fk && !noImg && !fellBack ? FMODEL : (RESOLVED ?? MODEL) });
+    return J({ ...out, model: [...usedProviders].join(" → ") || (RESOLVED ?? MODEL) });
   } catch (e: any) {
     await refund();
     return J({ error: e?.msg ?? "Beklenmeyen hata." }, e?.code ?? 500);

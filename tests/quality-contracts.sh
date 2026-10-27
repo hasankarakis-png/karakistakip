@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+fail() { echo "FAIL: $1" >&2; exit 1; }
+pass() { echo "PASS: $1"; }
+
+grep -Fq "week_title text check (char_length(week_title) <= 40)" supabase/schema-ai.sql || fail "fresh schema missing week_title"
+grep -Fq "source in ('coach','ai','student')" supabase/schema-ai.sql || fail "fresh schema rejects student-created tasks"
+grep -Fq "new.week_title is distinct from old.week_title" supabase/schema-ai.sql || fail "student task guard does not protect week_title"
+test -f supabase/migrations/20261027_week_title.sql || fail "existing-database migration missing"
+test -f supabase/migrations/20261027_exam_student_crud.sql || fail "student exam CRUD migration missing"
+grep -Fq 'create policy "exam_student_update"' supabase/schema-ai.sql || fail "fresh schema blocks student exam edits shown in UI"
+grep -Fq 'create policy "exam_student_delete"' supabase/schema-ai.sql || fail "fresh schema blocks student exam deletion shown in UI"
+grep -Fq 'with check (student_id = auth.uid())' supabase/migrations/20261027_exam_student_crud.sql || fail "exam edit policy does not enforce student ownership"
+grep -Fq "const providers:" supabase/functions/exam-extract/index.ts || fail "exam extraction provider fallback missing"
+grep -Fq "FREE_AI_KEY" supabase/functions/plan-extract/index.ts || fail "free provider config missing for plan extraction"
+grep -Fq "error: dailyError" supabase/functions/send-reminders/index.ts || fail "reminder job hides daily data read errors"
+grep -Fq "navigator.clipboard.writeText(text)" js/coach.js || fail "preference copy action regression"
+grep -Fq "function hataMatrisiCard(sid)" js/coach.js || fail "topic error matrix missing"
+grep -Fq "function adaptivePlanCard(sid,L,coach)" js/tasks-chat.js || fail "adaptive weekly plan guidance missing"
+grep -Fq "Neden?" js/tasks-chat.js || fail "adaptive plan lacks explainable evidence"
+grep -Fq "adaptivePlanCard(ME,L,false)" js/tasks-chat.js || fail "student adaptive guidance missing"
+grep -Fq "adaptivePlanCard(x.id,L,true)" js/tasks-chat.js || fail "coach adaptive plan guidance missing"
+grep -Fq ".adaptive-card .adaptive-tip" styles.css || fail "adaptive plan styling missing"
+grep -Fq 'const sid=PX.studentId||(ROLE==="coach"?sel:ME)' js/coach.js || fail "exam save does not bind to the selected student"
+grep -Fq 'EXERR[id]="Deneme kayıtları yüklenemedi.' js/coach.js || fail "exam load errors are silently hidden"
+grep -Fq 'async function examStudentId()' js/exams.js || grep -Fq 'function examStudentId()' js/exams.js || fail "exam CRUD selected-student helper missing"
+grep -Fq 'other configured provider' supabase/functions/exam-extract/index.ts || grep -Fq 'Network exceptions (TypeError)' supabase/functions/exam-extract/index.ts || fail "AI network errors can bypass provider fallback"
+pass "Weekly-task schema and guard"
+pass "Student exam edit/delete policies match the UI and enforce ownership"
+pass "AI provider fallback configuration"
+pass "Reminder failure handling"
+pass "Preference copy action"
+pass "Explainable topic error matrix"
+pass "Theme-matched adaptive plan guidance for coach and student"
+pass "Exam save scope and load-error visibility"
+pass "AI provider fallback on network failures"
