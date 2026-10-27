@@ -394,11 +394,12 @@ function hataMatrisiCard(sid){
       agg.set(key,a);
     });
   });
+  const rank={"Öncelik yüksek":0,"Tekrar et":1,"İyi gidiyor":2};
   const rows=[...agg.values()].map(a=>{
     const total=a.d+a.y+a.b,rate=Math.round(a.d/total*100);
     const priority=(a.exams.size>=2&&rate<60)||a.y>=5?"Öncelik yüksek":rate<75||a.y>=2?"Tekrar et":"İyi gidiyor";
     return {...a,total,rate,priority};
-  }).sort((a,b)=>({ "Öncelik yüksek":0,"Tekrar et":1,"İyi gidiyor":2 }[a.priority]-({ "Öncelik yüksek":0,"Tekrar et":1,"İyi gidiyor":2 }[b.priority])||b.exams.size-a.exams.size||b.y-a.y).slice(0,10);
+  }).sort((a,b)=>rank[a.priority]-rank[b.priority]||b.exams.size-a.exams.size||b.y-a.y).slice(0,10);
   if(!rows.length)return `<div class="card"><h2>🧩 Hata matrisi</h2><p class="empty">Konu bazlı doğru/yanlış verisi olan deneme eklendikçe burada öncelikli konular görünür.</p></div>`;
   return `<div class="card"><h2>🧩 Hata matrisi</h2><p class="empty" style="margin:0 0 8px;font-size:13px">Son ${exams.length} denemeden konu bazlı özet. Öncelik; tekrar sayısı, yanlış sayısı ve doğru oranına göre belirlenir.</p>
   ${rows.map(a=>`<div class="subj"><span><b>${esc(a.ders)} · ${esc(a.konu)}</b><small style="display:block;color:var(--mute)">${a.exams.size} deneme · ${a.d} doğru / ${a.y} yanlış / ${a.b} boş</small></span><span style="text-align:right;white-space:nowrap"><b>%${a.rate}</b><small style="display:block;color:${a.priority==="Öncelik yüksek"?"var(--warn)":a.priority==="Tekrar et"?"var(--gold)":"var(--acc)"}">${a.priority}</small></span></div>`).join("")}
