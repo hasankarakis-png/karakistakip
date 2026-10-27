@@ -63,7 +63,7 @@ async function start(){
   render();
 }
 document.addEventListener("input",e=>{if(e.target.dataset&&e.target.dataset.rx!=null||e.target.id==="ext")recalcExam()});
-document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="lp")doLogin();if(e.key==="Enter"&&e.target.id==="cin")chatSend()});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="lp")doLogin();if(e.key==="Enter"&&e.target.id==="cin")aiChatSend()});
 (function(){
   const root=document.documentElement,btn=document.getElementById("theme"),tc=document.getElementById("tc");
   const paint=()=>{const d=root.getAttribute("data-theme")!=="light";btn.textContent=d?"☀ Sabah":"☾ Gece";tc.setAttribute("content",d?"#0B1020":"#C93A20")};

@@ -66,13 +66,14 @@ export function buildStats(exams: any[]) {
   const sub: Record<string, { net: number; acc: number | null; oy: number | null; ky: number | null }[]> = {};
   const top: Record<string, { ders: string; konu: string; dogru: number; yanlis: number; bos: number; sinav: number; yanlis_sinav: number; bos_sinav: number }> = {};
   for (const e of exams) {
-    for (const s of (e.subjects ?? [])) {
-      if (typeof s.net !== "number") continue;
+    for (const s of (Array.isArray(e.subjects) ? e.subjects : [])) {
+      if (!s || typeof s !== "object" || typeof s.net !== "number") continue;
       const t = (s.dogru ?? 0) + (s.yanlis ?? 0) + (s.bos ?? 0);
-      const k = e.exam_type + " " + s.ders;
+      const k = e.exam_type + " " + cut(s.ders, 60);
       (sub[k] ??= []).push({ net: s.net, acc: s.dogru != null && t > 0 ? r2(s.dogru / t) : null, oy: typeof s.ogrenci_yuzde === "number" ? s.ogrenci_yuzde : null, ky: typeof s.kurum_yuzde === "number" ? s.kurum_yuzde : null });
     }
-    for (const t of (e.topics ?? [])) {
+    for (const t of (Array.isArray(e.topics) ? e.topics : [])) {
+      if (!t || typeof t !== "object") continue;
       const k = e.exam_type + "|" + t.ders + "|" + t.konu;
       const o = (top[k] ??= { ders: cut(e.exam_type + " " + t.ders, 80), konu: cut(t.konu, 100), dogru: 0, yanlis: 0, bos: 0, sinav: 0, yanlis_sinav: 0, bos_sinav: 0 });
       o.dogru += t.dogru ?? 0; o.yanlis += t.yanlis ?? 0; o.bos += t.bos ?? 0; o.sinav++;
@@ -348,7 +349,7 @@ export async function handler(req: Request): Promise<Response> {
         await new Promise((res) => setTimeout(res, 1500));
         r = await fetch(GLIST, { headers: { "x-goog-api-key": gk } });
       }
-      if (!r.ok) return J({ ok: false, status: r.status, model: MODEL, anahtar_uzunlugu: gk.length, hata: "Gemini anahtarı kabul edilmedi veya servis erişilemiyor." + (await errDetail(r)) });
+      if (!r.ok) return J({ ok: false, status: r.status, model: MODEL, hata: "Gemini anahtarı kabul edilmedi veya servis erişilemiyor." + (await errDetail(r)) });
       const j = await r.json();
       const names: string[] = (j?.models ?? []).filter((m: any) => (m?.supportedGenerationMethods ?? []).includes("generateContent")).map((m: any) => String(m.name).replace("models/", ""));
       return J({ ok: true, model: MODEL, model_kullanilabilir: names.includes(MODEL), flash_modeller: names.filter((n) => /flash/.test(n)).slice(0, 15) });

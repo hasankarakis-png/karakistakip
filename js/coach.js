@@ -72,7 +72,7 @@ function ui(t){
   if(D.exdel){exDel(D.exdel);return true}
   if(D.exedit){exEdit(D.exedit);return true}
   if(D.fz){if(D.fz==="stop"){FZ=null;render()}else fzStart(D.fz);return true}
-  const m={pushon:pushEnable,pushoff:pushDisable,csend:chatSend,tkadd:addTask,planrun:planRun,planok:planOk,plandel:planDel,adddn:addExam};
+  const m={pushon:pushEnable,pushoff:pushDisable,csend:aiChatSend,tkadd:addTask,planrun:planRun,planok:planOk,plandel:planDel,adddn:addExam};
   if(m[id]){m[id]();return true}
   if(id==="admadd"){admRun("add");return true}
   if(id==="admreset"){admRun("reset");return true}

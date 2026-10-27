@@ -1,11 +1,12 @@
 /* Profil fotoğrafı: 256px JPEG olarak profile_photos tablosunda tutulur */
-const PH={};let PHST="idle",PHMSG="";
+const PH={};const okImg=v=>typeof v==="string"&&/^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(v)?v:"";
+let PHST="idle",PHMSG="";
 const avIn=(id,name)=>PH[id]?`<img src="${PH[id]}" alt="">`:esc(((name||"Ö").trim().slice(0,1)||"Ö").toLocaleUpperCase("tr-TR"));
 const mav=id=>PH[id]?`<img class="mav" src="${PH[id]}" alt="">`:"";
 function phEnsure(){
   if(PHST!=="idle"||!ME)return;PHST="load";
   const q=ROLE==="coach"?sb.from("profile_photos").select("student_id,img"):sb.from("profile_photos").select("student_id,img").eq("student_id",ME);
-  Promise.resolve(q).then(r=>{(r&&r.data||[]).forEach(x=>{PH[x.student_id]=x.img});PHST="ok";render()},()=>{PHST="ok"});
+  Promise.resolve(q).then(r=>{(r&&r.data||[]).forEach(x=>{PH[x.student_id]=okImg(x.img)});PHST="ok";render()},()=>{PHST="ok"});
 }
 function phShrink(file){
   return new Promise((ok,no)=>{

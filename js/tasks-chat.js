@@ -148,7 +148,7 @@ function chatTab(){
   ${CHATERR?`<p style="color:var(--warn);margin:0 0 8px">${esc(CHATERR)}</p>`:""}
   <div class="row" style="margin-top:0"><input id="cin" type="text" maxlength="600" placeholder="Sorunu yaz…" style="flex:1;min-width:0"><button class="btn" style="padding:11px 16px" id="csend"${CHATBUSY?" disabled":""}>Gönder</button></div></div>`;
 }
-async function chatSend(){
+async function aiChatSend(){
   const el=document.getElementById("cin"),v=el?el.value.trim().slice(0,600):"";if(!v||CHATBUSY)return;
   CHAT.push({role:"user",text:v});CHAT=CHAT.slice(-8);CHATBUSY=true;CHATERR="";render();
   const r=await callFn("exam-insights",{action:"chat",messages:CHAT});

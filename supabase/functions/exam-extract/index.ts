@@ -326,11 +326,14 @@ export async function handler(req: Request): Promise<Response> {
     // PDF sayfaları istemcide görsele çevrilip gönderilir (en fazla 8 sayfa, toplam ≈6,5 MB).
     const im = body.images.slice(0, 8);
     if (!im.length || mime === "application/pdf" || !im.every(b64ok) || im.reduce((a: number, x: string) => a + x.length, 0) > MAX_PDF_B64) return J({ error: "Sayfa görselleri geçersiz veya çok büyük." }, 400);
+    const magic = mime === "image/png" ? "iVBOR" : mime === "image/webp" ? "UklGR" : "/9j/";
+    if (!im.every((x: string) => x.startsWith(magic))) return J({ error: "Görsel biçimi geçersiz." }, 400);
     fs = im.map((x: string) => ({ b64: x, mime }));
   } else {
     const image = String(body?.image ?? "");
     if (!image || image.length > (isPdf ? MAX_PDF_B64 : MAX_B64) || !b64ok(image)) return J({ error: isPdf ? "PDF geçersiz veya çok büyük (en fazla yaklaşık 6 MB)." : "Görsel geçersiz veya çok büyük." }, 400);
     if (isPdf && !image.startsWith(PDF_MAGIC)) return J({ error: "Bu dosya geçerli bir PDF değil." }, 400);
+    if (!isPdf && !image.startsWith(mime === "image/png" ? "iVBOR" : mime === "image/webp" ? "UklGR" : "/9j/")) return J({ error: "Görsel biçimi geçersiz." }, 400);
     fs = [{ b64: image, mime }];
   }
   const noImg = fs.some((f) => f.mime === "application/pdf");
@@ -360,7 +363,7 @@ export async function handler(req: Request): Promise<Response> {
       ai(SCHEMA, "Bu deneme sonuç belgesinden yalnızca üst bilgileri ve DERSLER özet tablosunu çıkar. Soru bazlı kazanım satırlarını bu çağrıda çıkarma.", 6000),
       ai(Q_SCHEMA, "SADECE_SORULAR: Bu deneme sonuç belgesindeki tüm ders tablolarında yer alan soru bazlı kazanım satırlarını sorular listesine çıkar. Başka alan üretme.", 20000, true, fk && !ak ? 1500 : 0).catch((e: any) => ({ __hata: e })),
     ]);
-    if (head?.sinav_gorseli_mi === false) { await refund(); return J({ error: "Bu dosya bir deneme sonuç belgesine benzemiyor." }, 422); }
+    if (head?.sinav_gorseli_mi === false) { return J({ error: "Bu dosya bir deneme sonuç belgesine benzemiyor." }, 422); }
     const out = validate({ ...head, sorular: Array.isArray(q?.sorular) ? q.sorular : [] });
     if (q?.__hata) out.uyarilar.push("Soru bazlı konu detayı okunamadı, yalnızca ders tablosu kaydedilecek. Konu analizi için görseli tekrar yüklemeyi deneyebilirsin.");
     return J({ ...out, model: ak ? CMODEL : fk && !noImg && !fellBack ? FMODEL : (RESOLVED ?? MODEL) });
