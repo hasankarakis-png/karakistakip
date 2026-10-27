@@ -30,7 +30,8 @@ export async function handler(req: Request): Promise<Response> {
   if (!url || !sk) return J({ error: "Sunucu yapılandırması eksik." }, 500);
   const sb = createClient(url, sk, { auth: { persistSession: false, autoRefreshToken: false } });
   // Anahtarlar yalnızca servis rolünün okuyabildiği app_secrets tablosunda durur.
-  const { data: sec } = await sb.from("app_secrets").select("name,value").in("name", ["CRON_SECRET", "VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT"]);
+  const { data: sec, error: secError } = await sb.from("app_secrets").select("name,value").in("name", ["CRON_SECRET", "VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT"]);
+  if (secError) return J({ error: "Hatırlatma yapılandırması okunamadı." }, 500);
   const K: Record<string, string> = Object.fromEntries((sec ?? []).map((r: any) => [r.name, r.value]));
   if (!K.CRON_SECRET || !eq(req.headers.get("x-cron-secret") ?? "", K.CRON_SECRET)) return J({ error: "Yetkisiz." }, 401);
   const pub = K.VAPID_PUBLIC_KEY, priv = K.VAPID_PRIVATE_KEY, subj = K.VAPID_SUBJECT ?? "mailto:admin@karakis.app";
@@ -39,12 +40,15 @@ export async function handler(req: Request): Promise<Response> {
   try { const b = await req.json(); if (b?.kind === "evening") kind = "evening"; } catch { /* varsayılan */ }
   webpush.setVapidDetails(subj, pub, priv);
   const day = istDay();
-  const { data: subs } = await sb.from("push_subs").select("id,student_id,endpoint,p256dh,auth");
+  const { data: subs, error: subsError } = await sb.from("push_subs").select("id,student_id,endpoint,p256dh,auth");
+  if (subsError) return J({ error: "Bildirim abonelikleri okunamadı." }, 500);
   const list = subs ?? [];
   if (!list.length) return J({ ok: true, sent: 0, subs: 0 });
   const ids = [...new Set(list.map((s: any) => s.student_id))];
-  const { data: daily } = await sb.from("daily").select("student_id,snap,status:state->>status").eq("day", day).in("student_id", ids);
-  const { data: tasks } = await sb.from("weekly_tasks").select("student_id,done").eq("task_date", day).eq("done", false).in("student_id", ids);
+  const { data: daily, error: dailyError } = await sb.from("daily").select("student_id,snap,status:state->>status").eq("day", day).in("student_id", ids);
+  if (dailyError) return J({ error: "Günlük çalışma kayıtları okunamadı." }, 500);
+  const { data: tasks, error: tasksError } = await sb.from("weekly_tasks").select("student_id,done").eq("task_date", day).eq("done", false).in("student_id", ids);
+  if (tasksError) return J({ error: "Günlük görevler okunamadı." }, 500);
   // Çalışıyor sayılır: kayıtlı süre/soru var VEYA oturum açık/molada/noktalanmış/kapatılmış (snap.m yalnızca kayıt anında hesaplandığından).
   const ACTIVE = ["study", "break", "stopped", "closed"];
   const studied = new Set((daily ?? []).filter((d: any) => Number(d.snap?.m) > 0 || Number(d.snap?.q) > 0 || ACTIVE.includes(d.status)).map((d: any) => d.student_id));

@@ -131,9 +131,10 @@ create table if not exists public.weekly_tasks(
   title text not null check (char_length(title) between 1 and 120),
   subject text check (char_length(subject) <= 40),
   amount text check (char_length(amount) <= 60),
+  week_title text check (char_length(week_title) <= 40),
   done boolean not null default false,
   done_at timestamptz,
-  source text not null default 'coach' check (source in ('coach','ai')),
+  source text not null default 'coach' check (source in ('coach','ai','student')),
   created_by uuid,
   created_at timestamptz not null default now());
 create index if not exists weekly_tasks_student_idx on public.weekly_tasks(student_id, task_date);
@@ -147,9 +148,14 @@ create policy tasks_student_update on public.weekly_tasks for update to authenti
 create or replace function public.tasks_guard() returns trigger language plpgsql set search_path to 'public' as $$
 begin
   if not public.is_coach() then
-    if new.student_id <> old.student_id or new.task_date <> old.task_date or new.title <> old.title
-       or new.subject is distinct from old.subject or new.amount is distinct from old.amount
-       or new.source <> old.source or new.created_by is distinct from old.created_by then
+    if new.student_id <> old.student_id
+       or (new.task_date <> old.task_date and coalesce(current_setting('app.resched', true), '') <> '1')
+       or new.title <> old.title
+       or new.subject is distinct from old.subject
+       or new.amount is distinct from old.amount
+       or new.week_title is distinct from old.week_title
+       or new.source <> old.source
+       or new.created_by is distinct from old.created_by then
       raise exception 'Öğrenci yalnızca tamamlandı durumunu değiştirebilir';
     end if;
     new.done_at := case when new.done then coalesce(old.done_at, now()) else null end;

@@ -6,6 +6,7 @@ begin
        or (new.task_date <> old.task_date and coalesce(current_setting('app.resched',true),'')<>'1')
        or new.title <> old.title
        or new.subject is distinct from old.subject or new.amount is distinct from old.amount
+       or new.week_title is distinct from old.week_title
        or new.source <> old.source or new.created_by is distinct from old.created_by then
       raise exception 'Öğrenci yalnızca tamamlandı durumunu değiştirebilir';
     end if;

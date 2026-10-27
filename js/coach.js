@@ -48,7 +48,7 @@ function ui(t){
   if(D.tctr!=null){TC.tr=D.tctr;TC.lim=40;render();return true}
   if(D.tclv){TC.lv=D.tclv;TC.pt=D.tclv==="O"?"TYT":"SAY";TC.il="";TC.tur="";TC.flt="";TC.lim=40;const o=tcLoadList();o.lv=TC.lv;o.pt=TC.pt;tcSave(o);render();return true}
   if(id==="tcmore"){TC.lim+=40;render();return true}
-  if(id==="tccopy"){const o=tcLoadList(),by=Object.fromEntries((TC.data.p||[]).map(p=>[p.kod,p]));const t=(o.l||[]).map((k,i)=>by[k]?`${i+1}. ${by[k].uni} - ${by[k].b} (${k})`:"").filter(Boolean).join("\n");try{navigator.clipboard.writeText(tx).then(()=>{t.textContent="Kopyalandı ✓"},()=>{t.textContent="Kopyalanamadı"})}catch(e){t.textContent="Kopyalanamadı"}return true}
+  if(id==="tccopy"){const o=tcLoadList(),by=Object.fromEntries((TC.data.p||[]).map(p=>[p.kod,p]));const text=(o.l||[]).map((k,i)=>by[k]?`${i+1}. ${by[k].uni} - ${by[k].b} (${k})`:"").filter(Boolean).join("\n");const btn=document.getElementById("tccopy");if(!text){if(btn)btn.textContent="Liste boş";return true}(async()=>{try{if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(text)}else{const ta=document.createElement("textarea");ta.value=text;ta.setAttribute("readonly","");ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();const ok=document.execCommand("copy");ta.remove();if(!ok)throw new Error("Kopyalama desteklenmiyor")}if(btn)btn.textContent="Kopyalandı ✓"}catch(e){if(btn)btn.textContent="Kopyalanamadı; listeyi seçip kopyala"}})();return true}
   if(id==="theme2"){document.getElementById("theme").click();setTimeout(render,30);return true}
   if(id==="out2"){logout();return true}
   if(id==="guideok"){try{localStorage.setItem(GK(),"1")}catch(e){}render();return true}
@@ -381,6 +381,30 @@ function aiReportCard(sid,title){
   return AIR[sid]?reportHTML(AIR[sid],title,sid):"";
 }
 function examRows(L,mode){return L.slice().reverse().slice(0,mode?12:8).map(e=>`<div class="subj"><span>${esc(e.exam_name)} · ${esc(e.exam_type)}</span><span>${e.total_net==null?"–":num(e.total_net)+" net"}${e.exam_date?" · "+fd(String(e.exam_date)):""}${mode?` <button class="chip" data-exdel="${e.id}" aria-label="Denemeyi sil">Sil</button>`+(mode==="own"?` <button class="chip" data-exedit="${e.id}" aria-label="Denemeyi düzelt">Düzelt</button>`:""):""}</span></div>`).join("")}
+function hataMatrisiCard(sid){
+  const exams=(EX[sid]||[]).slice(-3),agg=new Map();
+  exams.forEach(e=>{
+    (Array.isArray(e.topics)?e.topics:[]).forEach(t=>{
+      const ders=String(t?.ders||"").trim(),konu=String(t?.konu||"").trim();
+      const d=num(t?.dogru),y=num(t?.yanlis),b=num(t?.bos);
+      if(!ders||!konu||d+y+b<=0)return;
+      const key=(ders+"|"+konu).toLocaleLowerCase("tr");
+      const a=agg.get(key)||{ders,konu,d:0,y:0,b:0,exams:new Set()};
+      a.d+=d;a.y+=y;a.b+=b;a.exams.add(String(e.id??(e.exam_date+"|"+e.exam_name)));
+      agg.set(key,a);
+    });
+  });
+  const rank={"Öncelik yüksek":0,"Tekrar et":1,"İyi gidiyor":2};
+  const rows=[...agg.values()].map(a=>{
+    const total=a.d+a.y+a.b,rate=Math.round(a.d/total*100);
+    const priority=(a.exams.size>=2&&rate<60)||a.y>=5?"Öncelik yüksek":rate<75||a.y>=2?"Tekrar et":"İyi gidiyor";
+    return {...a,total,rate,priority};
+  }).sort((a,b)=>rank[a.priority]-rank[b.priority]||b.exams.size-a.exams.size||b.y-a.y).slice(0,10);
+  if(!rows.length)return `<div class="card"><h2>🧩 Hata matrisi</h2><p class="empty">Konu bazlı doğru/yanlış verisi olan deneme eklendikçe burada öncelikli konular görünür.</p></div>`;
+  return `<div class="card"><h2>🧩 Hata matrisi</h2><p class="empty" style="margin:0 0 8px;font-size:13px">Son ${exams.length} denemeden konu bazlı özet. Öncelik; tekrar sayısı, yanlış sayısı ve doğru oranına göre belirlenir.</p>
+  ${rows.map(a=>`<div class="subj"><span><b>${esc(a.ders)} · ${esc(a.konu)}</b><small style="display:block;color:var(--mute)">${a.exams.size} deneme · ${a.d} doğru / ${a.y} yanlış / ${a.b} boş</small></span><span style="text-align:right;white-space:nowrap"><b>%${a.rate}</b><small style="display:block;color:${a.priority==="Öncelik yüksek"?"var(--warn)":a.priority==="Tekrar et"?"var(--gold)":"var(--acc)"}">${a.priority}</small></span></div>`).join("")}
+  </div>`;
+}
 function examCard(){
   if(PX)return examForm();
   const L=EX[ME]||[];
@@ -388,7 +412,7 @@ function examCard(){
   <p class="empty" style="margin:0 0 10px">Deneme sonuç görselini ya da PDF'ini yükle, yapay zekâ okusun. Sen kontrol edip onaylarsın. PDF genelde daha hızlı ve net okunur.</p>
   <div class="row" style="margin-top:0"><input id="exf" type="file" accept="image/*,application/pdf,.pdf" style="width:100%"><button class="btn" style="padding:11px 16px" id="exgo">Dosyayı oku</button></div>
   <p class="empty" id="exmsg" style="margin:8px 0 0;font-size:14px">${esc(EXMSG)}</p>
-  ${L.length?`<div style="margin-top:10px">${examRows(L,"own")}</div><div class="row"><button class="chip" id="airun" data-sid="${ME}">📈 Gelişim analizimi yenile</button></div>`:""}</div>${aiReportCard(ME)}`;
+  ${L.length?`<div style="margin-top:10px">${examRows(L,"own")}</div><div class="row"><button class="chip" id="airun" data-sid="${ME}">📈 Gelişim analizimi yenile</button></div>`:""}</div>${hataMatrisiCard(ME)}${aiReportCard(ME)}`;
 }
 function aiCard(sid){
   const L=EX[sid]||[];
@@ -396,7 +420,7 @@ function aiCard(sid){
   const acc=tot?`<p class="empty" style="font-size:13px;margin:8px 0 0">Yapay zekâ okuma doğruluğu: %${Math.round((tot-fix)/tot*100)} (${tot} alandan ${fix} tanesi öğrenci tarafından düzeltildi)</p>`:"";
   return `<div class="card"><h2>Deneme sonuçları ve yapay zekâ</h2>${L.length?examRows(L,"coach"):`<p class="empty">Öğrenci henüz deneme sonucu yüklemedi.</p>`}
   ${acc}<p class="empty" id="exmsg" style="margin:8px 0 0;font-size:14px">${esc(EXMSG)}</p>
-  ${L.length?`<div class="row"><button class="chip" id="airun" data-sid="${sid}" data-force="1">🤖 Yapay zekâ koç raporunu üret</button></div>`:""}</div>${aiReportCard(sid,"Yapay zekâ koç raporu")}`;
+  ${L.length?`<div class="row"><button class="chip" id="airun" data-sid="${sid}" data-force="1">🤖 Yapay zekâ koç raporunu üret</button></div>`:""}</div>${hataMatrisiCard(sid)}${aiReportCard(sid,"Yapay zekâ koç raporu")}`;
 }
 
 const setSync=m=>{const e=document.getElementById("sync");if(e)e.textContent=m};
