@@ -169,7 +169,7 @@ async function errDetail(r: Response): Promise<string> {
   try { const m = String(JSON.parse(await r.text())?.error?.message ?? "").replace(/[\u0000-\u001f<>]/g, " ").slice(0, 160); return m ? " " + m : ""; } catch { return ""; }
 }
 
-async function geminiRaw(key: string, system: string, schema: unknown, contents: unknown, temp: number, json: boolean, maxTokens = 8192): Promise<any> {
+async function geminiOnce(key: string, system: string, schema: unknown, contents: unknown, temp: number, json: boolean, maxTokens = 8192): Promise<any> {
   const generationConfig: Record<string, unknown> = { temperature: temp, maxOutputTokens: maxTokens };
   if (json) { generationConfig.responseMimeType = "application/json"; generationConfig.responseSchema = schema; }
   const payload = JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents, generationConfig });
@@ -190,6 +190,38 @@ async function geminiRaw(key: string, system: string, schema: unknown, contents:
   const t = (j?.candidates?.[0]?.content?.parts ?? []).map((p: any) => p?.text ?? "").join("");
   if (!json) { if (!t.trim()) throw { code: 502, msg: "Yapay zekâ yanıt vermedi, tekrar dene." }; return t; }
   try { return JSON.parse(t); } catch { throw { code: 502, msg: "Yapay zekâ yanıtı okunamadı, tekrar dene." }; }
+}
+
+// ---- Yedek sağlayıcı: OpenRouter (ücretsiz Nemotron). Gemini kota/yoğunluk hatası verirse devreye girer. ----
+const ORMODEL = (Deno.env.get("OPENROUTER_MODEL") ?? "nvidia/nemotron-3-ultra-550b-a55b:free").trim();
+function toJs(s: any): any {
+  if (Array.isArray(s)) return s.map(toJs);
+  if (!s || typeof s !== "object") return s;
+  const o: any = {};
+  for (const [k, v] of Object.entries(s)) { if (k === "nullable") continue; o[k] = k === "type" && typeof v === "string" ? v.toLowerCase() : toJs(v); }
+  if (s.nullable && typeof o.type === "string") o.type = [o.type, "null"];
+  return o;
+}
+async function openrouterRaw(key: string, system: string, schema: unknown, contents: unknown, temp: number, json: boolean, maxTokens: number): Promise<any> {
+  const sys = system + (json && schema ? "\nYanıtı yalnızca şu JSON şemasına uyan tek bir JSON nesnesi olarak ver: " + JSON.stringify(toJs(schema)) : "");
+  const messages = [{ role: "system", content: sys }, ...(contents as any[]).map((c) => ({ role: c.role === "model" ? "assistant" : "user", content: (c.parts ?? []).map((p: any) => p?.text ?? "").join("") }))];
+  const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
+    body: JSON.stringify({ model: ORMODEL, temperature: temp, max_tokens: Math.min(maxTokens, 6000), ...(json ? { response_format: { type: "json_object" } } : {}), messages }),
+  });
+  if (!r.ok) throw { code: 502, msg: `Yedek yapay zekâ hata verdi (${r.status}).` };
+  const j = await r.json();
+  const t = String(j?.choices?.[0]?.message?.content ?? "").replace(/^```(?:json)?\s*|```$/g, "").trim();
+  if (!json) { if (!t) throw { code: 502, msg: "Yapay zekâ yanıt vermedi, tekrar dene." }; return t; }
+  const a = t.indexOf("{"), b = t.lastIndexOf("}");
+  try { return JSON.parse(t.slice(a, b + 1)); } catch { throw { code: 502, msg: "Yapay zekâ yanıtı okunamadı, tekrar dene." }; }
+}
+async function geminiRaw(key: string, system: string, schema: unknown, contents: unknown, temp: number, json: boolean, maxTokens = 8192): Promise<any> {
+  try { return await geminiOnce(key, system, schema, contents, temp, json, maxTokens); } catch (e: any) {
+    const ork = (Deno.env.get("OPENROUTER_API_KEY") ?? "").replace(/[\s"']/g, "");
+    if (ork && (e?.code === 429 || e?.code === 502)) { try { return await openrouterRaw(ork, system, schema, contents, temp, json, maxTokens); } catch { /* ilk hata döner */ } }
+    throw e;
+  }
 }
 
 async function gemini(key: string, facts: unknown, role: string) {
