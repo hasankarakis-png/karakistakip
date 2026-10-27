@@ -33,7 +33,8 @@ begin
        or new.amount is distinct from old.amount
        or new.week_title is distinct from old.week_title
        or new.source <> old.source
-       or new.created_by is distinct from old.created_by then
+       or new.created_by is distinct from old.created_by
+       or new.created_at is distinct from old.created_at then
       raise exception 'Öğrenci yalnızca tamamlandı durumunu değiştirebilir';
     end if;
     new.done_at := case when new.done then coalesce(old.done_at, now()) else null end;
