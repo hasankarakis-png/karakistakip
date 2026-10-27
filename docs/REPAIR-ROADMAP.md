@@ -11,6 +11,8 @@ Bu dosya, kaynak kodunda yapılan inceleme ile canlı ortamda doğrulanması ger
 - Sınav düzenleme/yükleme akışında seçili öğrenci kimliği korunuyor; tarih, tür ve sayısal alanlar doğrulanıyor.
 - Deneme kayıtları okunamadığında eski/boş listeyi sessizce göstermek yerine ekranda hata uyarısı gösteriliyor.
 - Deneme belgesi okuma sırasında bir sağlayıcıya yapılan ağ çağrısı istisna verirse diğer yapılandırılmış AI sağlayıcılarına geçiş sürdürülüyor.
+- Mevcut tema değişkenlerini kullanan akıllı plan uyarlama kartı eklendi: son 7 günlük görev tamamlama, geciken görevler, aynı sınav türündeki net eğilimi ve tekrarlayan konu yanlışlarına göre gerekçeli öneriler sunar. Koç panelindeki taslak üretimi öğrenciye otomatik atama yapmaz; koç inceleyip onaylar.
+- Hata matrisi, koç erken uyarıları, odak/Pomodoro oturumu, veli raporu ve gerekçeli yapay zekâ öncelikleri zaten mevcut modüllerde bulunduğundan yinelenmedi; yeni plan kartı bu verilerle uyumlu çalışacak şekilde eklendi.
 
 ## Dağıtımdan önce gerekli manuel kontroller
 
@@ -21,7 +23,8 @@ Bu dosya, kaynak kodunda yapılan inceleme ile canlı ortamda doğrulanması ger
 5. Gemini, ücretsiz görsel sağlayıcısı ve Claude ayrı ayrı devre dışıyken/anahtarı hatalıyken diğer sağlayıcıya geri dönüşü test et. Ücretsiz katman/kota ve gizlilik koşulları sağlayıcıya göre değişir; ücretsiz kullanım garantisi verilmez.
 6. Bildirimler için VAPID, CRON secret, zamanlanmış görev ve cihaz aboneliğini test et.
 7. Android Chrome'da PWA kurulumu, sayfa yenileme, çevrimdışı/çevrimiçi geçiş ve küçük ekran düzenini doğrula.
-8. Geri yüklenebilir yedek oluştur ve geri yükleme prosedürünü ayrı test ortamında dene.
+8. Akıllı plan önerilerini hiç denemesi olmayan, tek denemesi olan, aynı türde iki denemesi olan ve gecikmiş görevi bulunan test hesaplarında kontrol et; koç onayı olmadan öğrenciye görev atanmadığını doğrula.
+9. Geri yüklenebilir yedek oluştur ve geri yükleme prosedürünü ayrı test ortamında dene.
 
 ## Geliştirme sırası
 
