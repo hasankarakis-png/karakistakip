@@ -1,5 +1,5 @@
 // Edge Function: exam-extract
-// Öğrencinin yüklediği deneme sonuç görselini veya PDF'ini Gemini ile okur, yapılandırılmış JSON döndürür.
+// Öğrencinin yüklediği deneme sonuç görselini veya PDF'ini Claude (varsa) veya Gemini ile okur, yapılandırılmış JSON döndürür.
 // Hiçbir şey kaydetmez ve görseli saklamaz; kayıt, öğrenci onayından sonra istemciden yapılır.
 import { createClient } from "npm:@supabase/supabase-js@2.117.1";
 
@@ -12,6 +12,7 @@ const J = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...CORS, "Content-Type": "application/json" } });
 
 const MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
+const CMODEL = (Deno.env.get("ANTHROPIC_MODEL") ?? "claude-sonnet-5-5").trim();
 const LIMIT = Number(Deno.env.get("EXTRACT_DAILY_LIMIT") ?? "10");
 const MIMES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 const MAX_B64 = 6_000_000;
@@ -230,11 +231,48 @@ async function gemini(key: string, b64: string, mime: string, schema: unknown, p
   }
 }
 
+
+// Gemini tarzı şemayı (BÜYÜK harf tipler, nullable) standart JSON Schema'ya çevirir.
+function toJsonSchema(s: any): any {
+  if (Array.isArray(s)) return s.map(toJsonSchema);
+  if (!s || typeof s !== "object") return s;
+  const o: any = {};
+  for (const [k, v] of Object.entries(s)) {
+    if (k === "nullable") continue;
+    o[k] = k === "type" && typeof v === "string" ? v.toLowerCase() : toJsonSchema(v);
+  }
+  if (s.nullable && typeof o.type === "string") o.type = [o.type, "null"];
+  if (s.nullable && Array.isArray(o.enum)) o.enum = [...o.enum, null];
+  return o;
+}
+
+async function claude(key: string, b64: string, mime: string, schema: unknown, prompt: string, maxTok: number) {
+  const isPdf = mime === "application/pdf";
+  const file = isPdf
+    ? { type: "document", source: { type: "base64", media_type: mime, data: b64 } }
+    : { type: "image", source: { type: "base64", media_type: mime, data: b64 } };
+  const payload = JSON.stringify({
+    model: CMODEL, max_tokens: maxTok, temperature: 0.1, system: SYSTEM,
+    tools: [{ name: "kaydet", description: "Okunan sonuç belgesi verisini kaydet.", input_schema: toJsonSchema(schema) }],
+    tool_choice: { type: "tool", name: "kaydet" },
+    messages: [{ role: "user", content: [file, { type: "text", text: prompt }] }],
+  });
+  const send = () => fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" }, body: payload });
+  let r = await send();
+  for (let i = 0; i < 2 && [500, 502, 503, 529].includes(r.status); i++) { await new Promise((res) => setTimeout(res, 1500 * (i + 1))); r = await send(); }
+  if (r.status === 429) throw { code: 429, msg: "Yapay zekâ kotası doldu, biraz sonra tekrar dene." };
+  if (!r.ok) throw { code: 502, msg: `Yapay zekâ hizmeti hata verdi (${r.status}).` + await errDetail(r) };
+  const j = await r.json();
+  const tu = (j?.content ?? []).find((c: any) => c?.type === "tool_use");
+  if (!tu?.input || typeof tu.input !== "object" || !Object.keys(tu.input).length) throw { code: 502, msg: "Yapay zekâ yanıtı okunamadı, tekrar dene." };
+  return tu.input;
+}
+
 export async function handler(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return J({ error: "Yalnızca POST kabul edilir." }, 405);
-  const url = Deno.env.get("SUPABASE_URL"), pk = Deno.env.get("APP_PUBLISHABLE_KEY"), sk = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"), gk = (Deno.env.get("GEMINI_API_KEY") ?? "").replace(/[\s"']/g, "");
-  if (!url || !pk || !sk || !gk) return J({ error: "Sunucu yapılandırması eksik." }, 500);
+  const url = Deno.env.get("SUPABASE_URL"), pk = Deno.env.get("APP_PUBLISHABLE_KEY"), sk = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"), gk = (Deno.env.get("GEMINI_API_KEY") ?? "").replace(/[\s"']/g, ""), ak = (Deno.env.get("ANTHROPIC_API_KEY") ?? "").replace(/[\s"']/g, "");
+  if (!url || !pk || !sk || (!gk && !ak)) return J({ error: "Sunucu yapılandırması eksik." }, 500);
   const auth = req.headers.get("Authorization") ?? "";
   const sb = createClient(url, pk, { global: { headers: { Authorization: auth } }, auth: { persistSession: false } });
   const adm = createClient(url, sk, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -258,14 +296,17 @@ export async function handler(req: Request): Promise<Response> {
   const refund = () => adm.rpc("refund_usage", { p_student: user.id, p_kind: "extract" }).then(() => {}, () => {});
 
   try {
+    const ai = ak
+      ? (sc: unknown, pr: string, mt: number, _sv = false) => claude(ak, image, mime, sc, pr, Math.min(mt, 16000))
+      : (sc: unknown, pr: string, mt: number, sv = false) => gemini(gk, image, mime, sc, pr, mt, sv);
     const [head, q] = await Promise.all([
-      gemini(gk, image, mime, SCHEMA, "Bu deneme sonuç belgesinden yalnızca üst bilgileri ve DERSLER özet tablosunu çıkar. Soru bazlı kazanım satırlarını bu çağrıda çıkarma.", 6000),
-      gemini(gk, image, mime, Q_SCHEMA, "SADECE_SORULAR: Bu deneme sonuç belgesindeki tüm ders tablolarında yer alan soru bazlı kazanım satırlarını sorular listesine çıkar. Başka alan üretme.", 20000, true).catch((e: any) => ({ __hata: e })),
+      ai(SCHEMA, "Bu deneme sonuç belgesinden yalnızca üst bilgileri ve DERSLER özet tablosunu çıkar. Soru bazlı kazanım satırlarını bu çağrıda çıkarma.", 6000),
+      ai(Q_SCHEMA, "SADECE_SORULAR: Bu deneme sonuç belgesindeki tüm ders tablolarında yer alan soru bazlı kazanım satırlarını sorular listesine çıkar. Başka alan üretme.", 20000, true).catch((e: any) => ({ __hata: e })),
     ]);
     if (head?.sinav_gorseli_mi === false) { await refund(); return J({ error: "Bu dosya bir deneme sonuç belgesine benzemiyor." }, 422); }
     const out = validate({ ...head, sorular: Array.isArray(q?.sorular) ? q.sorular : [] });
     if (q?.__hata) out.uyarilar.push("Soru bazlı konu detayı okunamadı, yalnızca ders tablosu kaydedilecek. Konu analizi için görseli tekrar yüklemeyi deneyebilirsin.");
-    return J({ ...out, model: RESOLVED ?? MODEL });
+    return J({ ...out, model: ak ? CMODEL : (RESOLVED ?? MODEL) });
   } catch (e: any) {
     await refund();
     return J({ error: e?.msg ?? "Beklenmeyen hata." }, e?.code ?? 500);
