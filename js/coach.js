@@ -275,6 +275,8 @@ async function pdfPages(file){
   return out;
 }
 async function examExtract(){
+  const sid=ROLE==="coach"?sel:ME;
+  if(!sid){setEx("Önce öğrenci seç.");return}
   const f=document.getElementById("exf").files[0];
   if(!f){setEx("Önce bir görsel veya PDF seç.");return}
   const pdf=f.type==="application/pdf"||/\.pdf$/i.test(f.name||"");
@@ -289,14 +291,14 @@ async function examExtract(){
       r=await callFn("exam-extract",{image:b64,mime:"application/pdf"});
     }
     if(r.error){setEx(r.error);return}
-    PX={exam:r.exam,uyarilar:r.uyarilar||[]};setEx("");render();return;
+    PX={studentId:sid,exam:r.exam,uyarilar:r.uyarilar||[]};setEx("");render();return;
   }
   if(f.size>15e6){setEx("Görsel çok büyük (en fazla 15 MB).");return}
   setEx("Görsel okunuyor, 10-20 saniye sürebilir…");
   let im;try{im=await prepImage(f)}catch(e){setEx("Görsel açılamadı.");return}
   const r=await callFn("exam-extract",{image:im.b64,mime:im.mime});
   if(r.error){setEx(r.error);return}
-  PX={exam:r.exam,uyarilar:r.uyarilar||[]};setEx("");render();
+  PX={studentId:sid,exam:r.exam,uyarilar:r.uyarilar||[]};setEx("");render();
 }
 const netOf=(d,y,k)=>Math.round((d-y/k)*100)/100;
 function recalcExam(){
@@ -322,24 +324,31 @@ function examForm(){
   <div class="row"><button class="btn" id="exsave">Onayla ve kaydet</button><button class="chip" id="excancel">İptal</button></div></div>`;
 }
 async function examSave(){
-  const err=m=>{document.getElementById("exerr").textContent=m};
+  const err=m=>{const el=document.getElementById("exerr");if(el)el.textContent=m;else setEx(m)};
+  if(!PX||!PX.exam){err("Deneme verisi bulunamadı. Lütfen yeniden yükle.");return}
+  const sid=PX.studentId||(ROLE==="coach"?sel:ME);
+  if(!sid){err("Öğrenci seçimi bulunamadı. Lütfen yeniden dene.");return}
   const e=PX.exam,tur=document.getElementById("ext").value,name=document.getElementById("exn").value.trim().slice(0,120),date=document.getElementById("exd").value;
-  if(!tur||!name){err("Deneme adı ve türü gerekli.");return}
-  if(!e.dersler.length){err("Kaydedilecek ders satırı yok.");return}
+  if(!["TYT","AYT","LGS","BRANS"].includes(tur)||!name){err("Deneme adı ve geçerli sınav türü gerekli.");return}
+  if(date&&!/^\d{4}-\d{2}-\d{2}$/.test(date)){err("Geçerli bir sınav tarihi seç.");return}
+  if(!Array.isArray(e.dersler)||!e.dersler.length){err("Kaydedilecek ders satırı yok.");return}
   const k=tur==="LGS"?3:4,subs=[];let okc=0,fixc=0,missc=0;
   for(let i=0;i<e.dersler.length;i++){
-    const v=[0,1,2].map(j=>document.querySelector('[data-rx="'+i+'"][data-c="'+j+'"]').value);
-    if(v.some(x=>x===""||+x<0)){err("Boş kalan doğru, yanlış ve boş alanlarını doldur.");return}
+    const v=[0,1,2].map(j=>{const el=document.querySelector('[data-rx="'+i+'"][data-c="'+j+'"]');return el?el.value:""});
+    if(v.some(x=>x===""||!Number.isFinite(Number(x))||Number(x)<0)){err("Boş kalan doğru, yanlış ve boş alanlarını doldur.");return}
     const [d,y,b]=v.map(Number);
+    if(d+y+b>500){err("Bir ders için doğru, yanlış ve boş toplamı geçersiz.");return}
     [d,y,b].forEach((x,j)=>{const a=e.dersler[i][["dogru","yanlis","bos"][j]];if(a==null)missc++;else if(a===x)okc++;else fixc++});
-    subs.push({ders:e.dersler[i].ders,dogru:d,yanlis:y,bos:b,net:netOf(d,y,k),ogrenci_yuzde:e.dersler[i].ogrenci_yuzde??null,kurum_yuzde:e.dersler[i].kurum_yuzde??null});
+    subs.push({ders:String(e.dersler[i].ders||"Ders").slice(0,60),dogru:d,yanlis:y,bos:b,net:netOf(d,y,k),ogrenci_yuzde:e.dersler[i].ogrenci_yuzde??null,kurum_yuzde:e.dersler[i].kurum_yuzde??null});
   }
-  if(!PX.editId&&(EX[ME]||[]).some(x=>x.exam_name===name&&(x.exam_date||"")===date)&&!confirm("Aynı adla bir deneme zaten kayıtlı. Yine de kaydedilsin mi?"))return;
+  if(!PX.editId&&(EX[sid]||[]).some(x=>x.exam_name===name&&(x.exam_date||"")===date)&&!confirm("Aynı adla bir deneme zaten kayıtlı. Yine de kaydedilsin mi?"))return;
   const total=Math.round(subs.reduce((a,s)=>a+s.net,0)*100)/100;
-  const rec={exam_name:name,exam_date:date||null,exam_type:tur,total_net:total,score:e.puan,rank:e.siralama,subjects:subs,topics:e.konular||[]};
-  const {error}=PX.editId?await sb.from("exam_results").update(rec).eq("id",PX.editId).eq("student_id",ME):await sb.from("exam_results").insert({student_id:ME,...rec,source:"ai_image",verified:true,extraction_meta:{okunan:okc+fixc,dogru_okunan:okc,duzeltilen:fixc,okunamayan:missc,uyari:PX.uyarilar.length,soru_satiri:e.soru_satiri||0}});
-  if(error){err("Kaydedilemedi: "+error.message);return}
-  PX=null;await loadExams(ME);setEx("Kaydedildi ✓ Analiz hazırlanıyor…");render();runInsights(ME,true);
+  const rec={exam_name:name,exam_date:date||null,exam_type:tur,total_net:total,score:e.puan??null,rank:e.siralama??null,subjects:subs,topics:Array.isArray(e.konular)?e.konular:[]};
+  try{
+    const {error}=PX.editId?await sb.from("exam_results").update(rec).eq("id",PX.editId).eq("student_id",sid):await sb.from("exam_results").insert({student_id:sid,...rec,source:"ai_image",verified:true,extraction_meta:{okunan:okc+fixc,dogru_okunan:okc,duzeltilen:fixc,okunamayan:missc,uyari:(PX.uyarilar||[]).length,soru_satiri:e.soru_satiri||0}});
+    if(error){err("Kaydedilemedi. "+error.message);return}
+  }catch(e){err("Kaydedilirken bağlantı hatası oluştu. İnternetini kontrol edip tekrar dene.");return}
+  PX=null;await loadExams(sid);setEx("Kaydedildi ✓ Analiz hazırlanıyor…");render();runInsights(sid,true);
 }
 async function runInsights(sid,force){
   AIBUSY=sid;render();
