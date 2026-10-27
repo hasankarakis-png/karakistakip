@@ -14,7 +14,7 @@ Bu dosya, kaynak kodunda yapılan inceleme ile canlı ortamda doğrulanması ger
 
 ## Dağıtımdan önce gerekli manuel kontroller
 
-1. Supabase SQL Editor'da `supabase/migrations/20261027_week_title.sql` dosyasını inceleyip canlı şemayla uyumlu olduğunu doğrula; yedek/geri dönüş planı olmadan çalıştırma.
+1. Supabase SQL Editor'da `supabase/migrations/20261027_week_title.sql` ve `supabase/migrations/20261027_exam_student_crud.sql` dosyalarını inceleyip canlı şemayla uyumlu olduğunu doğrula; yedek/geri dönüş planı olmadan çalıştırma.
 2. Koç ve en az iki öğrenci hesabıyla RLS: öğrenci A, öğrenci B'nin günlükleri, denemeleri, görevleri, mesajları ve hedeflerini okuyamamalı/değiştirememeli.
 3. Öğrenci ve koç rollerinde deneme ekleme, silme, düzenleme; seçili öğrenciye doğru kaydedildiğini doğrula.
 4. Gerçek PDF, taranmış PDF, JPG ve PNG dosyalarıyla AI okuma yap; okunamayan değerlerin tahmin edilmediğini, netlerin doğru hesaplandığını ve kota hatasında kullanıcıya anlaşılır mesaj verildiğini doğrula.
