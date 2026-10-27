@@ -359,7 +359,7 @@ export async function handler(req: Request): Promise<Response> {
       for (const provider of providers) {
         try {
           const result = await provider.run(sc, pr, mt, sv);
-          usedProviders.add(provider.name);
+          usedProviders.add(provider.name === MODEL ? (RESOLVED ?? MODEL) : provider.name);
           return result;
         } catch (e: any) {
           last = e;
