@@ -34,3 +34,11 @@ jobs:
           while IFS= read -r file; do
             deno check "$file"
           done < <(find supabase/functions -mindepth 2 -maxdepth 2 -name 'index.ts' -type f | sort)
+
+  repository-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check critical repository invariants
+        shell: bash
+        run: bash tests/quality-contracts.sh
