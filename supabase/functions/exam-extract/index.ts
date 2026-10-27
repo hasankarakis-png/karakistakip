@@ -270,10 +270,11 @@ async function claude(key: string, fs: F[], mime: string, schema: unknown, promp
 
 // Ücretsiz sağlayıcı (OpenAI uyumlu): Mistral / Groq / OpenRouter. Yalnızca görsel okur (PDF desteklenmez).
 const FBASE = (() => {
-  const d = "https://api.mistral.ai/v1", v = (Deno.env.get("FREE_AI_BASE") ?? "").trim().replace(/\/+$/, "");
-  return /^https:\/\/(api\.mistral\.ai\/v1|api\.groq\.com\/openai\/v1|openrouter\.ai\/api\/v1)$/.test(v) ? v : d;
+  const v = (Deno.env.get("FREE_AI_BASE") ?? "").trim().replace(/\/+$/, "");
+  if (/^https:\/\/(api\.mistral\.ai\/v1|api\.groq\.com\/openai\/v1|openrouter\.ai\/api\/v1)$/.test(v)) return v;
+  return Deno.env.get("OPENROUTER_API_KEY") && !Deno.env.get("FREE_AI_KEY") ? "https://openrouter.ai/api/v1" : "https://api.mistral.ai/v1";
 })();
-const FMODEL = (Deno.env.get("FREE_AI_MODEL") ?? "mistral-small-latest").trim();
+const FMODEL = (Deno.env.get("FREE_AI_MODEL") ?? (FBASE.includes("openrouter.ai") ? "mistralai/mistral-small-3.2-24b-instruct:free" : "mistral-small-latest")).trim();
 
 async function freeai(key: string, fs: F[], mime: string, schema: unknown, prompt: string, maxTok: number, salvage = false) {
   const js = toJsonSchema(schema);
@@ -304,7 +305,7 @@ async function freeai(key: string, fs: F[], mime: string, schema: unknown, promp
 export async function handler(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return J({ error: "Yalnızca POST kabul edilir." }, 405);
-  const url = Deno.env.get("SUPABASE_URL"), pk = Deno.env.get("APP_PUBLISHABLE_KEY"), sk = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"), gk = (Deno.env.get("GEMINI_API_KEY") ?? "").replace(/[\s"']/g, ""), ak = (Deno.env.get("ANTHROPIC_API_KEY") ?? "").replace(/[\s"']/g, ""), fk = (Deno.env.get("FREE_AI_KEY") ?? "").replace(/[\s"']/g, "");
+  const url = Deno.env.get("SUPABASE_URL"), pk = Deno.env.get("APP_PUBLISHABLE_KEY"), sk = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"), gk = (Deno.env.get("GEMINI_API_KEY") ?? "").replace(/[\s"']/g, ""), ak = (Deno.env.get("ANTHROPIC_API_KEY") ?? "").replace(/[\s"']/g, ""), fk = (Deno.env.get("FREE_AI_KEY") ?? Deno.env.get("OPENROUTER_API_KEY") ?? "").replace(/[\s"']/g, "");
   if (!url || !pk || !sk || (!gk && !ak && !fk)) return J({ error: "Sunucu yapılandırması eksik." }, 500);
   const auth = req.headers.get("Authorization") ?? "";
   const sb = createClient(url, pk, { global: { headers: { Authorization: auth } }, auth: { persistSession: false } });
