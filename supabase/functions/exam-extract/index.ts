@@ -362,10 +362,12 @@ export async function handler(req: Request): Promise<Response> {
           usedProviders.add(provider.name === MODEL ? (RESOLVED ?? MODEL) : provider.name);
           return result;
         } catch (e: any) {
-          last = e;
-          // Invalid request/auth configuration is not helped by retrying the same provider;
-          // continue to the next configured provider, but preserve the final useful error.
-          if (e?.code !== 429 && e?.code !== 502) throw e;
+          // Network exceptions (TypeError), timeouts and provider HTTP errors must not
+          // prevent trying the next configured provider. Keep a safe, user-facing message.
+          last = e?.msg
+            ? { code: Number(e?.code) || 502, msg: String(e.msg).slice(0, 240) }
+            : { code: 502, msg: provider.name + " sağlayıcısına ulaşılamadı; diğer sağlayıcı deneniyor." };
+          continue;
         }
       }
       throw last ?? { code: 500, msg: "Kullanılabilir yapay zekâ sağlayıcısı bulunamadı." };
