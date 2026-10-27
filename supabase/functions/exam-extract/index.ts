@@ -268,11 +268,38 @@ async function claude(key: string, b64: string, mime: string, schema: unknown, p
   return tu.input;
 }
 
+// Ücretsiz sağlayıcı (OpenAI uyumlu): Mistral / Groq / OpenRouter. Yalnızca görsel okur (PDF desteklenmez).
+const FBASE = (() => {
+  const d = "https://api.mistral.ai/v1", v = (Deno.env.get("FREE_AI_BASE") ?? "").trim().replace(/\/+$/, "");
+  return /^https:\/\/(api\.mistral\.ai\/v1|api\.groq\.com\/openai\/v1|openrouter\.ai\/api\/v1)$/.test(v) ? v : d;
+})();
+const FMODEL = (Deno.env.get("FREE_AI_MODEL") ?? "mistral-small-latest").trim();
+
+async function freeai(key: string, b64: string, mime: string, schema: unknown, prompt: string, maxTok: number, salvage = false) {
+  const js = toJsonSchema(schema);
+  const mk = (rf: unknown, extra: string) => JSON.stringify({
+    model: FMODEL, temperature: 0.1, max_tokens: Math.min(maxTok, 16000), response_format: rf,
+    messages: [{ role: "system", content: SYSTEM }, { role: "user", content: [{ type: "text", text: prompt + extra }, { type: "image_url", image_url: { url: `data:${mime};base64,${b64}` } }] }],
+  });
+  const send = (body: string) => fetch(FBASE + "/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + key }, body });
+  let r = await send(mk({ type: "json_schema", json_schema: { name: "sonuc", schema: js } }, ""));
+  if (r.status === 400 || r.status === 422) r = await send(mk({ type: "json_object" }, "\nYanıtı yalnızca şu JSON şemasına uyan tek bir JSON nesnesi olarak ver: " + JSON.stringify(js)));
+  for (let i = 0; i < 2 && [500, 502, 503].includes(r.status); i++) { await new Promise((res) => setTimeout(res, 1500 * (i + 1))); r = await send(mk({ type: "json_object" }, "\nYanıtı yalnızca şu JSON şemasına uyan tek bir JSON nesnesi olarak ver: " + JSON.stringify(js))); }
+  if (r.status === 429) throw { code: 429, msg: "Ücretsiz yapay zekâ kotası doldu, biraz sonra tekrar dene." };
+  if (!r.ok) throw { code: 502, msg: `Yapay zekâ hizmeti hata verdi (${r.status}).` + await errDetail(r) };
+  const j = await r.json();
+  const t = String(j?.choices?.[0]?.message?.content ?? "").replace(/^```(?:json)?\s*|\s*```$/g, "");
+  try { return JSON.parse(t); } catch {
+    if (salvage) { const i = t.lastIndexOf("}"); if (i > 0) { try { return JSON.parse(t.slice(0, i + 1) + "]}"); } catch { /* kurtarılamadı */ } } }
+    throw { code: 502, msg: "Yapay zekâ yanıtı okunamadı, tekrar dene." };
+  }
+}
+
 export async function handler(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return J({ error: "Yalnızca POST kabul edilir." }, 405);
-  const url = Deno.env.get("SUPABASE_URL"), pk = Deno.env.get("APP_PUBLISHABLE_KEY"), sk = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"), gk = (Deno.env.get("GEMINI_API_KEY") ?? "").replace(/[\s"']/g, ""), ak = (Deno.env.get("ANTHROPIC_API_KEY") ?? "").replace(/[\s"']/g, "");
-  if (!url || !pk || !sk || (!gk && !ak)) return J({ error: "Sunucu yapılandırması eksik." }, 500);
+  const url = Deno.env.get("SUPABASE_URL"), pk = Deno.env.get("APP_PUBLISHABLE_KEY"), sk = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"), gk = (Deno.env.get("GEMINI_API_KEY") ?? "").replace(/[\s"']/g, ""), ak = (Deno.env.get("ANTHROPIC_API_KEY") ?? "").replace(/[\s"']/g, ""), fk = (Deno.env.get("FREE_AI_KEY") ?? "").replace(/[\s"']/g, "");
+  if (!url || !pk || !sk || (!gk && !ak && !fk)) return J({ error: "Sunucu yapılandırması eksik." }, 500);
   const auth = req.headers.get("Authorization") ?? "";
   const sb = createClient(url, pk, { global: { headers: { Authorization: auth } }, auth: { persistSession: false } });
   const adm = createClient(url, sk, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -289,6 +316,7 @@ export async function handler(req: Request): Promise<Response> {
   const isPdf = mime === "application/pdf";
   if (!image || image.length > (isPdf ? MAX_PDF_B64 : MAX_B64) || !/^[A-Za-z0-9+/=]+$/.test(image)) return J({ error: isPdf ? "PDF geçersiz veya çok büyük (en fazla yaklaşık 6 MB)." : "Görsel geçersiz veya çok büyük." }, 400);
   if (isPdf && !image.startsWith(PDF_MAGIC)) return J({ error: "Bu dosya geçerli bir PDF değil." }, 400);
+  if (isPdf && !ak && !gk) return J({ error: "Bu yapay zekâ PDF okuyamaz, lütfen belgenin ekran görüntüsünü yükle." }, 400);
 
   // Kota atomik ve yalnızca sunucuda artırılır; Gemini hata verirse hak iade edilir.
   const { data: okQ, error: qErr } = await adm.rpc("bump_usage", { p_student: user.id, p_kind: "extract", p_limit: LIMIT });
@@ -298,7 +326,9 @@ export async function handler(req: Request): Promise<Response> {
   try {
     const ai = ak
       ? (sc: unknown, pr: string, mt: number, _sv = false) => claude(ak, image, mime, sc, pr, Math.min(mt, 16000))
-      : (sc: unknown, pr: string, mt: number, sv = false) => gemini(gk, image, mime, sc, pr, mt, sv);
+      : fk && !isPdf
+        ? (sc: unknown, pr: string, mt: number, sv = false) => freeai(fk, image, mime, sc, pr, mt, sv)
+        : (sc: unknown, pr: string, mt: number, sv = false) => gemini(gk, image, mime, sc, pr, mt, sv);
     const [head, q] = await Promise.all([
       ai(SCHEMA, "Bu deneme sonuç belgesinden yalnızca üst bilgileri ve DERSLER özet tablosunu çıkar. Soru bazlı kazanım satırlarını bu çağrıda çıkarma.", 6000),
       ai(Q_SCHEMA, "SADECE_SORULAR: Bu deneme sonuç belgesindeki tüm ders tablolarında yer alan soru bazlı kazanım satırlarını sorular listesine çıkar. Başka alan üretme.", 20000, true).catch((e: any) => ({ __hata: e })),
@@ -306,7 +336,7 @@ export async function handler(req: Request): Promise<Response> {
     if (head?.sinav_gorseli_mi === false) { await refund(); return J({ error: "Bu dosya bir deneme sonuç belgesine benzemiyor." }, 422); }
     const out = validate({ ...head, sorular: Array.isArray(q?.sorular) ? q.sorular : [] });
     if (q?.__hata) out.uyarilar.push("Soru bazlı konu detayı okunamadı, yalnızca ders tablosu kaydedilecek. Konu analizi için görseli tekrar yüklemeyi deneyebilirsin.");
-    return J({ ...out, model: ak ? CMODEL : (RESOLVED ?? MODEL) });
+    return J({ ...out, model: ak ? CMODEL : fk && !isPdf ? FMODEL : (RESOLVED ?? MODEL) });
   } catch (e: any) {
     await refund();
     return J({ error: e?.msg ?? "Beklenmeyen hata." }, e?.code ?? 500);
