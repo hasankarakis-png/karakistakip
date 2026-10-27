@@ -131,6 +131,7 @@ create table if not exists public.weekly_tasks(
   title text not null check (char_length(title) between 1 and 120),
   subject text check (char_length(subject) <= 40),
   amount text check (char_length(amount) <= 60),
+  week_title text check (char_length(week_title) <= 40),
   done boolean not null default false,
   done_at timestamptz,
   source text not null default 'coach' check (source in ('coach','ai')),
