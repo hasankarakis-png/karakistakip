@@ -72,11 +72,18 @@ async function puAssign(id){
   const nm=(STU.find(p=>p.id===id)||{}).name||"öğrenci";
   if(!confirm(nm+" için "+rows.length+" görev atansın mı?"))return;
   P.busy=true;render();let err=null;
-  for(let i=0;i<rows.length;i+=50){const r=await dbw(sb.from("weekly_tasks").insert(rows.slice(i,i+50)));if(r&&r.error){err=r.error.message;break}}
+  const insertResult=await dbw(sb.from("weekly_tasks").insert(rows));if(insertResult&&insertResult.error)err=insertResult.error.message;
   P.busy=false;
   if(err){P.msg="Atanamadı: "+err;P.err=true;render();return}
   WSEL[id]=dr.week;P.draft=null;P.err=false;P.msg=rows.length+" görev atandı ✓"+(skippedPast?` · ${skippedPast} geçmiş gün atlandı`:"")+(dup?` · ${dup} zaten vardı`:"");
   WK[id]=0;await loadTasks(id);render();
+}
+async function puRenameWeek(sid,w,nm){
+  const P=PU[sid]=PU[sid]||{};P.busy=true;P.msg="Hafta adı kaydediliyor…";P.err=false;render();
+  const r=await dbw(sb.from("weekly_tasks").update({week_title:nm}).eq("student_id",sid).gte("task_date",w.mon).lte("task_date",shift(w.mon,6)));
+  P.busy=false;
+  if(r&&r.error){P.msg="Hafta adı kaydedilemedi: "+r.error.message;P.err=true;render();return}
+  P.msg="Hafta adı güncellendi.";P.err=false;await loadTasks(sid);render();
 }
 function puAct(D,id){
   if(D.plpick){const id=(document.getElementById("plsel")||{}).value;if(!id)return true;sel=id;selDay=null;DTAB="g";PLV=id;render();window.scrollTo(0,0);Promise.all([loadHist(id),loadExams(id),loadTasks(id),loadTarget(id)]).then(()=>{if(sel===id)render()});return true}
@@ -91,7 +98,7 @@ function puAct(D,id){
   if(D.bmadd){boostManual(D.bmadd);return true}
   if(D.selfdel){selfDel(D.selfdel);return true}
   if(D.wsel){WSEL[sid]=D.wsel;render();return true}
-  if(D.wren){const w=selWeek(sid),n=prompt("Hafta adı:",weekName(w));if(n===null)return true;const nm=n.trim().slice(0,40)||null;dbw(sb.from("weekly_tasks").update({week_title:nm}).eq("student_id",sid).gte("task_date",w.mon).lte("task_date",shift(w.mon,6))).then(()=>loadTasks(sid)).then(render);return true}
+  if(D.wren){const w=selWeek(sid),n=prompt("Hafta adı:",weekName(w));if(n===null)return true;const nm=n.trim().slice(0,40)||null;puRenameWeek(sid,w,nm);return true}
   if(D.wk!=null){WK[sid]=(WK[sid]||0)+(+D.wk);render();return true}
   return false;
 }
