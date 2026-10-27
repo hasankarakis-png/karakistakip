@@ -265,11 +265,13 @@ export function cleanPlan(raw: any, start: string) {
 }
 
 async function loadFacts(sb: any, sid: string) {
-  const { data: exams } = await sb.from("exam_results")
+  const { data: exams, error: examsError } = await sb.from("exam_results")
     .select("exam_name,exam_date,exam_type,total_net,score,rank,subjects,topics,created_at")
     .eq("student_id", sid).order("exam_date", { ascending: true }).order("created_at", { ascending: true });
+  if (examsError) throw new Error("Deneme sonuçları okunamadı.");
   const list = exams ?? [];
-  const { data: tgs } = await sb.from("exam_targets").select("exam_type,target_net,target_score,note,university,department").eq("student_id", sid);
+  const { data: tgs, error: targetsError } = await sb.from("exam_targets").select("exam_type,target_net,target_score,note,university,department").eq("student_id", sid);
+  if (targetsError) throw new Error("Hedefler okunamadı.");
   const tg = pickGoal(list, tgs);
   return { list, stats: { ...buildStats(list), hedef: hedefOzet(list, tg) } };
 }
