@@ -1,6 +1,6 @@
 // Edge Function: weekly-report
 // Koç için: öğrencinin haftalık verisinden koç değerlendirmesi + veliye gönderilecek mesaj TASLAĞI üretir.
-// Yalnızca koç hesabı. Gemini anahtarı yalnızca sunucuda durur. Çıktı taslaktır; koç göndermeden önce okur/düzenler.
+// Yalnızca koç hesabı. OpenRouter (Nemotron, varsa) veya Gemini anahtarı yalnızca sunucuda durur. Çıktı taslaktır; koç göndermeden önce okur/düzenler.
 import { createClient } from "npm:@supabase/supabase-js@2.117.1";
 
 const CORS = {
@@ -10,6 +10,21 @@ const CORS = {
 };
 const J = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...CORS, "Content-Type": "application/json" } });
 const MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
+const ORMODEL = (Deno.env.get("OPENROUTER_MODEL") ?? "nvidia/nemotron-3-ultra-550b-a55b:free").trim();
+// OpenRouter (OpenAI uyumlu, yalnızca metin). Hata verirse null döner; çağıran Gemini'ye düşer.
+async function openrouter(key: string, user: string): Promise<any | null> {
+  try {
+    const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
+      body: JSON.stringify({ model: ORMODEL, temperature: 0.5, max_tokens: 3000, response_format: { type: "json_object" }, messages: [{ role: "system", content: SYSTEM }, { role: "user", content: user }] }),
+    });
+    if (!r.ok) return null;
+    const j = await r.json();
+    const t = String(j?.choices?.[0]?.message?.content ?? "").replace(/^```(?:json)?\s*|```$/g, "").trim();
+    const a = t.indexOf("{"), b = t.lastIndexOf("}");
+    return a >= 0 && b > a ? JSON.parse(t.slice(a, b + 1)) : null;
+  } catch { return null; }
+}
 const GBASE = (() => {
   const d = "https://generativelanguage.googleapis.com/v1beta", v = (Deno.env.get("GEMINI_BASE") ?? "").trim().replace(/\/+$/, "");
   return /^https:\/\/(generativelanguage\.googleapis\.com|gateway\.ai\.cloudflare\.com)\//.test(v + "/") ? v : d;
@@ -46,8 +61,8 @@ async function errDetail(r: Response): Promise<string> {
 export async function handler(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return J({ error: "Yalnızca POST kabul edilir." }, 405);
-  const url = Deno.env.get("SUPABASE_URL"), pk = Deno.env.get("APP_PUBLISHABLE_KEY"), gk = (Deno.env.get("GEMINI_API_KEY") ?? "").replace(/[\s"']/g, "");
-  if (!url || !pk || !gk) return J({ error: "Sunucu yapılandırması eksik." }, 500);
+  const url = Deno.env.get("SUPABASE_URL"), pk = Deno.env.get("APP_PUBLISHABLE_KEY"), gk = (Deno.env.get("GEMINI_API_KEY") ?? "").replace(/[\s"']/g, ""), ork = (Deno.env.get("OPENROUTER_API_KEY") ?? "").replace(/[\s"']/g, "");
+  if (!url || !pk || (!gk && !ork)) return J({ error: "Sunucu yapılandırması eksik." }, 500);
   const auth = req.headers.get("Authorization") ?? "";
   const sb = createClient(url, pk, { global: { headers: { Authorization: auth } }, auth: { persistSession: false } });
   const { data: u } = await sb.auth.getUser(auth.replace(/^Bearer /i, ""));
@@ -74,22 +89,28 @@ export async function handler(req: Request): Promise<Response> {
     koc_notu: cut(f.not, 200),
   };
   try {
-    const payload = JSON.stringify({ systemInstruction: { parts: [{ text: SYSTEM }] }, contents: [{ role: "user", parts: [{ text: "veri: " + JSON.stringify(veri) }] }], generationConfig: { temperature: 0.5, maxOutputTokens: 2500, responseMimeType: "application/json" } });
-    const send = (m: string = RESOLVED ?? MODEL) => fetch(`${GBASE}/models/${m}:generateContent`, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": gk }, body: payload });
-    let r = await send();
-    if (r.status === 404 && !RESOLVED) { const alt = await pickModel(gk); if (alt && alt !== MODEL) { RESOLVED = alt; r = await send(alt); } }
-    for (let i = 0; i < 2 && (r.status === 503 || r.status === 500); i++) { await new Promise((res) => setTimeout(res, 1500 * (i + 1))); r = await send(); }
-    if (r.status === 429) return J({ error: "Yapay zekâ kotası doldu, biraz sonra tekrar dene." }, 429);
-    if (!r.ok) return J({ error: `Yapay zekâ hizmeti hata verdi (${r.status}).` + await errDetail(r) }, 502);
-    const j = await r.json();
-    const t = (j?.candidates?.[0]?.content?.parts ?? []).map((p: any) => p?.text ?? "").join("");
-    let o: any = null;
-    try { o = JSON.parse(t.replace(/^```json\s*|```$/g, "").trim()); } catch { /* aşağıda hata */ }
+    let o: any = null, model = "";
+    if (ork) { o = await openrouter(ork, "veri: " + JSON.stringify(veri)); if (o && typeof o.veli_mesaji === "string") model = ORMODEL; else o = null; }
+    if (!o) {
+      if (!gk) return J({ error: "Yapay zekâ yanıtı alınamadı, tekrar dene." }, 502);
+      const payload = JSON.stringify({ systemInstruction: { parts: [{ text: SYSTEM }] }, contents: [{ role: "user", parts: [{ text: "veri: " + JSON.stringify(veri) }] }], generationConfig: { temperature: 0.5, maxOutputTokens: 2500, responseMimeType: "application/json" } });
+      const send = (m: string = RESOLVED ?? MODEL) => fetch(`${GBASE}/models/${m}:generateContent`, { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": gk }, body: payload });
+      let r = await send();
+      if (r.status === 404 && !RESOLVED) { const alt = await pickModel(gk); if (alt && alt !== MODEL) { RESOLVED = alt; r = await send(alt); } }
+      for (let i = 0; i < 2 && (r.status === 503 || r.status === 500); i++) { await new Promise((res) => setTimeout(res, 1500 * (i + 1))); r = await send(); }
+      if (r.status === 429) return J({ error: "Yapay zekâ kotası doldu, biraz sonra tekrar dene." }, 429);
+      if (!r.ok) return J({ error: `Yapay zekâ hizmeti hata verdi (${r.status}).` + await errDetail(r) }, 502);
+      const j = await r.json();
+      const t = (j?.candidates?.[0]?.content?.parts ?? []).map((p: any) => p?.text ?? "").join("");
+      try { o = JSON.parse(t.replace(/^```json\s*|```$/g, "").trim()); } catch { /* aşağıda hata */ }
+      model = RESOLVED ?? MODEL;
+    }
     if (!o || typeof o.veli_mesaji !== "string") return J({ error: "Yapay zekâ yanıtı okunamadı, tekrar dene." }, 502);
     return J({
       degerlendirme: cut(o.koc_degerlendirmesi, 900),
       oneriler: (Array.isArray(o.oneriler) ? o.oneriler : []).slice(0, 4).map((x: unknown) => cut(x, 220)).filter(Boolean),
       veli: cut(o.veli_mesaji, 1200).replace(/\s*\n\s*/g, "\n"),
+      model,
     });
   } catch (_e) {
     return J({ error: "Beklenmeyen hata, tekrar dene." }, 500);
