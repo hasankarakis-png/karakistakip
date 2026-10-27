@@ -12,11 +12,12 @@ Gemini anahtarı yalnızca Supabase Edge Function'larında (sunucuda) durur. Tar
 ## 1. Tabloları ekle
 Supabase → SQL Editor → New query → `supabase/schema-ai.sql` içeriğini yapıştır → Run. (schema.sql daha önce çalıştırılmış olmalı.)
 
-## 2. İki fonksiyonu yükle
+## 2. Edge Functions'ı yükle
 Supabase → Edge Functions → Deploy a new function → **Via Editor**.
 1. Adı tam olarak `exam-extract` yaz. `supabase/functions/exam-extract/index.ts` içeriğini yapıştır → Deploy.
 2. Aynısını `exam-insights` için yap (`supabase/functions/exam-insights/index.ts`).
 3. Her fonksiyonun ayarlarında **"Verify JWT"** seçeneği varsa kapat. Fonksiyonlar kullanıcı oturumunu kendileri doğrular ve girişsiz isteği reddeder.
+4. Haftalık program PDF/görsel okuma için `plan-extract` fonksiyonunu da dağıt: `supabase/functions/plan-extract/index.ts` içeriğini aynı adla yayımla. Bu fonksiyon koç rolünü sunucuda doğrular.
 
 ## 3. Gizli değerleri (Secrets) ekle
 Edge Functions → Secrets (ya da Project Settings → Edge Functions → Secrets):
