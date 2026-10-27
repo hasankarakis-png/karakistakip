@@ -281,7 +281,13 @@ async function freeai(key: string, fs: F[], mime: string, schema: unknown, promp
     model: FMODEL, temperature: 0.1, max_tokens: Math.min(maxTok, 16000), response_format: rf,
     messages: [{ role: "system", content: SYSTEM }, { role: "user", content: [{ type: "text", text: prompt + extra }, ...fs.map((f) => ({ type: "image_url", image_url: { url: `data:${f.mime};base64,${f.b64}` } }))] }],
   });
-  const send = (body: string) => fetch(FBASE + "/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + key }, body });
+  // Ücretsiz katman saniyede ~1 istek kabul eder: 429 gelirse bekleyip yeniden dene.
+  const send = async (body: string) => {
+    const go = () => fetch(FBASE + "/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + key }, body });
+    let r = await go();
+    for (let i = 0; i < 3 && r.status === 429; i++) { await new Promise((res) => setTimeout(res, 2500 * (i + 1))); r = await go(); }
+    return r;
+  };
   let r = await send(mk({ type: "json_schema", json_schema: { name: "sonuc", schema: js } }, ""));
   if (r.status === 400 || r.status === 422) r = await send(mk({ type: "json_object" }, "\nYanıtı yalnızca şu JSON şemasına uyan tek bir JSON nesnesi olarak ver: " + JSON.stringify(js)));
   for (let i = 0; i < 2 && [500, 502, 503].includes(r.status); i++) { await new Promise((res) => setTimeout(res, 1500 * (i + 1))); r = await send(mk({ type: "json_object" }, "\nYanıtı yalnızca şu JSON şemasına uyan tek bir JSON nesnesi olarak ver: " + JSON.stringify(js))); }
@@ -336,19 +342,28 @@ export async function handler(req: Request): Promise<Response> {
   const refund = () => adm.rpc("refund_usage", { p_student: user.id, p_kind: "extract" }).then(() => {}, () => {});
 
   try {
-    const ai = ak
+    const primary = ak
       ? (sc: unknown, pr: string, mt: number, _sv = false) => claude(ak, fs, mime, sc, pr, Math.min(mt, 16000))
       : fk && !noImg
         ? (sc: unknown, pr: string, mt: number, sv = false) => freeai(fk, fs, mime, sc, pr, mt, sv)
         : (sc: unknown, pr: string, mt: number, sv = false) => gemini(gk, fs, mime, sc, pr, mt, sv);
+    let fellBack = false;
+    // Ücretsiz sağlayıcı kotaya takılırsa (ve Gemini anahtarı varsa) otomatik Gemini'ye geçer.
+    const ai = async (sc: unknown, pr: string, mt: number, sv = false, delay = 0) => {
+      if (delay) await new Promise((res) => setTimeout(res, delay));
+      try { return await primary(sc, pr, mt, sv); } catch (e: any) {
+        if (!ak && fk && !noImg && gk && (e?.code === 429 || e?.code === 502)) { fellBack = true; return await gemini(gk, fs, mime, sc, pr, mt, sv); }
+        throw e;
+      }
+    };
     const [head, q] = await Promise.all([
       ai(SCHEMA, "Bu deneme sonuç belgesinden yalnızca üst bilgileri ve DERSLER özet tablosunu çıkar. Soru bazlı kazanım satırlarını bu çağrıda çıkarma.", 6000),
-      ai(Q_SCHEMA, "SADECE_SORULAR: Bu deneme sonuç belgesindeki tüm ders tablolarında yer alan soru bazlı kazanım satırlarını sorular listesine çıkar. Başka alan üretme.", 20000, true).catch((e: any) => ({ __hata: e })),
+      ai(Q_SCHEMA, "SADECE_SORULAR: Bu deneme sonuç belgesindeki tüm ders tablolarında yer alan soru bazlı kazanım satırlarını sorular listesine çıkar. Başka alan üretme.", 20000, true, fk && !ak ? 1500 : 0).catch((e: any) => ({ __hata: e })),
     ]);
     if (head?.sinav_gorseli_mi === false) { await refund(); return J({ error: "Bu dosya bir deneme sonuç belgesine benzemiyor." }, 422); }
     const out = validate({ ...head, sorular: Array.isArray(q?.sorular) ? q.sorular : [] });
     if (q?.__hata) out.uyarilar.push("Soru bazlı konu detayı okunamadı, yalnızca ders tablosu kaydedilecek. Konu analizi için görseli tekrar yüklemeyi deneyebilirsin.");
-    return J({ ...out, model: ak ? CMODEL : fk && !noImg ? FMODEL : (RESOLVED ?? MODEL) });
+    return J({ ...out, model: ak ? CMODEL : fk && !noImg && !fellBack ? FMODEL : (RESOLVED ?? MODEL) });
   } catch (e: any) {
     await refund();
     return J({ error: e?.msg ?? "Beklenmeyen hata." }, e?.code ?? 500);
