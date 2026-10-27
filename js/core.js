@@ -9,7 +9,7 @@ const dayN=n=>{const d=new Date();d.setDate(d.getDate()+n);return ymd(d)};
 const fresh=()=>({day:day(),status:"idle",cur:null,done:0,log:[],qs:[],prog:false,mood:0,sleep:0,dist:0,en:0,str:0,hard:"",meth:{}});
 let S=fresh();
 let view="s",subj=SUBJ[0],meth=METH[0];
-const snap=()=>({m:Math.round(total()/60000),q:solved(),prog:S.prog?1:0,mood:S.mood,sleep:S.sleep,dist:S.dist,en:S.en,str:S.str,act:actPct(),c:correct(),b:S.qs.reduce((a,q)=>a+(q.b||0),0)});
+const snap=()=>({m:Math.min(1440,Math.max(0,Math.round(total()/60000)||0)),q:Math.min(3000,Math.max(0,Math.round(solved())||0)),prog:S.prog?1:0,mood:S.mood,sleep:S.sleep,dist:S.dist,en:S.en,str:S.str,act:actPct(),c:correct(),b:S.qs.reduce((a,q)=>a+(q.b||0),0)});
 let pend;
 let DIRTY=false,rtry;
 const dayRow=s=>({student_id:ME,day:s.day,state:s,snap:snap(),updated_at:new Date().toISOString()});
