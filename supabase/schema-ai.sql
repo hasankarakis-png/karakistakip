@@ -40,6 +40,8 @@ alter table public.ai_usage     enable row level security;
 -- Deneme sonuçları: öğrenci kendi sonucunu ekler/okur, koç hepsini okur ve silebilir
 create policy "exam_student_select" on public.exam_results for select using (student_id = auth.uid());
 create policy "exam_student_insert" on public.exam_results for insert with check (student_id = auth.uid());
+create policy "exam_student_update" on public.exam_results for update using (student_id = auth.uid()) with check (student_id = auth.uid());
+create policy "exam_student_delete" on public.exam_results for delete using (student_id = auth.uid());
 create policy "exam_coach_select"   on public.exam_results for select using (public.is_coach());
 create policy "exam_coach_delete"   on public.exam_results for delete using (public.is_coach());
 
