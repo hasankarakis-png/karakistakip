@@ -40,6 +40,5 @@ function profileCard(){
 }
 function accountCard(){
   const dark=document.documentElement.getAttribute("data-theme")!=="light";
-  return `<div class="card"><h2>Hesap</h2><div class="row" style="margin-top:6px"><button class="chip" id="theme2">${dark?"☀ Açık tema":"☾ Koyu tema"}</button><button class="chip" id="out2">Çıkış yap</button></div>${resetCard()}</div>`;
+  return `<div class="card"><h2>Hesap</h2><div class="row" style="margin-top:6px"><button class="chip" id="theme2">${dark?"☀ Açık tema":"☾ Koyu tema"}</button><button class="chip" id="pw-open" aria-haspopup="dialog" aria-controls="pwp-dialog"><svg class="account-action-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="5"/><path d="m11.5 11.5 8-8 2 2-2 2 2 2-3 3-2-2-2 2"/></svg><span>Parola</span></button><button class="chip" id="out2">Çıkış yap</button></div>${resetCard()}</div>`;
 }
-
