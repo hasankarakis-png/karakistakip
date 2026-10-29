@@ -80,15 +80,24 @@ function yarisTab(){
   const c=CH.list.find(x=>x.id===CH.sel);
   return `${stHead("Yarışma")}${CH.st!=="ok"?`<p class="empty">Yükleniyor…</p>`:!c?`<div class="card"><p class="empty" style="margin:0">Şu an bir yarışma yok. Koçun yarışma başlatınca burada ve bildirimde göreceksin.</p></div>`:`${CH.list.length>1?`<div class="chips" style="margin-bottom:10px">${chips}</div>`:""}<div class="card"><h2>${esc(c.title)}</h2><p class="sub2" style="margin:2px 0 12px">${chInfo(c)}</p>${chBoardHTML(c)}<button class="chip" id="chrf" style="margin-top:12px">↻ Yenile</button></div><p class="sub2" style="margin:10px 4px">Sıralamada isimler kısaltılmış görünür. Yeşil nokta şu an çalışıyor demek.</p>${chatBox(c)}`}`;
 }
-function chCoachCard(){
+function chCoachCard(page){
   chLoad();
   const board=c=>`<div class="chdet"><h3 style="margin:4px 0 6px">${esc(c.title)} · sıralama</h3>${chBoardHTML(c)}<div class="row"><button class="chip" data-chtog="${c.id}">${c.chat_open===false?"💬 Sohbeti aç":"🔒 Sohbeti kapat"}</button></div>${chatBox(c)}</div>`;
   const rows=CH.list.map(c=>`<div class="chr${c.id===CH.sel?" me":""}"><button class="chsel" data-chsel="${c.id}" aria-expanded="${c.id===CH.sel}"><span class="chn"><b>${esc(c.title)}</b><small style="display:block;color:var(--mute)">${chInfo(c)}</small></span></button><span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${c.notified_at?`<span class="bd g">duyuruldu</span>`:`<button class="chip" data-chnot="${c.id}">📣 Duyur</button>`}<button class="chip" data-chdel="${c.id}">Sil</button></span></div>`+(c.id===CH.sel?board(c):"")).join("")
   const sel=CH.list.find(x=>x.id===CH.sel);
-  return `<details class="card"${CH.msg||CH.list.length?" open":""}><summary style="cursor:pointer;font-weight:700">🏆 Yarışmalar</summary>
-  <div class="row"><label>Başlık<input id="cht" type="text" maxlength="80" placeholder="Hafta şampiyonu" style="width:170px"></label><label>Ölçüt<select id="chmet"><option value="minutes">Çalışma süresi</option><option value="questions">Çözülen soru</option></select></label><label>Başlangıç<input id="chs" type="date" value="${day()}" style="width:150px"></label><label>Bitiş<input id="che" type="date" value="${dayN(6)}" style="width:150px"></label><button class="btn" style="padding:11px 16px" id="chmk">Oluştur ve duyur</button></div>
-  <p class="empty" style="font-size:13px;margin:6px 0 0">${CH.msg?esc(CH.msg):"Oluşturunca tüm öğrencilere bildirim gider. En fazla 60 gün."}</p>
-  ${rows?`<div style="margin-top:10px">${rows}</div>`:""}</details>`;
+  const form=`<div class="row"><label>Başlık<input id="cht" type="text" maxlength="80" placeholder="Hafta şampiyonu" style="width:170px"></label><label>Ölçüt<select id="chmet"><option value="minutes">Çalışma süresi</option><option value="questions">Çözülen soru</option></select></label><label>Başlangıç<input id="chs" type="date" value="${day()}" style="width:150px"></label><label>Bitiş<input id="che" type="date" value="${dayN(6)}" style="width:150px"></label><button class="btn" style="padding:11px 16px" id="chmk">Oluştur ve duyur</button></div>
+  <p class="empty" style="font-size:13px;margin:6px 0 0">${CH.msg?esc(CH.msg):"Oluşturunca tüm öğrencilere bildirim gider. En fazla 60 gün."}</p>`;
+  const list=CH.st!=="ok"?`<p class="empty" style="margin-top:10px">Yükleniyor…</p>`:rows?`<div style="margin-top:10px">${rows}</div>`:`<p class="empty" style="margin-top:10px">Henüz yarışma yok. Yukarıdan ilkini oluştur.</p>`;
+  if(page)return `<div class="card"><h2>➕ Yeni yarışma</h2>${form}</div><div class="card"><h2>🏆 Yarışmalar</h2>${list}</div>`;
+  return `<details class="card"${CH.msg||CH.list.length?" open":""}><summary style="cursor:pointer;font-weight:700">🏆 Yarışmalar</summary>${form}${list}</details>`;
+}
+/* Koç genel bakış: aktif yarışmanın özeti ve ilk üç */
+function chOverCard(){
+  chLoad();const c=CH.list.find(chActive);
+  if(!c)return `<button class="card ch-ov" data-cp="c"><span class="ch-ic">🏆</span><span><b>Yarışma</b><small>${CH.st==="ok"?"Şu an aktif yarışma yok · yeni yarışma başlat":"Yükleniyor…"}</small></span><i aria-hidden="true">›</i></button>`;
+  if(CH.sel!==c.id&&!CH.busy){CH.sel=c.id;CH.board=null;chBoardLoad().then(()=>{if(ROLE==="coach")render()})}
+  const B=CH.board&&CH.board.id===c.id?CH.board.rows.slice(0,3):null;
+  return `<button class="card ch-ov" data-cp="c"><span class="ch-ic">🏆</span><span><b>${esc(c.title)}</b><small>${chInfo(c)}</small>${B&&B.length?`<span class="ch-top">${B.map((r,i)=>`<em>${["🥇","🥈","🥉"][i]} ${esc(r.label)} · ${chVal(c,+r.total||0)}</em>`).join("")}</span>`:""}</span><i aria-hidden="true">›</i></button>`;
 }
 async function chCreate(){
   const g=i=>document.getElementById(i).value,title=g("cht").trim().slice(0,80),m=g("chmet"),a=g("chs"),b=g("che");

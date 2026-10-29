@@ -569,3 +569,14 @@ button.kc{text-align:left;font:inherit;color:inherit;cursor:pointer}
 .mgrid>*{min-width:0}
 .mrow textarea{min-width:0;flex:1}
 @media (max-width:900px){#coach-msgs:has(.mgrid.th) .pi-back{display:none}}
+.ntf-more{display:block;width:100%;margin-top:8px;padding:10px;border:1px dashed var(--line);border-radius:14px;background:transparent;color:var(--acc);font:700 14px var(--fb);cursor:pointer}
+.ch-ov{display:flex;align-items:center;gap:14px;width:100%;text-align:left;color:var(--ink);font:inherit;cursor:pointer;margin-bottom:20px}
+.ch-ov:hover{border-color:var(--acc)}
+.ch-ic{width:46px;height:46px;border-radius:14px;background:var(--goldsoft);display:grid;place-items:center;font-size:24px;flex:none}
+.ch-ov>span:nth-child(2){flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.ch-ov b{font-size:17px}
+.ch-ov small{color:var(--mute);font-size:13px}
+.ch-top{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px}
+.ch-top em{font-style:normal;font-size:13px;font-weight:600}
+.ch-ov>i{font-style:normal;color:var(--mute);font-size:24px}
+.side-nav .bd:not(.warn){white-space:nowrap}

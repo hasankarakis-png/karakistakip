@@ -87,6 +87,9 @@ document.addEventListener("click",e=>{
   const t=e.target.closest("button,[data-gohome],#who,#hdrhome");if(!t)return;
   rollover();
   if(t.id==="sbmini"){e.stopPropagation();const m=document.body.classList.toggle("sbmini");try{localStorage.setItem("sbmini",m?"1":"")}catch(x){}return}
+  // Telefonda menüden bir öğe seçilince menü kapansın (önceden sayfa menünün arkasında kalıyordu)
+  if(t.id==="sbov"||t.closest(".side-nav"))document.body.classList.remove("sbopen");
+  if(t.id==="sbov")return;
   if(t.dataset.proxy){const el=document.getElementById(t.dataset.proxy);if(el)el.click();return}
   if(t.dataset.cp){CPG=t.dataset.cp;MV=false;MSEL=null;sel=null;PLV=null;render();window.scrollTo(0,0);return}
   if(t.dataset.msgnav){MV=true;sel=null;PLV=null;loadUnr().then(()=>{render();window.scrollTo(0,0)});render();return}
@@ -96,8 +99,6 @@ document.addEventListener("click",e=>{
   if(t.id==="rpgo"){RPMODE=true;CPG="s";MV=false;sel=null;render();window.scrollTo(0,0);return}
   if(t.id==="rpx"){RPMODE=false;render();return}
   if(t.id==="sbtog"){document.body.classList.add("sbopen");navOv();return}
-  if(t.id==="sbov"||t.closest(".side-nav"))document.body.classList.remove("sbopen");
-  if(t.id==="sbov")return;
   if(ui(t))return;
   if(t.id==="t1"){view="s";render()}else if(t.id==="t2"){view="c";sel=null;render()}
   else if(t.dataset.cnav){const el=document.getElementById(t.dataset.cnav);if(el)el.scrollIntoView({behavior:"smooth",block:"start"});document.querySelectorAll(".side-nav [data-cnav]").forEach(b=>b.setAttribute("aria-current",String(b===t)))}else if(t.dataset.backnav){sel=null;selDay=null;render()}else if(t.dataset.me){meth=t.dataset.me;render()}

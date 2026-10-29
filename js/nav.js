@@ -5,7 +5,7 @@
    2) Koç bildirim merkezi: geciken görevler, okunmamış mesajlar ve uyarılar öğrenci adıyla listelenir. */
 
 let NAVK=null,NAVD=0,NAVPOP=false,NAVOV=false,NAVSKIP=false,NAVREPL=false,NAVY=0,NAVLAST="";
-const CPL={o:"Genel bakış",s:"Öğrenciler",t:"Görev yönetimi",a:"Deneme analizi",p:"Program ver",y:"Ayarlar"};
+const CPL={o:"Genel bakış",s:"Öğrenciler",t:"Görev yönetimi",c:"Yarışmalar",a:"Deneme analizi",p:"Program ver",y:"Ayarlar"};
 const STL={b:"Bugün",g:"Görevler",d:"Analiz",h:"Profil",k:"Asistan",t:"Tercih Robotu",c:"Konu Takibi",y:"Yarışma",m:"Koçum"};
 const stuNm=id=>(STU.find(p=>p.id===id)||{}).name||"Öğrenci";
 const stuAv=(id,cls)=>`<span class="${cls||"oav"}">${PH[id]?`<img src="${PH[id]}" alt="">`:esc(initials(stuNm(id)))}</span>`;
@@ -140,15 +140,18 @@ function notifData(){
   return {od,un,fl,n:od.length+un.length+fl.length};
 }
 const nameList=(ids,max)=>{const n=ids.map(stuNm);return n.slice(0,max||2).join(", ")+(n.length>(max||2)?" +"+(n.length-(max||2)):"")};
+const NTFX={};
 function notifCard(){
   const {od,un,fl,n}=notifData();
   const who=(id,sub,attr)=>`<button class="ntf-who" ${attr}>${stuAv(id)}<span><b>${esc(stuNm(id))}</b><small>${sub}</small></span><i aria-hidden="true">›</i></button>`;
+  // Uzun listede her bölüm ilk 4 öğrenciyle başlar; "Tümünü göster" açar. Böylece alttaki kartlar aşağıda kaybolmaz.
+  const LIM=4,cut=(k,L)=>NTFX[k]?L:L.slice(0,LIM),more=(k,L)=>L.length>LIM?`<button class="ntf-more" data-ntfx="${k}">${NTFX[k]?"Daha az göster":"Tümünü göster ("+L.length+")"}</button>`:"";
   const sec=(ic,t,c,body)=>c?`<div class="ntf-sec"><div class="ntf-h"><span>${ic} ${t}</span><span class="bd n">${c}</span></div>${body}</div>`:"";
-  const odH=od.map(([id,L])=>`<div class="ntf-row">${who(id,L.length+" görev gecikti · en eskisi "+fd(L[0].task_date),`data-ngo="${id}" data-ndt="g"`)}
+  const odH=cut("od",od).map(([id,L])=>`<div class="ntf-row">${who(id,L.length+" görev gecikti · en eskisi "+fd(L[0].task_date),`data-ngo="${id}" data-ndt="g"`)}
     <ul class="ntf-list">${L.slice(0,3).map(t=>`<li><span>${esc(t.title)}${t.subject?` <em>${esc(t.subject)}</em>`:""}</span><time>${fd(t.task_date)}</time></li>`).join("")}${L.length>3?`<li class="more">+${L.length-3} görev daha</li>`:""}</ul>
-    <div class="ntf-acts"><button class="chip" data-ngo="${id}" data-ndt="g">Görevlerini aç</button><button class="chip" data-nrs="${id}" data-nrd="${day()}">Bugüne al</button><button class="chip" data-nrs="${id}" data-nrd="${dayN(1)}">Yarına kaydır</button></div></div>`).join("");
-  const unH=un.map(([id,c])=>{const l=MUL[id]||{};return `<div class="ntf-row">${who(id,c+" okunmamış mesaj"+(l.t?" · "+ago(l.t):""),`data-nmsg="${id}"`)}${l.b?`<p class="ntf-q">“${esc(l.b.length>110?l.b.slice(0,109)+"…":l.b)}”</p>`:""}</div>`}).join("");
-  const flH=fl.map(o=>`<div class="ntf-row">${who(o.id,o.f.map(esc).join(" · "),`data-ngo="${o.id}" data-ndt="a"`)}</div>`).join("");
+    <div class="ntf-acts"><button class="chip" data-ngo="${id}" data-ndt="g">Görevlerini aç</button><button class="chip" data-nrs="${id}" data-nrd="${day()}">Bugüne al</button><button class="chip" data-nrs="${id}" data-nrd="${dayN(1)}">Yarına kaydır</button></div></div>`).join("")+more("od",od);
+  const unH=cut("un",un).map(([id,c])=>{const l=MUL[id]||{};return `<div class="ntf-row">${who(id,c+" okunmamış mesaj"+(l.t?" · "+ago(l.t):""),`data-nmsg="${id}"`)}${l.b?`<p class="ntf-q">“${esc(l.b.length>110?l.b.slice(0,109)+"…":l.b)}”</p>`:""}</div>`}).join("")+more("un",un);
+  const flH=cut("fl",fl).map(o=>`<div class="ntf-row">${who(o.id,o.f.map(esc).join(" · "),`data-ngo="${o.id}" data-ndt="a"`)}</div>`).join("")+more("fl",fl);
   return `<div class="card ntf" id="coach-notifs"><div class="ntf-top"><h2>🔔 Bildirimler</h2>${refreshBtn()}</div>
   ${n?`<p class="empty" style="margin:0 0 4px;font-size:14px">Bir öğrenciye dokun, ilgili sekmesi açılır.</p>`+sec("⏰","Geciken görevler (son 7 gün)",od.length,odH)+sec("💬","Okunmamış mesajlar",un.length,unH)+sec("🚩","Dikkat gereken öğrenciler",fl.length,flH)
   :`<p class="empty" style="margin:0">Şu an bekleyen bildirim yok 🎉 Geciken görev, okunmamış mesaj veya uyarı olduğunda burada öğrenci adıyla görünür.</p>`}</div>`;
@@ -170,5 +173,6 @@ function navUi(t){
   if(D.nmsg){openMsg(D.nmsg);return true}
   if(D.nrs){odResched(D.nrs,D.nrd);return true}
   if(D.nrf){refreshNow();return true}
+  if(D.ntfx){NTFX[D.ntfx]=!NTFX[D.ntfx];const y=window.scrollY;render();window.scrollTo(0,y);return true}
   return false;
 }
