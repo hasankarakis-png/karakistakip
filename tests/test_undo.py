@@ -1,0 +1,77 @@
+import sys,subprocess,time
+from playwright.sync_api import sync_playwright
+exec(open("test_nav.py").read().split("with sync_playwright() as p:")[0].replace('srv = subprocess.Popen','srv = None and subprocess.Popen'))
+srv=subprocess.Popen([sys.executable,"-m","http.server","8769","--bind","127.0.0.1"],cwd=ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL);time.sleep(1)
+URL="http://127.0.0.1:8769/index.html"
+errs=[]
+with sync_playwright() as p:
+    b=p.chromium.launch()
+    ctx=b.new_context(viewport={"width":390,"height":844},service_workers="block",device_scale_factor=2);setup(ctx,"student")
+    # öğrenci için sunucuda bugünkü kayıt olmasın: temiz gün
+    ctx.add_init_script("window.__CLEAN=1")
+    page=ctx.new_page();page.on("pageerror",lambda e:errs.append(str(e)));page.on("dialog",lambda d:d.accept())
+    page.goto(URL);page.wait_for_selector(".pill");page.wait_for_timeout(4700)
+    page.evaluate("S=fresh();save();render()")
+    E=page.evaluate
+    page.click("[data-a='wake']");page.wait_for_timeout(600)
+    page.click("[data-a='start']");page.wait_for_timeout(600)
+    E("S.cur.start-=45*60000;save()")   # 45 dk ders
+    page.click("[data-a='close']");page.wait_for_timeout(300)
+    check(E("S.status")=="closed","Günü kapat çalıştı")
+    check(page.is_visible(".undo-toast"),"Kapatınca altta 'Geri al' bildirimi çıktı")
+    check(page.query_selector(".card.undo") is not None,"Ana sayfada geri al kartı var")
+    page.screenshot(path=f"{SHOTS}/u1-kapat-toast.png")
+    page.click(".undo-toast [data-a='undo']");page.wait_for_timeout(300)
+    check(E("S.status")=="study" and E("Math.round(curNet()/60000)")>=45,f"Geri al: ders kaldığı yerden sürüyor ({E('Math.round(curNet()/60000)')} dk)")
+    check("Geri aldım: Günü kapat" in E("S.log.map(l=>l.m).join('|')"),"Akışa 'Geri aldım' yazıldı (koç görür)")
+    # süre geçince geri alma kalkar, yeniden aç kalır
+    page.click("[data-a='stop']");page.wait_for_timeout(600)
+    check(E("S.undo&&S.undo.k")=="stop","Çalışmayı noktala da geri alınabilir")
+    page.click("[data-a='close']");page.wait_for_timeout(600)
+    E("S.undo.t-=11*60000;render()")
+    check(page.query_selector(".card.undo") is None,"10 dakika geçince geri al kartı kalktı")
+    check(page.query_selector(".hero [data-a='reopen']") is not None,"Kapalı günde 'Günü yeniden aç' düğmesi var")
+    page.screenshot(path=f"{SHOTS}/u2-yeniden-ac.png")
+    m0=E("Math.round(total()/60000)")
+    page.click(".hero [data-a='reopen']");page.wait_for_timeout(200)
+    check(E("S.status")=="stopped" and E("Math.round(total()/60000)")==m0,f"Gün yeniden açıldı, süre korundu ({m0} dk)")
+    check(page.query_selector("[data-a='start']") is not None,"Yeniden açınca derse başla düğmesi geldi")
+    # soru girişi doğrulama
+    page.fill("#qn","20");page.fill("#qc","18");page.fill("#qb","5");page.click("#addq");page.wait_for_timeout(200)
+    check(E("S.qs.length")==0 and "fazla olamaz" in txt(page,"#qerr"),"Doğru+boş > çözülen: kayıt engellendi, uyarı gösterildi")
+    page.fill("#qn","20");page.fill("#qc","15");page.fill("#qb","2");page.click("#addq");page.wait_for_timeout(200)
+    check(E("S.qs.length")==1,"Geçerli soru girişi eklendi")
+    page.click("[data-qdel='0']");page.wait_for_timeout(200)
+    check(E("S.qs.length")==0 and page.is_visible(".undo-toast"),"Soru silindi, geri al bildirimi çıktı")
+    page.click(".undo-toast [data-a='undo']");page.wait_for_timeout(200)
+    check(E("S.qs.length")==1,"Silinen soru geri geldi")
+    # sıfırlama: profilde, iki adımlı, gün boyu geri getirilebilir
+    check(page.query_selector("#reset") is None,"Alttaki 'Günü sıfırla' bağlantısı kaldırıldı")
+    before=E("[Math.round(total()/60000),solved(),S.log.length]")
+    page.click(".pill [data-tab='h']");page.wait_for_timeout(300)
+    page.click("#rstask");page.wait_for_timeout(200)
+    check("Bugünün kaydı silinecek" in txt(page,"#app"),"Sıfırla önce ne silineceğini gösteriyor")
+    page.screenshot(path=f"{SHOTS}/u3-sifirla-onay.png")
+    page.click("#rstok");page.wait_for_timeout(300)
+    check(E("tab")=="b" and E("solved()")==0 and E("!!S.rbk"),"Gün sıfırlandı, yedek saklandı, ana sayfaya dönüldü")
+    check("sıfırladın" in txt(page,".card.undo.warn"),"Ana sayfada 'Geri getir' kartı var")
+    page.screenshot(path=f"{SHOTS}/u4-geri-getir.png")
+    # sıfırlamadan sonra yeni çalışma, sonra geri getir → birleşmeli
+    page.click("[data-a='wake']");page.wait_for_timeout(600)
+    page.fill("#qn","10");page.fill("#qc","8");page.click("#addq");page.wait_for_timeout(150)
+    E("S.rbk.t-=5*3600000;render()")   # 5 saat sonra fark etti
+    check(page.query_selector(".card.undo.warn") is not None,"Saatler sonra da geri getirilebilir")
+    page.click(".card.undo.warn [data-a='rbk']");page.wait_for_timeout(300)
+    after=E("[Math.round(total()/60000),solved(),S.log.length]")
+    check(after[0]==before[0] and after[1]==before[1]+10,f"Geri getirildi ve sonradan girilenle birleşti: önce {before} → sonra {after}")
+    check(E("!S.rbk"),"Yedek kullanıldı, kart kalktı")
+    ctx.close()
+    # koç: öğrencinin sıfırladığı gün uyarısı
+    ctx=b.new_context(viewport={"width":1366,"height":860},service_workers="block");setup(ctx,"coach");page=ctx.new_page();page.on("pageerror",lambda e:errs.append(str(e)))
+    page.goto(URL);page.wait_for_selector(".kst");page.wait_for_timeout(500)
+    page.evaluate("""(()=>{const r=__FX.daily.find(x=>x.student_id==='s3'&&x.day===day());r.state.rbk={t:Date.now()-3600000,s:Object.assign({},r.state,{done:5400000,qs:[{s:'Fizik',n:60,c:50,b:0}]})};})()""")
+    page.evaluate("pullCoach().then(()=>openStu('s3','o'))");page.wait_for_timeout(600)
+    check("günü sıfırladı" in page.inner_text(".dashboard-main"),"Koç, öğrencinin günü sıfırladığını ve geri getirilebileceğini görüyor")
+    ctx.close();b.close()
+srv.terminate()
+print("JS hataları:",errs or "yok")

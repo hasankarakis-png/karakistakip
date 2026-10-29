@@ -6,3 +6,5 @@ ogrenciler.txt
 node_modules/
 *.zip
 .DS_Store
+tests/shots/
+tests/__pycache__/
