@@ -25,6 +25,7 @@ Hasan Karakış'ın (Karakış Eğitim & Danışmanlık, Diyarbakır) ~18 YKS/LG
 | js/challenge.js | yarışmalar + `studentView()` (öğrenci sekmeleri: b,g,d,h,k,t,c,y,m) |
 | js/messages.js | WhatsApp düzeninde mesajlaşma, `msgLive` (realtime), `msgPaint` |
 | js/automation.js | mola hatırlatma ayarları, WhatsApp durumu, iletişim kartı, geciken görevleri yapay zekâyla dağıtma (`RD`) |
+| js/coach-center.js (+coach-center.css) | koç genel bakışındaki "Aksiyon Merkezi": `coachView`'ı sarar, öğrencileri gecikme/uyarıya göre önceliklendirir |
 | js/nav.js | geri tuşu (History API, `navSync`), üst çubuk, bildirim merkezi `notifCard`, `openStu`, `openMsg` |
 | js/coach.js | tıklama yönlendirme `ui()`, denemeler/yapay zekâ raporu, `busy()`/`DRAFTS` |
 | js/boot.js | giriş (Turnstile), `start()`, `loadStudent()`/`pushPast()`, `refreshRun()`, realtime kanalları |
