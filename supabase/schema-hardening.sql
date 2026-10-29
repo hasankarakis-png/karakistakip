@@ -1,4 +1,4 @@
--- v3.5 güvenlik sıkılaştırması (29.10.2026 güvenlik taramasından). DURUM: henüz canlı veritabanına uygulanmadı (Hasan onayı bekleniyor).
+-- v3.5 güvenlik sıkılaştırması (29.10.2026 güvenlik taramasından). DURUM: 29.10.2026 21:00 canlı veritabanına uygulandı ve doğrulandı.
 
 -- 1) Öğrenci günlük kaydı: yalnızca kendi satırı, yalnızca son 2 gün ile yarın arası yazılabilir, silinemez.
 --    (Eski "FOR ALL" kuralı geçmiş günleri uydurmaya/silmeye ve yarışma sıralamasını şişirmeye izin veriyordu.)
