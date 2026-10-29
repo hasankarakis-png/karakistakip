@@ -112,7 +112,7 @@ function weekGrid(x){
 
 let PLV=null;
 function planPage(x){
-  return `<button class="back" data-plback="1">← ${esc(x.n)}</button><h1 class="pg" style="margin:6px 0 12px">📄 Program ver</h1>${planUploadCard(x)}${weekGrid(x)}`;
+  return `${topBar("<b>📄 Program ver</b>",x.n,refreshBtn())}${planUploadCard(x)}${weekGrid(x)}`;
 }
 
 function planPickCard(all){

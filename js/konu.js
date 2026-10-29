@@ -74,12 +74,12 @@ function konuTab(){
   const ex=KTS.exam,di=KTS.ders;
   if(di!=null&&KT[ex][di]){
     const d=KT[ex][di],[n,m]=ktCount(ex,di),p=m?Math.round(n*100/m):0;
-    return `<div class="ktbar"><button class="ktback" data-ktd="-1" aria-label="Geri">←</button><h1 class="pg" style="margin:0">${esc(d.n)}</h1></div>
+    return `${stHead(esc(d.n))}
     <div class="card"><div class="rw" style="justify-content:space-between;align-items:center"><b>${n}/${m} konu</b><span style="font:800 20px var(--fd);color:var(--acc)">%${p}</span></div><div class="ktpr"><i style="width:${p}%"></i></div><button class="chip" style="margin-top:12px" data-ktall="${di}">${n===m?"Hepsini kaldır":"Hepsini işaretle"}</button></div>
     ${d.t.map((t,ti)=>{const id=ktId(ex,di,ti),on=KTS.done.has(id);return `<button class="ktt" data-ktt="${id}" aria-pressed="${on}"><span class="ktck">${on?"✓":""}</span><span>${esc(t)}</span></button>`}).join("")}`;
   }
   let T=0,D=0;KT[ex].forEach((_,i)=>{const [n,m]=ktCount(ex,i);D+=n;T+=m});
-  return `<h1 class="pg">Konu Takibi</h1>${tekrarCard(ME,KTS.done)}
+  return `${stHead("Konu Takibi")}${tekrarCard(ME,KTS.done)}
   <div class="ktseg">${["TYT","AYT"].map(e=>`<button data-kte="${e}" aria-pressed="${ex===e}">${e}</button>`).join("")}</div>
   <p class="sub2" style="margin:10px 2px">${ex} genel ilerleme: <b style="color:var(--ink)">${D}/${T} konu · %${T?Math.round(D*100/T):0}</b></p>
   ${KT[ex].map((d,i)=>{const [n,m]=ktCount(ex,i),p=m?Math.round(n*100/m):0;return `<button class="ktd" data-ktd="${i}"><b>${esc(d.n)}</b><span class="ktpr"><i style="width:${p}%"></i></span><em>%${p}</em><i aria-hidden="true">›</i></button>`}).join("")}`;

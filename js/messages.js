@@ -1,14 +1,14 @@
 // Koç ↔ öğrenci mesajlaşma
-const MSG={},MU={};let MNEW=null,MDRAFT="",MFIRST={};let MSEL=null,MV=false,MERR="",MLOAD=false,MSENDING=false;
+const MSG={},MU={},MUL={};let MNEW=null,MNEWID=null,MDRAFT="",MFIRST={};let MSEL=null,MV=false,MERR="",MLOAD=false,MSENDING=false;
 const mtime=t=>{const d=new Date(t),n=new Date(),same=d.toDateString()===n.toDateString();return same?d.toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}):d.toLocaleDateString("tr-TR",{day:"numeric",month:"short"})+" "+d.toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"})};
 async function loadMsgs(id){try{const {data,error}=await sb.from("messages").select("id,from_coach,body,created_at,read_at").eq("student_id",id).order("created_at",{ascending:false}).limit(100);if(error)throw error;MSG[id]=(data||[]).reverse()}catch(e){MSG[id]=MSG[id]||[]}}
 async function loadUnr(){try{
-  if(ROLE==="coach"){const {data,error}=await sb.from("messages").select("student_id,created_at").eq("from_coach",false).is("read_at",null).limit(1000);if(error)throw error;Object.keys(MU).forEach(k=>delete MU[k]);MNEW=null;(data||[]).forEach(r=>{MU[r.student_id]=(MU[r.student_id]||0)+1;if(!MNEW||r.created_at>MNEW)MNEW=r.created_at})}
+  if(ROLE==="coach"){const {data,error}=await sb.from("messages").select("student_id,created_at,body").eq("from_coach",false).is("read_at",null).limit(1000);if(error)throw error;Object.keys(MU).forEach(k=>delete MU[k]);Object.keys(MUL).forEach(k=>delete MUL[k]);MNEW=null;MNEWID=null;(data||[]).forEach(r=>{MU[r.student_id]=(MU[r.student_id]||0)+1;const l=MUL[r.student_id];if(!l||r.created_at>l.t)MUL[r.student_id]={t:r.created_at,b:String(r.body||"")};if(!MNEW||r.created_at>MNEW){MNEW=r.created_at;MNEWID=r.student_id}})}
   else{const {data,error}=await sb.from("messages").select("id").eq("student_id",ME).eq("from_coach",true).is("read_at",null).limit(200);if(error)throw error;MU[ME]=(data||[]).length}
 }catch(e){}}
 const ago=t=>{if(!t)return "";const m=Math.max(0,Math.round((Date.now()-new Date(t))/60000));return m<1?"az önce":m<60?m+" dk önce":m<1440?Math.floor(m/60)+" sa önce":Math.floor(m/1440)+" gün önce"};
 const unrTotal=()=>Object.values(MU).reduce((a,n)=>a+n,0);
-async function msgMarkRead(id){try{await sb.rpc("msg_read",{p_student:id});MU[id]=0}catch(e){}}
+async function msgMarkRead(id){try{await sb.rpc("msg_read",{p_student:id});MU[id]=0;delete MUL[id]}catch(e){}}
 async function msgOpen(id){MSEL=id;MERR="";MDRAFT="";await loadMsgs(id);await msgMarkRead(id);render();const c=document.getElementById("mth");if(c)c.scrollTop=c.scrollHeight}
 async function msgSync(){await loadMsgs(ME);if(MU[ME]){await msgMarkRead(ME)}}
 async function msgSend(id){
@@ -27,9 +27,10 @@ function msgBox(id,coach){
 function msgView(){
   const all=roster().slice().sort((a,b)=>(MU[b.id]||0)-(MU[a.id]||0)||a.n.localeCompare(b.n,"tr"));
   const cur=all.find(x=>x.id===MSEL);
-  return `<section id="coach-msgs" class="coach-section"><div class="page-intro"><div><p>Öğrencilerinle yazışma</p><h1>Mesajlar</h1></div></div>
-  <div class="mgrid"><div class="card mlist">${all.map(x=>`<button class="mli${x.id===MSEL?" on":""}" data-mo="${x.id}"><span class="oav">${PH[x.id]?`<img src="${PH[x.id]}" alt="">`:esc(initials(x.n))}</span><b>${x.n}</b>${MU[x.id]?`<span class="bd">${MU[x.id]}</span>`:""}</button>`).join("")||`<p class="empty">Öğrenci yok.</p>`}</div>
-  <div class="card mpane">${cur?`<h2>${cur.n}</h2>${msgBox(cur.id,true)}`:`<p class="empty" style="margin:auto">Soldan bir öğrenci seç.</p>`}</div></div></section>`;
+  // Telefonda yazışma açıkken liste gizlenir; üstteki ← listeye döner. "Profili aç" öğrencinin sayfasına geçer.
+  return `<section id="coach-msgs" class="coach-section"><div class="page-intro"><div class="pi-t">${backBtn("Geri","pi-back")}<div><p>Öğrencilerinle yazışma</p><h1>Mesajlar</h1></div></div></div>
+  <div class="mgrid${cur?" th":""}"><div class="card mlist">${all.map(x=>`<button class="mli${x.id===MSEL?" on":""}" data-mo="${x.id}"><span class="oav">${PH[x.id]?`<img src="${PH[x.id]}" alt="">`:esc(initials(x.n))}</span><b>${x.n}</b>${MU[x.id]?`<span class="bd">${MU[x.id]}</span>`:""}</button>`).join("")||`<p class="empty">Öğrenci yok.</p>`}</div>
+  <div class="card mpane">${cur?`<div class="mhd"><button class="ktback mbk" data-navback="1" aria-label="Öğrenci listesine dön">←</button><span class="oav">${PH[cur.id]?`<img src="${PH[cur.id]}" alt="">`:esc(initials(cur.n))}</span><h2>${cur.n}</h2><button class="chip" data-i="${cur.id}">Profili aç</button></div>${msgBox(cur.id,true)}`:`<p class="empty" style="margin:auto">Soldan bir öğrenci seç.</p>`}</div></div></section>`;
 }
 function msgTab(){
   if(!MFIRST[ME]&&!MLOAD){MLOAD=true;msgSync().then(()=>{MFIRST[ME]=1;MLOAD=false;if(tab==="m"&&!busy())render()}).catch(()=>{MFIRST[ME]=1;MLOAD=false})}

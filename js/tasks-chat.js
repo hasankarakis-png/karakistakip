@@ -35,8 +35,9 @@ function taskList(L,coach){
 }
 
 /* geciken görevler */
-let ODN=null,ODS=0;
-async function loadOD(){try{const r=await sb.from("weekly_tasks").select("student_id").lt("task_date",day()).gte("task_date",dayN(-7)).eq("done",false).limit(1000);if(r.error){ODN=null;ODS=0}else{const L=r.data||[];ODN=L.length;ODS=new Set(L.map(x=>x.student_id)).size}}catch(e){ODN=null;ODS=0}}
+let ODN=null,ODS=0,ODL=[];
+// Koç: son 7 günde tamamlanmamış görevler; bildirim merkezinde öğrenci adıyla listelenir.
+async function loadOD(){try{const r=await sb.from("weekly_tasks").select("id,student_id,title,subject,task_date").lt("task_date",day()).gte("task_date",dayN(-7)).eq("done",false).order("task_date").order("id").limit(1000);if(r.error){ODN=null;ODS=0;ODL=[]}else{const L=(r.data||[]).filter(x=>STU.some(p=>p.id===x.student_id));ODL=L;ODN=L.length;ODS=new Set(L.map(x=>x.student_id)).size}}catch(e){ODN=null;ODS=0;ODL=[]}}
 const overdue=id=>(TK[id]||[]).filter(t=>t.task_date<day()&&t.task_date>=dayN(-7)&&!t.done);
 function overdueCard(id,coach){
   const L=overdue(id);if(!L.length)return"";

@@ -34,7 +34,7 @@ async function bulkAdd(){
   BULKMSG=r&&r.error?"Atanamadı: "+r.error.message:rows.length+" öğrenciye atandı: "+title;
   try{await pullCoach()}catch(e){}render();
 }
-let sel=null;
+let sel=null,STQ="";
 function coachView(){
   if(MV&&!sel)return msgView();
   if(sel)return detailView();
@@ -46,20 +46,22 @@ function coachView(){
   const od=ODN!=null?ODN:all.reduce((a,x)=>a+overdue(x.id).length,0),warn=all.filter(x=>flags(x.hist).length).length,work=c(["study","break"]);
   const dt=new Date().toLocaleDateString("tr-TR",{weekday:"long",day:"numeric",month:"long"});
   const grid=L=>`<div class="grid">${L.map(x=>{const pc=Math.round(x.p*100),col=x.st==="study"||x.st==="closed"?"":x.st==="break"?" w":"";return `<button class="s ocard${x.live?" live":""}" data-i="${x.id}"><span class="oav${col}">${PH[x.id]?`<img src="${PH[x.id]}" alt="">`:esc(initials(x.n))}<i class="dot ${DOT[x.st]}"></i></span><span class="oin"><b>${x.n}${flags(x.hist).length?" 🚩":""}</b><small>${LBL[x.st]} · ${Math.floor(x.m/60)} sa ${x.m%60} dk · ${x.q} soru</small><span class="kbar"><i style="width:${pc}%"></i></span></span><span class="opc">%${pc}</span></button>`}).join("")}</div>`;
-  const hd=(t,sub,cta)=>`<div class="page-intro"><div><p>${sub}</p><h1>${t}</h1></div>${cta||""}</div>`;
+  // Alt sayfalarda başlığın solunda geri düğmesi (telefonda menü kapalıyken de dönülebilsin)
+  const hd=(t,sub,cta)=>`<div class="page-intro"><div class="pi-t">${CPG!=="o"?backBtn("Geri","pi-back"):""}<div><p>${sub}</p><h1>${t}</h1></div></div>${cta||""}</div>`;
   const rp=RPMODE?`<div class="rpban"><b>Rapor için bir öğrenci seç</b><button id="rpx">Vazgeç</button></div>`:"";
-  if(CPG==="s")return `<section id="coach-students" class="coach-section">${hd("Öğrenciler",all.length+" kayıt")}${rp}${grid(all)}</section>`;
-  if(CPG==="t")return `<section id="coach-tasks" class="coach-section">${hd("Görev yönetimi","Planlama ve toplu işlemler")}${bulkCard()}${chCoachCard()}</section>`;
+  if(CPG==="s"){const q=STQ.trim().toLocaleLowerCase("tr"),L=q?all.filter(x=>x.n.toLocaleLowerCase("tr").includes(q)):all;
+    return `<section id="coach-students" class="coach-section">${hd("Öğrenciler",all.length+" kayıt")}${rp}<div class="stu-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="stq" type="search" placeholder="Öğrenci ara…" aria-label="Öğrenci ara" autocomplete="off" value="${esc(STQ)}"></div>${L.length?grid(L):`<p class="empty">“${esc(STQ)}” ile eşleşen öğrenci yok.</p>`}</section>`}
+  if(CPG==="t")return `<section id="coach-tasks" class="coach-section">${hd("Görev yönetimi","Bildirimler, planlama ve toplu işlemler")}${notifCard()}${bulkCard()}${chCoachCard()}</section>`;
   if(CPG==="p")return `<section id="coach-plan" class="coach-section">${hd("Program ver","Öğrenciye haftalık plan PDF'i yükle")}${planPickCard(all)}</section>`;
   if(CPG==="a")return `<section id="coach-class" class="coach-section">${hd("Deneme analizi","Sınıfın ortak zayıf konuları")}${classCard()}</section>`;
   if(CPG==="y")return `<section id="coach-tools" class="coach-section">${hd("Ayarlar","Öğrenci ekleme, yedek ve eşikler")}${addStudentCard()}${backupCard()}${thCard()}</section>`;
-  const top=all.slice(0,6);
+  const top=all.slice(0,6),nd=notifData(),odIds=nd.od.map(o=>o[0]),flIds=nd.fl.map(o=>o.id);
   return `<section id="coach-overview" class="coach-section">${hd("Genel bakış",esc(dt),`<button class="cta" data-cp="p"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Program ver</button>`)}<div class="kst">
   <div class="kc"><span>Bugün çalışan</span><b>${work}<em> / ${all.length}</em></b><div class="kbar"><i style="width:${all.length?Math.round(work/all.length*100):0}%"></i></div></div>
   <div class="kc"><span>Ortalama net süre</span><b>${Math.floor(avg/60)}<em> sa </em>${avg%60}<em> dk</em></b><small>${all.reduce((a,x)=>a+x.q,0)} soru çözüldü</small></div>
-  <button class="kc" data-cp="t"><span>Geciken görev</span><b>${od}</b><small class="${od?"w":""}">${od?(ODS?ODS+" öğrencide yoğunlaşıyor":"Tamamlanmayı bekliyor"):"Hepsi güncel"}</small></button>
-  <button class="kc" data-msgnav="1"><span>Okunmamış mesaj</span><b>${unrTotal()}</b><small class="${unrTotal()?"w":""}">${unrTotal()?"En yeni: "+ago(MNEW):"Hepsi okundu"}</small></button>
-  <div class="kc"><span>Dikkat gereken</span><b>${warn}</b><small class="${warn?"w":""}">${warn?"öğrencide uyarı var":"uyarı yok"}</small></div></div>
+  <button class="kc" data-cp="t"><span>Geciken görev</span><b>${od}</b><small class="${od?"w":""}">${od?(odIds.length?esc(nameList(odIds))+" · listeyi aç ›":"Tamamlanmayı bekliyor"):"Hepsi güncel"}</small></button>
+  <button class="kc" data-msgnav="1"><span>Okunmamış mesaj</span><b>${unrTotal()}</b><small class="${unrTotal()?"w":""}">${unrTotal()?"En yeni: "+(MNEWID?esc(stuNm(MNEWID))+" · ":"")+ago(MNEW):"Hepsi okundu"}</small></button>
+  <button class="kc" data-cp="t"><span>Dikkat gereken</span><b>${warn}</b><small class="${warn?"w":""}">${warn?esc(nameList(flIds))+" · nedenini gör ›":"uyarı yok"}</small></button></div>
   <div class="section-heading"><div><h2>Öğrencilerim</h2></div>${all.length>6?`<button class="link" data-cp="s">Tümünü gör (${all.length})</button>`:""}</div>${rp}${grid(top)}</section>`;
 }
 let selDay=null,per="hw";const HIST={},DSTATE={};
@@ -116,18 +118,20 @@ function detTabs(){return `<div class="ktseg dtseg" role="tablist">${[["o","Öze
 function detailView(){
   const pr=STU.find(r=>r.id===sel);if(!pr){sel=null;return coachView()}
   const past=selDay&&selDay!==day();let x;
-  if(past){const ds=DSTATE[sel+"|"+selDay];if(!ds)return `<button class="back" id="backhist">← Geçmişe dön</button><p class="empty">Yükleniyor…</p>`;x=pastX(pr,ds)}else x=roster().find(r=>r.id===sel);
+  // Üstte yapışkan çubuk: geri, öğrenci adı, mesaj, yenile ve sekmeler sayfa kaydırılınca da görünür kalır.
+  const ttl=`${stuAv(pr.id,"tb-av")}<b>${esc(pr.name)}</b>`;
+  if(past){const ds=DSTATE[sel+"|"+selDay];if(!ds)return topBar(ttl,"📅 "+fd(selDay)+" · yükleniyor…")+`<p class="empty">Yükleniyor…</p>`;x=pastX(pr,ds)}else x=roster().find(r=>r.id===sel);
   if(!x){sel=null;return coachView()}
   const sn=x.qs.reduce((a,q)=>a+q.n,0),sc=x.qs.reduce((a,q)=>a+q.c,0),acc=sn?Math.round(sc/sn*100):0;
   const by={};x.qs.forEach(q=>{by[q.s]=by[q.s]||{n:0,c:0,b:0,k:[]};by[q.s].n+=q.n;by[q.s].c+=q.c;by[q.s].b+=q.b||0;if(q.k)by[q.s].k.push(q.k)});
-  const head=past?`<button class="back" id="backhist">← Geçmişe dön</button><div class="card" style="border-color:var(--gold)"><b>📅 ${fd(selDay)}</b> · geçmiş gün</div>`:`<button class="back" id="back">← Tüm öğrenciler</button>`;
+  const mb=`<button class="tb-ic" data-nmsg="${x.id}" aria-label="${esc(pr.name)} ile mesajlaş" title="Mesaj yaz">💬${MU[x.id]?`<i>${MU[x.id]}</i>`:""}</button>`;
+  const head=past?topBar(ttl,"📅 "+fd(selDay)+" · geçmiş gün",refreshBtn()):topBar(ttl,`<span class="dot ${DOT[x.st]}"></span>${LBL[x.st]}`,mb+refreshBtn(),detTabs());
   if(PLV===sel&&!past)return planPage(x);
   return `${head}
   <section class="hero"><div class="st"><span class="dot ${DOT[x.st]}"></span>${LBL[x.st]}</div>
   <div class="big" style="font-size:34px;display:flex;align-items:center;gap:12px">${mav(x.id)}<span>${x.n}</span></div>
   <div class="sub">Net çalışma: ${Math.floor(x.m/60)} sa ${x.m%60} dk</div></section>
   <div class="stats"><div class="stat"><b>${sn}</b><span>çözülen soru</span></div><div class="stat"><b>${sn?"%"+acc:"–"}</b><span>doğruluk</span></div><div class="stat"><b>${x.p>=1?"✓":"–"}</b><span>program</span></div></div>
-  ${past?"":detTabs()}
   <div class="dcols">${past||DTAB==="o"?`<div id="detail-history">${past?"":histCard(x.id,x)}</div>`:""}
   ${past||DTAB==="o"?`<div class="card"><h2>Derslere göre sorular</h2>${Object.keys(by).length?Object.entries(by).map(([k,v])=>`<div class="subj"><span>${esc(k)}${v.k.length?" ("+esc(v.k.join(", "))+")":""}</span><span>${v.n} soru · ${v.c} doğru${v.b?" · "+v.b+" boş":""}</span></div>`).join(""):`<p class="empty">Henüz soru girişi yok.</p>`}</div>
   ${x.mood?`<div class="card"><h2>Gün puanı</h2><p class="empty" style="margin:0">${x.mood} / 5</p></div>`:""}`:""}
@@ -151,13 +155,13 @@ const SIC={
 };
 const sic=n=>`<span><svg viewBox="0 0 24 24" aria-hidden="true">${SIC[n]}</svg></span>`;
 const initials=n=>String(n||"K").trim().split(/\s+/).map(w=>w[0]||"").slice(0,2).join("").toUpperCase()||"K";
-let RPMODE=false,CPG="o";
+let RPMODE=false,CPG="o",NOTN=0;
 function sideNav(){
-  const all=roster(),od=ODN!=null?ODN:all.reduce((a,x)=>a+overdue(x.id).length,0);
-  const top=`<div class="side-top"><div class="side-brand" data-gohome="1" style="cursor:pointer"><span class="brand-mark">K</span><div><b>KARAKIŞ <em>TAKİP</em></b><small>Koç paneli</small></div></div><button class="side-bell" data-cp="t" aria-label="Bildirimler">${sic("bell").replace("<span>","").replace("</span>","")}${od?'<i></i>':""}</button></div>`;
-  const foot=`<div class="side-rep"><b>${sic("spark").replace("<span>","").replace("</span>","")} Haftalık rapor</b><span>Öğrencilerin için yapay zekâ özeti ve veli mesajı taslağı hazırla.</span><button id="rpgo">Raporu hazırla</button></div><div class="side-acts"><button data-proxy="theme">Tema</button><button data-proxy="out">Çıkış</button></div><div class="side-foot" data-gohome="1" style="cursor:pointer"><span class="side-avatar">${esc(initials(NAME))}</span><div><b>${esc(NAME||"Koç")}</b><small>Koç</small></div><button id="sbmini" class="side-mini" aria-label="Menüyü daralt"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg></button></div>`;
+  const all=roster(),od=ODN!=null?ODN:all.reduce((a,x)=>a+overdue(x.id).length,0),nn=NOTN=notifData().n;
+  const top=`<div class="side-top"><div class="side-brand" data-gohome="1" style="cursor:pointer"><span class="brand-mark">K</span><div><b>KARAKIŞ <em>TAKİP</em></b><small>Koç paneli</small></div></div><button class="side-bell" data-cp="t" aria-label="Bildirimler${nn?" ("+nn+" öğrenci)":""}" title="Bildirimler">${sic("bell").replace("<span>","").replace("</span>","")}${nn?'<i></i>':""}</button></div>`;
+  const foot=`<div class="side-rep"><b>${sic("spark").replace("<span>","").replace("</span>","")} Haftalık rapor</b><span>Öğrencilerin için yapay zekâ özeti ve veli mesajı taslağı hazırla.</span><button id="rpgo">Raporu hazırla</button></div><div class="side-acts"><button data-nrf="1">↻ Yenile</button><button data-proxy="theme">Tema</button><button data-proxy="out">Çıkış</button></div><div class="side-foot" data-gohome="1" style="cursor:pointer"><span class="side-avatar">${esc(initials(NAME))}</span><div><b>${esc(NAME||"Koç")}</b><small>Koç</small></div><button id="sbmini" class="side-mini" aria-label="Menüyü daralt"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg></button></div>`;
   const b=(ic,l,attr,extra="",on=false)=>`<button ${attr}${on?' aria-current="true"':""}>${sic(ic)}<span class="nav-label">${l}</span>${extra}</button>`;
-  if(sel)return `<nav class="side-nav coach-side" aria-label="Koç menüsü">${top}<div class="side-label">ÖĞRENCİ ÇALIŞMA ALANI</div>${b("back","Öğrenci listesi",'data-backnav="1"')}${b("home","Özet",'data-dt="o"',"",DTAB==="o")}${b("bars","Analiz",'data-dt="a"',"",DTAB==="a")}${b("task","Görevler",'data-dt="g"',"",DTAB==="g")}${b("cal","Program ver",'data-plopen="1"')}${b("list","Diğer",'data-dt="d"',"",DTAB==="d")}${foot}</nav>`;
+  if(sel)return `<nav class="side-nav coach-side" aria-label="Koç menüsü">${top}<div class="side-label">${esc(stuNm(sel).toLocaleUpperCase("tr"))}</div>${b("back",'<span class="nbl" data-def="Öğrenci listesi">Öğrenci listesi</span>','data-navback="1"')}${b("home","Özet",'data-dt="o"',"",DTAB==="o"&&!PLV)}${b("bars","Analiz",'data-dt="a"',"",DTAB==="a"&&!PLV)}${b("task","Görevler",'data-dt="g"',"",DTAB==="g"&&!PLV)}${b("cal","Program ver",'data-plopen="1"',"",!!PLV)}${b("list","Diğer",'data-dt="d"',"",DTAB==="d"&&!PLV)}${b("chat","Mesaj yaz",'data-nmsg="'+sel+'"',MU[sel]?`<span class="bd">${MU[sel]}</span>`:"")}${foot}</nav>`;
   return `<nav class="side-nav coach-side" aria-label="Koç menüsü">${top}<div class="side-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="sbq" type="search" placeholder="Öğrenci ara…" aria-label="Öğrenci ara" autocomplete="off"></div><div class="side-label">ANA MENÜ</div>${b("home","Genel bakış",'data-cp="o"',"",CPG==="o"&&!MV)}${b("users","Öğrenciler",'data-cp="s"',`<span class="bd">${all.length}</span>`,CPG==="s"&&!MV)}${b("task","Görev yönetimi",'data-cp="t"',od?`<span class="bd warn">${od}</span>`:"",CPG==="t"&&!MV)}${b("bars","Deneme analizi",'data-cp="a"',"",CPG==="a"&&!MV)}${b("chat","Mesajlar",'data-msgnav="1"',unrTotal()?`<span class="bd">${unrTotal()}</span>`:"",MV)}<div class="side-label">AYARLAR</div>${b("cal","Program ver",'data-cp="p"',"",CPG==="p"&&!MV)}${b("gear","Ayarlar",'data-cp="y"',"",CPG==="y"&&!MV)}${foot}</nav>`;
 }
 function render(){
@@ -166,9 +170,10 @@ function render(){
     if(view==="s")app.innerHTML=studentView();
     else{
       const nav=sideNav();
-      app.innerHTML=`<div class="dashboard-shell"><button class="sbtog" id="sbtog" aria-label="Menüyü aç"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button><button class="sbov" id="sbov" aria-label="Menüyü kapat"></button>${nav}<div class="dashboard-main">${coachView()}</div></div>`;
+      app.innerHTML=`<div class="dashboard-shell"><button class="sbtog" id="sbtog" aria-label="Menüyü aç${NOTN?", "+NOTN+" bildirim":""}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>${NOTN?'<i class="sbdot"></i>':""}</button><button class="sbov" id="sbov" aria-label="Menüyü kapat"></button>${nav}<div class="dashboard-main">${coachView()}</div></div>`;
     }
     const c=document.getElementById("chat");if(c)c.scrollTop=c.scrollHeight;
+    navSync();
 }
 document.addEventListener("change",e=>{if(e.target.id==="phfile"){const f=e.target.files&&e.target.files[0];e.target.value="";phSet(f);return}if(e.target.id==="hd"){S.hard=e.target.value.slice(0,60);save()}
   const id=e.target.id,v=e.target.value;

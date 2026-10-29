@@ -110,9 +110,9 @@ async function taAsk(){
 function tercihTab(){
   tcInit();
   const o=tcLoadList(),list=o.l||[];
-  if(TC.st!=="ok")return `<h1 class="pg">Tercih Robotu</h1><div class="card"><p class="empty" style="margin:0">Yükleniyor…</p></div>`;
+  if(TC.st!=="ok")return `${stHead("Tercih Robotu")}<div class="card"><p class="empty" style="margin:0">Yükleniyor…</p></div>`;
   const D=TC.data,has=D.p.length>0,m=D.meta||{};
-  const head=`<h1 class="pg">Tercih Robotu</h1><div class="card"><p class="empty" style="margin:0;font-size:14px">Puanını gir; programlar <b>${TC.fc?(((m.yil||2026)+1)+" tahmini taban puanına"):((m.yil||2026)+" taban puanına")}</b> göre <b>Güvenli / Hedef / Riskli</b> ayrılır. Bu bir <b>tahmindir</b>, resmî araç değildir; puanlar yıllar arasında birebir kıyaslanamaz. Tercih öncesi ÖSYM kılavuzunu ve koçunu kontrol et.<br><small>Veri: ÖSYM ${esc((m.yillar||[]).join(", "))} yerleştirme sonuçları.</small></p></div>`;
+  const head=`${stHead("Tercih Robotu")}<div class="card"><p class="empty" style="margin:0;font-size:14px">Puanını gir; programlar <b>${TC.fc?(((m.yil||2026)+1)+" tahmini taban puanına"):((m.yil||2026)+" taban puanına")}</b> göre <b>Güvenli / Hedef / Riskli</b> ayrılır. Bu bir <b>tahmindir</b>, resmî araç değildir; puanlar yıllar arasında birebir kıyaslanamaz. Tercih öncesi ÖSYM kılavuzunu ve koçunu kontrol et.<br><small>Veri: ÖSYM ${esc((m.yillar||[]).join(", "))} yerleştirme sonuçları.</small></p></div>`;
   if(!has)return head+`<div class="card"><h2>Veri henüz yüklenmedi</h2><p class="empty" style="margin:0">Bölüm listesi yüklenince burada arama yapabileceksin.</p></div>`;
   const M=tcMemo().L[TC.lv],ils=M.ils,tur=M.tur,pts=M.pts;if(pts.length&&!pts.includes(TC.pt))TC.pt=pts[0];
   const all=tcFiltered(),shown=all.slice(0,TC.lim),puan=num(TC.rank);

@@ -47,7 +47,12 @@ async function pullCoach(){
   EXALL=e.data||[];TKALL=w.data||[];
 }
 let rt;
-const refresh=()=>{clearTimeout(rt);rt=setTimeout(async()=>{if(!ME||busy()||PX||AIBUSY||PLANBUSY||CHATBUSY)return;try{if(ROLE==="coach"){await pullCoach();await loadOD();await loadUnr();if(MV&&MSEL)await loadMsgs(MSEL);if(sel)await Promise.all([loadHist(sel),loadTasks(sel),loadExams(sel)])}else await Promise.all([pullStudent(),loadTasks(ME),loadUnr(),tab==="m"?msgSync():0]);render();setSync("Güncellendi "+hm(Date.now()))}catch(e){}},2500)};
+// Verileri sayfayı yenilemeden çeker. Otomatik çağrıda yazı yazılıyorsa bekler; "↻ Yenile" düğmesi hemen çalıştırır.
+async function refreshRun(manual){
+  if(!ME||PX||AIBUSY||PLANBUSY||CHATBUSY){if(manual)setSync("Şu an bir işlem sürüyor, birazdan tekrar dene");return}
+  try{if(ROLE==="coach"){await pullCoach();await loadOD();await loadUnr();if(MV&&MSEL)await loadMsgs(MSEL);if(sel)await Promise.all([loadHist(sel),loadTasks(sel),loadExams(sel)].concat(manual?[loadTarget(sel),loadReport(sel),loadPlan(sel)]:[]))}else await Promise.all([pullStudent(),loadTasks(ME),loadUnr(),tab==="m"?msgSync():0]);render();setSync("Güncellendi "+hm(Date.now()))}catch(e){setSync("⚠️ Yenilenemedi, bağlantını kontrol et")}
+}
+const refresh=()=>{clearTimeout(rt);rt=setTimeout(()=>{if(busy())return;refreshRun(false)},2500)};
 async function start(){
   const app=document.getElementById("app");
   const {data:{session}}=await sb.auth.getSession();
@@ -60,7 +65,7 @@ async function start(){
   document.getElementById("who").textContent=NAME+" · ";document.getElementById("out").hidden=false;document.getElementById("reset").hidden=ROLE==="coach";document.body.classList.toggle("stu",ROLE==="student");document.body.classList.toggle("coach",ROLE==="coach");if(ROLE==="student")setTimeout(()=>{try{tcInit()}catch(e){}},4500);
   if(ROLE==="coach"){await pullCoach();await loadOD();await loadUnr();["daily","goals","notes","exam_results","weekly_tasks","messages"].reduce((ch,t)=>ch.on("postgres_changes",{event:"*",schema:"public",table:t},refresh),sb.channel("koc")).subscribe();setInterval(refresh,60000)}
   else{await loadStudent();await loadUnr();try{sb.channel("m"+ME).on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:"student_id=eq."+ME},refresh).subscribe()}catch(e){}setInterval(refresh,45000);setInterval(()=>{if(rollover()){save();render()}},30000);pushState().then(()=>{if(tab==='h')render()})}
-  render();
+  navInit();render();
 }
 document.addEventListener("input",e=>{if(e.target.dataset&&e.target.dataset.rx!=null||e.target.id==="ext")recalcExam()});
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="lp")doLogin();if(e.key==="Enter"&&e.target.id==="cin")aiChatSend()});

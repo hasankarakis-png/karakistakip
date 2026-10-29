@@ -22,13 +22,15 @@ function classCard(){
   const m={};Object.entries(by).forEach(([sid,L])=>L.slice(-3).forEach(e=>(e.topics||[]).forEach(t=>{if(!t||!t.konu||num(t.yanlis)<=0)return;const k=t.ders+"|"+t.konu,o=m[k]=m[k]||{ders:t.ders,konu:t.konu,y:0,s:new Set()};o.y+=num(t.yanlis);o.s.add(sid)})));
   const top=Object.values(m).sort((a,b)=>b.s.size-a.s.size||b.y-a.y).slice(0,8),nm=id=>(STU.find(p=>p.id===id)||{}).name||"";
   const tdn=TKALL.filter(t=>t.done).length,has={},dn={};TKALL.forEach(t=>{has[t.student_id]=1;if(t.done)dn[t.student_id]=1});
-  const idle=Object.keys(has).filter(id=>!dn[id]).map(nm).filter(Boolean);
+  const idle=Object.keys(has).filter(id=>!dn[id]&&nm(id));
+  const nmb=(id,dt)=>`<button class="nm-link" data-ngo="${id}" data-ndt="${dt}">${esc(nm(id))}</button>`;
   return `<div class="card"><h2>Sınıf analizi</h2>
-  ${top.length?`<p class="empty" style="margin:0 0 6px">En çok yanlış yapılan konular (öğrenci başına son 3 deneme)</p>${top.map(o=>`<div class="subj"><span>${esc(o.ders)} · ${esc(o.konu)}</span><span>${o.s.size} öğrenci · ${o.y} yanlış</span></div>`).join("")}`:`<p class="empty">Konu bazlı veri olan deneme yüklendikçe burada ortak zayıf konular görünür.</p>`}
-  <p class="empty" style="margin:10px 0 0">Görev tamamlama (son 7 gün): ${TKALL.length?"%"+Math.round(tdn/TKALL.length*100)+" ("+tdn+"/"+TKALL.length+")":"görev atanmadı"}${idle.length?" · hiç tamamlamayan: "+idle.map(esc).join(", "):""}</p></div>`;
+  ${top.length?`<p class="empty" style="margin:0 0 6px">En çok yanlış yapılan konular (öğrenci başına son 3 deneme)</p>${top.map(o=>`<div class="subj cls"><span>${esc(o.ders)} · ${esc(o.konu)}<span class="nms">${[...o.s].filter(nm).map(id=>nmb(id,"a")).join("")}</span></span><span>${o.s.size} öğrenci · ${o.y} yanlış</span></div>`).join("")}`:`<p class="empty">Konu bazlı veri olan deneme yüklendikçe burada ortak zayıf konular görünür.</p>`}
+  <p class="empty" style="margin:10px 0 0">Görev tamamlama (son 7 gün): ${TKALL.length?"%"+Math.round(tdn/TKALL.length*100)+" ("+tdn+"/"+TKALL.length+")":"görev atanmadı"}</p>${idle.length?`<p class="empty" style="margin:6px 0 0">Hiç görev tamamlamayan:</p><div class="nms">${idle.map(id=>nmb(id,"g")).join("")}</div>`:""}</div>`;
 }
 function ui(t){
   const D=t.dataset,id=t.id;
+  if(navUi(t))return true;
   if(id==="who"||id==="hdrhome"||D.gohome){PLV=null;CPG="o";MV=false;if(ROLE==="coach"){sel=null;selDay=null;render()}else{tab="b";QA=false;render()}window.scrollTo(0,0);return true}
   if(D.tab){tab=D.tab;QA=false;render();window.scrollTo(0,0);return true}
   if(id==="phdel"){phDel();return true}
@@ -37,7 +39,7 @@ function ui(t){
   if(id==="chrf"){chLoad(true);return true}
   if(D.chsel||D.chnot||D.chdel||D.chhide||D.chtog){chAct(D);return true}
   if(id==="chsend"){chatSend();return true}
-  if(id==="qaopen"){QA=true;render();return true}
+  if(id==="qaopen"){QA=true;render();navOv();return true}
   if(id==="qabg"){QA=false;render();return true}
   if(D.qa){QA=false;tab=D.qa;render();window.scrollTo(0,0);if(D.qs)setTimeout(()=>{const e=document.getElementById(D.qs);if(e)e.scrollIntoView({behavior:"smooth",block:"center"})},60);return true}
   if(D.hm){HMSEL=D.hm;render();return true}
@@ -88,12 +90,12 @@ document.addEventListener("click",e=>{
   if(t.dataset.proxy){const el=document.getElementById(t.dataset.proxy);if(el)el.click();return}
   if(t.dataset.cp){CPG=t.dataset.cp;MV=false;MSEL=null;sel=null;PLV=null;render();window.scrollTo(0,0);return}
   if(t.dataset.msgnav){MV=true;sel=null;PLV=null;loadUnr().then(()=>{render();window.scrollTo(0,0)});render();return}
-  if(MV&&(t.dataset.cnav||t.dataset.gohome||t.dataset.i||t.id==="who"||t.id==="hdrhome")){MV=false;MSEL=null;if(t.dataset.gohome||t.id==="who"||t.id==="hdrhome")CPG="o";render()}
+  if(MV&&(t.dataset.cnav||t.dataset.gohome||t.dataset.i||t.id==="who"||t.id==="hdrhome")){MV=false;MSEL=null;if(t.dataset.gohome||t.id==="who"||t.id==="hdrhome")CPG="o";if(t.dataset.cnav)render()}
   if(t.dataset.mo){msgOpen(t.dataset.mo);return}
   if(t.id==="msend"){msgSend(ROLE==="coach"?MSEL:ME);return}
   if(t.id==="rpgo"){RPMODE=true;CPG="s";MV=false;sel=null;render();window.scrollTo(0,0);return}
   if(t.id==="rpx"){RPMODE=false;render();return}
-  if(t.id==="sbtog"){document.body.classList.add("sbopen");return}
+  if(t.id==="sbtog"){document.body.classList.add("sbopen");navOv();return}
   if(t.id==="sbov"||t.closest(".side-nav"))document.body.classList.remove("sbopen");
   if(t.id==="sbov")return;
   if(ui(t))return;
@@ -118,7 +120,7 @@ document.addEventListener("click",e=>{
   else if(t.id==="backhist"){selDay=null;render()}
   else if(t.dataset.per){per=t.dataset.per;render()}
   else if(t.dataset.d){selDay=t.dataset.d===day()?null:t.dataset.d;render();if(selDay&&!DSTATE[sel+"|"+selDay]){const id=sel,d=selDay;loadDay(id,d).then(()=>{if(sel===id&&selDay===d)render()})}}
-  else if(t.dataset.i){sel=t.dataset.i;selDay=null;DTAB=RPMODE?"d":"o";RPMODE=false;PLV=null;render();const id=sel;Promise.all([loadHist(id),loadExams(id),loadReport(id),loadTarget(id),loadTasks(id),loadPlan(id)]).then(()=>{if(sel===id)render()})}
+  else if(t.dataset.i)openStu(t.dataset.i,RPMODE?"d":"o");
   else if(t.id==="addq")addQ();
   else if(t.id==="reset"){if(confirm("Bugünün verisi silinsin mi?")){S=fresh();save();render()}}
   else if(t.dataset.s){subj=t.dataset.s;render()}
@@ -414,4 +416,4 @@ ${msg?`<p class="lgx-msg" role="alert">${esc(msg)}</p>`:""}
 <div class="lgx-foot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.4 3.2 8 8 9 4.8-1 8-4.6 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg><span>Hesabın yok mu? Giriş bilgilerini koçundan alabilirsin.</span></div></div></section></div>`;
 
 try{if(localStorage.getItem("sbmini"))document.body.classList.add("sbmini")}catch(e){}
-document.addEventListener("input",e=>{if(e.target.id!=="sbq")return;const q=e.target.value.trim().toLocaleLowerCase("tr");document.querySelectorAll("#app .grid>button.s").forEach(b=>{b.style.display=!q||b.textContent.toLocaleLowerCase("tr").includes(q)?"":"none"})});
+document.addEventListener("input",e=>{if(e.target.id!=="sbq"&&e.target.id!=="stq")return;if(e.target.id==="stq")STQ=e.target.value.slice(0,40);const q=e.target.value.trim().toLocaleLowerCase("tr");document.querySelectorAll("#app .grid>button.s").forEach(b=>{b.style.display=!q||b.textContent.toLocaleLowerCase("tr").includes(q)?"":"none"})});

@@ -51,3 +51,10 @@ Cloudflare (Turnstile, Pages, alan adı, AI Gateway) kurulumu için README-CLOUD
 - Yapay zekâ kotası yalnızca sunucuda artırılır; öğrenci sayaç veya rapor önbelleği yazamaz.
 - Öğrenci: ilk giriş rehberi (veri/yapay zekâ bilgilendirmesi dahil), yanlış girilen soru kaydını silme, 4 saati aşan sayaç uyarısı, "Asistan" sekmesi, çıkışta cihazdaki verinin temizlenmesi.
 - Koç: tüm öğrencilere toplu görev ata, CSV yedek (günlük çalışma, denemeler, görevler), veli özetine son deneme/hedef/görev bilgisi ve WhatsApp/paylaş düğmesi.
+
+## Gezinme ve bildirimler (v3.2)
+- Geri tuşu: telefonun geri tuşu/hareketi, masaüstünde tarayıcının geri düğmesi ve uygulamadaki ← düğmeleri bir önceki ekrana döner. Geri düğmesi gideceği ekranın adını yazar (ör. "← Görev yönetimi"). Açık menü ve hızlı işlem paneli geri ile kapanır. Sayfa yenilenince aynı ekranda kalınır.
+- Koç öğrenci sayfası: üstte yapışkan çubuk (geri, öğrenci adı, mesaj yaz, yenile, Özet/Analiz/Görevler/Diğer sekmeleri).
+- Bildirim merkezi (Görev yönetimi ve zil): geciken görevler, okunmamış mesajlar ve uyarılar öğrenci adıyla; dokununca ilgili sekme açılır; "Bugüne al / Yarına kaydır" tek dokunuşla.
+- Genel bakış kartlarında öğrenci adları; mesajdan profile, profilden mesaja geçiş; Öğrenciler sayfasında arama; sınıf analizinde öğrenci adları; "↻ Yenile" ile sayfayı yenilemeden veri çekme.
+- Öğrenci: Konu Takibi, Tercih Robotu, Yarışma, Asistan ve Koçum ekranlarında geri düğmesi.
