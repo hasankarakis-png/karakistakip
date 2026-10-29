@@ -22,7 +22,7 @@
     const warnN=rows.filter(x=>{try{return flags(x.hist||[]).length>0}catch(e){return false}}).length;
     const idleN=rows.filter(x=>!(num(x.m)||num(x.q)||x.st==="study"||x.st==="break")).length;
     const list=items.slice(0,5);
-    const safeName=x=>esc(String(x.name).replace(/<[^>]*>/g,""));
+    const safeName=x=>esc((STU.find(p=>p.id===x.id)||{}).name||String(x.name||"Öğrenci").replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">"));
     return `<section class="coach-action-center" aria-labelledby="coach-action-title">
       <div class="cac-head"><div><p class="cac-eyebrow">KOÇ PANELİ · GÜNLÜK ÖNCELİKLER</p><h2 id="coach-action-title">Bugün müdahale planı</h2><p class="cac-sub">Verilerden çıkan sinyalleri sırala; gerekli öğrencinin kaydına doğrudan geç.</p></div><span class="cac-mark" aria-hidden="true">✦</span></div>
       <div class="cac-stats">
