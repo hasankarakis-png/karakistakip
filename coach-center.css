@@ -1,0 +1,35 @@
+/* Koç Aksiyon Merkezi — tema değişkenleri mevcut tasarımdan devralınır. */
+.coach-action-center{margin:18px 0 8px;padding:clamp(16px,3vw,24px);border:1px solid var(--line);border-radius:24px;background:linear-gradient(135deg,var(--card),color-mix(in srgb,var(--card) 88%,var(--acc) 12%));box-shadow:0 12px 30px rgba(8,15,35,.06);overflow:hidden}
+.cac-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:18px}
+.cac-eyebrow{margin:0 0 5px;color:var(--acc);font-size:10px;letter-spacing:.14em;font-weight:900}
+.cac-head h2{font-size:clamp(19px,3vw,24px);letter-spacing:-.03em}
+.cac-sub{margin:5px 0 0;color:var(--mute);font-size:13px;max-width:520px}
+.cac-mark{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:14px;background:var(--goldsoft);color:var(--acc);font-size:22px}
+.cac-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:22px}
+.cac-stat{display:flex;align-items:center;gap:10px;min-width:0;text-align:left;padding:13px 12px;border:1px solid var(--line);border-radius:16px;background:var(--cream);color:var(--ink);cursor:pointer;transition:transform .16s ease,border-color .16s ease}
+.cac-stat:hover{transform:translateY(-2px);border-color:var(--acc)}
+.cac-stat>span:last-child{display:flex;flex-direction:column;min-width:0}
+.cac-stat small{color:var(--mute);font-size:11px;font-weight:700;white-space:nowrap}
+.cac-stat b{font:700 25px/1.2 var(--fd);margin:3px 0}
+.cac-stat em{font-style:normal;color:var(--mute);font-size:10px;line-height:1.3}
+.cac-icon{display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:12px;font-size:17px;font-weight:900}
+.cac-orange{color:#a45a13;background:#ffedd5}.cac-violet{color:#6553b8;background:#eee9ff}.cac-teal{color:#167c6a;background:#d9f5ed}
+.cac-list-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px}
+.cac-list-head h3{margin:0;font-size:15px}.cac-list-head>span{color:var(--mute);font-size:11px}
+.cac-list{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--card)}
+.cac-row{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 13px;border-bottom:1px solid var(--line)}
+.cac-row:last-child{border-bottom:0}
+.cac-rank{font:700 12px var(--fd);color:var(--mute);font-variant-numeric:tabular-nums}
+.cac-person{display:flex;flex-direction:column;min-width:0;gap:3px}
+.cac-person b{font-size:13px;overflow-wrap:anywhere}
+.cac-person span{font-size:11px;color:var(--mute);line-height:1.4}
+.cac-open{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:10px;padding:8px 10px;font:700 11px var(--fb);cursor:pointer;white-space:nowrap}
+.cac-open:hover{border-color:var(--acc);color:var(--acc)}
+.cac-empty{display:flex;gap:12px;align-items:center;padding:18px;border:1px solid var(--line);border-radius:16px;background:var(--card)}
+.cac-empty>span{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--goldsoft);color:var(--ok);font-weight:900}
+.cac-empty b{font-size:13px}.cac-empty p{margin:3px 0 0;color:var(--mute);font-size:12px}
+.cac-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding-top:14px;margin-top:12px;border-top:1px solid var(--line)}
+.cac-foot>span{display:flex;align-items:center;gap:7px;color:var(--mute);font-size:11px}
+.cac-foot>span i{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px color-mix(in srgb,var(--ok) 16%,transparent)}
+.cac-foot button{border:0;background:transparent;color:var(--acc);font:700 12px var(--fb);cursor:pointer;padding:7px 0}
+@media(max-width:560px){.cac-stats{grid-template-columns:1fr;gap:7px}.cac-stat{padding:10px 12px}.cac-stat b{font-size:22px}.cac-stat em{display:none}.cac-row{grid-template-columns:26px minmax(0,1fr);gap:8px}.cac-actions{grid-column:2;justify-self:start}.cac-open{padding:7px 9px}.cac-list-head{align-items:flex-start;flex-direction:column;gap:2px}.cac-head h2{font-size:20px}.cac-mark{width:36px;height:36px}}
