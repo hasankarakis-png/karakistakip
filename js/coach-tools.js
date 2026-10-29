@@ -25,7 +25,8 @@ let BULKMSG="";
 function bulkCard(){
   return `<details class="card"${BULKMSG?" open":""}><summary style="cursor:pointer;font-weight:700">📣 Toplu görev ata</summary><div class="row"><label>Tarih<input id="bkd" type="date" value="${day()}" style="width:150px"></label><label>Ders<select id="bks"><option value="">Ders</option>${SUBJ.map(s=>`<option>${s}</option>`).join("")}</select></label><label>Görev<input id="bkt" type="text" maxlength="120" style="width:180px"></label><label>Miktar<input id="bka" type="text" maxlength="60" style="width:90px"></label><button class="btn" style="padding:11px 16px" id="bkadd">Herkese ata</button></div><p class="empty" style="font-size:13px;margin:6px 0 0">${BULKMSG?esc(BULKMSG):"Aynı görev tüm öğrencilere eklenir."}</p></details>`;
 }
-async function bulkAdd(){
+function bulkAdd(){return once("bulk",bulkAdd0)}
+async function bulkAdd0(){
   const g=i=>document.getElementById(i).value,title=g("bkt").trim().slice(0,120);
   if(!title||!STU.length)return;
   if(!confirm(STU.length+" öğrenciye bu görev atansın mı?"))return;
@@ -43,7 +44,7 @@ function coachView(){
   const order={study:0,break:1,awake:2,stopped:3,closed:4,idle:5};
   all.sort((a,b)=>order[a.st]-order[b.st]);
   const avg=all.length?Math.round(all.reduce((a,x)=>a+x.m,0)/all.length):0;
-  const od=ODN!=null?ODN:all.reduce((a,x)=>a+overdue(x.id).length,0),warn=all.filter(x=>flags(x.hist).length).length,work=c(["study","break"]);
+  const od=ODN!=null?ODN:all.reduce((a,x)=>a+overdue(x.id).length,0),warn=all.filter(x=>flags(x.hist).length).length,work=all.filter(x=>x.m>0||x.q>0||x.st==="study"||x.st==="break").length,live=c(["study","break"]),idle0=all.filter(x=>x.st==="idle"&&!x.m&&!x.q).length;
   const dt=new Date().toLocaleDateString("tr-TR",{weekday:"long",day:"numeric",month:"long"});
   const grid=L=>`<div class="grid">${L.map(x=>{const pc=Math.round(x.p*100),col=x.st==="study"||x.st==="closed"?"":x.st==="break"?" w":"";return `<button class="s ocard${x.live?" live":""}" data-i="${x.id}"><span class="oav${col}">${PH[x.id]?`<img src="${PH[x.id]}" alt="">`:esc(initials(x.n))}<i class="dot ${DOT[x.st]}"></i></span><span class="oin"><b>${x.n}${flags(x.hist).length?" 🚩":""}</b><small>${LBL[x.st]} · ${Math.floor(x.m/60)} sa ${x.m%60} dk · ${x.q} soru</small><span class="kbar"><i style="width:${pc}%"></i></span></span><span class="opc">%${pc}</span></button>`}).join("")}</div>`;
   // Alt sayfalarda başlığın solunda geri düğmesi (telefonda menü kapalıyken de dönülebilsin)
@@ -58,7 +59,7 @@ function coachView(){
   if(CPG==="y")return `<section id="coach-tools" class="coach-section">${hd("Ayarlar","Otomatik mesajlar, öğrenci ekleme, yedek ve eşikler")}${autoCard()}${addStudentCard()}${backupCard()}${thCard()}</section>`;
   const top=all.slice(0,6),nd=notifData(),odIds=nd.od.map(o=>o[0]),flIds=nd.fl.map(o=>o.id);
   return `<section id="coach-overview" class="coach-section">${hd("Genel bakış",esc(dt),`<button class="cta" data-cp="p"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Program ver</button>`)}<div class="kst">
-  <div class="kc"><span>Bugün çalışan</span><b>${work}<em> / ${all.length}</em></b><div class="kbar"><i style="width:${all.length?Math.round(work/all.length*100):0}%"></i></div></div>
+  <button class="kc" data-cp="s"><span>Bugün çalışan</span><b>${work}<em> / ${all.length}</em></b><div class="kbar"><i style="width:${all.length?Math.round(work/all.length*100):0}%"></i></div><small>${live?live+" öğrenci şu an derste/molada":"şu an çalışan yok"}${idle0?" · "+idle0+" henüz başlamadı":""}</small></button>
   <div class="kc"><span>Ortalama net süre</span><b>${Math.floor(avg/60)}<em> sa </em>${avg%60}<em> dk</em></b><small>${all.reduce((a,x)=>a+x.q,0)} soru çözüldü</small></div>
   <button class="kc" data-cp="t"><span>Geciken görev</span><b>${od}</b><small class="${od?"w":""}">${od?(odIds.length?esc(nameList(odIds))+" · listeyi aç ›":"Tamamlanmayı bekliyor"):"Hepsi güncel"}</small></button>
   <button class="kc" data-msgnav="1"><span>Okunmamış mesaj</span><b>${unrTotal()}</b><small class="${unrTotal()?"w":""}">${unrTotal()?"En yeni: "+(MNEWID?esc(stuNm(MNEWID))+" · ":"")+ago(MNEW):"Hepsi okundu"}</small></button>
@@ -126,7 +127,7 @@ function detailView(){
   const sn=x.qs.reduce((a,q)=>a+q.n,0),sc=x.qs.reduce((a,q)=>a+q.c,0),acc=sn?Math.round(sc/sn*100):0;
   const by={};x.qs.forEach(q=>{by[q.s]=by[q.s]||{n:0,c:0,b:0,k:[]};by[q.s].n+=q.n;by[q.s].c+=q.c;by[q.s].b+=q.b||0;if(q.k)by[q.s].k.push(q.k)});
   const mb=`<button class="tb-ic" data-nmsg="${x.id}" aria-label="${esc(pr.name)} ile mesajlaş" title="Mesaj yaz">💬${MU[x.id]?`<i>${MU[x.id]}</i>`:""}</button>`;
-  const head=past?topBar(ttl,"📅 "+fd(selDay)+" · geçmiş gün",refreshBtn()):topBar(ttl,`<span class="dot ${DOT[x.st]}"></span>${LBL[x.st]}`,mb+refreshBtn(),detTabs());
+  const head=past?topBar(ttl,"📅 "+fd(selDay)+" · geçmiş gün",refreshBtn(),`<div class="pastbar">📅 <b>${fd(selDay)}</b> günü gösteriliyor<button class="chip" data-d="${day()}">Bugüne dön</button></div>`):topBar(ttl,`<span class="dot ${DOT[x.st]}"></span>${LBL[x.st]}`,mb+refreshBtn(),detTabs());
   if(PLV===sel&&!past)return planPage(x);
   return `${head}
   <section class="hero"><div class="st"><span class="dot ${DOT[x.st]}"></span>${LBL[x.st]}</div>

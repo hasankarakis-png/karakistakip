@@ -717,3 +717,5 @@ body.coach,body.stu{--mbme:#2b3a10;--mbme-ink:#f3f3ee;--mbot:#1f1f1f;--mbot-ink:
 .rd-it{font-size:13px;padding:4px 0;border-top:1px dashed var(--line)}
 .rd-it em{font-style:normal;color:var(--mute);font-size:11px}
 .rd-it small{display:block;color:var(--mute);font-size:11px}
+.pastbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;padding:8px 12px;border-radius:12px;border:1px solid var(--warn);background:color-mix(in srgb,var(--warn) 10%,transparent);font-size:14px}
+.pastbar .chip{margin-left:auto;min-height:34px;padding:6px 12px;font-size:13px}

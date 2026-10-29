@@ -14,7 +14,7 @@ async function admRun0(a){
   const p=STU.find(s=>s.id===sel);
   if(a==="add"){const n=document.getElementById("sname").value.trim();if(n.length<2)return;ADMMSG={t:"Hesap hazır"};const r=await callFn("admin-students",{action:"create",name:n});ADMMSG=r.error?{err:r.error}:{t:r.name+" · kullanıcı adı: "+r.username+" · PIN: "+r.pin}}
   if(a==="reset"){if(!p||!confirm(p.name+" için yeni PIN üretilsin mi? Eski PIN çalışmaz."))return;const r=await callFn("admin-students",{action:"reset",student_id:sel});ADMMSG=r.error?{err:r.error}:{t:r.name+" · kullanıcı adı: "+r.username+" · yeni PIN: "+r.pin}}
-  if(a==="del"){if(!p||!confirm(p.name+" ve tüm kayıtları KALICI olarak silinsin mi? Bu geri alınamaz.")||!confirm("Emin misin? Son onay."))return;const r=await callFn("admin-students",{action:"delete",student_id:sel,confirm:true});if(r.error)ADMMSG={err:r.error};else{ADMMSG={t:p.name+" silindi."};sel=null}}
+  if(a==="del"){if(!p||!confirm(p.name+" ve tüm kayıtları KALICI olarak silinsin mi? Bu geri alınamaz.")||!confirm("Emin misin? Son onay."))return;const r=await callFn("admin-students",{action:"delete",student_id:sel,confirm:true});if(r.error)ADMMSG={err:r.error};else{ADMMSG=null;setSync("✓ "+p.name+" ve kayıtları silindi");alert(p.name+" ve tüm kayıtları silindi.");sel=null}}
   try{await pullCoach()}catch(e){}render();
 }
 function classCard(){
@@ -42,7 +42,7 @@ function ui(t){
   if(id==="chsend"){chatSend();return true}
   if(id==="qaopen"){QA=true;render();navOv();return true}
   if(id==="qabg"){QA=false;render();return true}
-  if(D.qa){QA=false;tab=D.qa;render();window.scrollTo(0,0);if(D.qs)setTimeout(()=>{const e=document.getElementById(D.qs);if(e)e.scrollIntoView({behavior:"smooth",block:"center"})},60);return true}
+  if(D.qa){QA=false;tab=D.qa;if(D.qa==="d")ANT="n";render();window.scrollTo(0,0);if(D.qs)setTimeout(()=>{const e=document.getElementById(D.qs);if(e)e.scrollIntoView({behavior:"smooth",block:"center"});else setSync(S.status==="closed"?"Gün kapalı: soru girmek için önce “Günü yeniden aç”":"Soru girmek için önce ☀️ Uyandım'a bas")},60);return true}
   if(D.hm){HMSEL=D.hm;render();return true}
   if(D.kte||D.ktd!=null||D.ktt||D.ktall!=null){ktAct(D);return true}
   if(D.tcadd||D.tcrm||D.tcup||D.tcdn){tcAct(D);return true}
@@ -51,7 +51,7 @@ function ui(t){
   if(D.tctr!=null){TC.tr=D.tctr;TC.lim=40;render();return true}
   if(D.tclv){TC.lv=D.tclv;TC.pt=D.tclv==="O"?"TYT":"SAY";TC.il="";TC.tur="";TC.flt="";TC.lim=40;const o=tcLoadList();o.lv=TC.lv;o.pt=TC.pt;tcSave(o);render();return true}
   if(id==="tcmore"){TC.lim+=40;render();return true}
-  if(id==="tccopy"){const o=tcLoadList(),by=Object.fromEntries((TC.data.p||[]).map(p=>[p.kod,p]));const t=(o.l||[]).map((k,i)=>by[k]?`${i+1}. ${by[k].uni} - ${by[k].b} (${k})`:"").filter(Boolean).join("\n");try{navigator.clipboard.writeText(tx).then(()=>{t.textContent="Kopyalandı ✓"},()=>{t.textContent="Kopyalanamadı"})}catch(e){t.textContent="Kopyalanamadı"}return true}
+  if(id==="tccopy"){const o=tcLoadList(),by=Object.fromEntries((TC.data.p||[]).map(p=>[p.kod,p]));const txt=(o.l||[]).map((k,i)=>by[k]?`${i+1}. ${by[k].uni} - ${by[k].b} (${k})`:"").filter(Boolean).join("\n");if(!txt){t.textContent="Liste boş";return true}try{navigator.clipboard.writeText(txt).then(()=>{t.textContent="Kopyalandı ✓"},()=>{t.textContent="Kopyalanamadı"})}catch(e){t.textContent="Kopyalanamadı"}return true}
   if(id==="theme2"){document.getElementById("theme").click();setTimeout(render,30);return true}
   if(id==="out2"){logout();return true}
   if(id==="guideok"){try{localStorage.setItem(GK(),"1")}catch(e){}render();return true}
@@ -68,7 +68,7 @@ function ui(t){
   if(id==="psh"){const p=document.getElementById("pt");if(navigator.share)navigator.share({text:p.value}).catch(()=>{});else{const c=document.getElementById("cp");if(c)c.click()}return true}
   if((D.pugo||D.puok||D.pucancel||D.putog!=null||D.wk!=null||D.wsel||D.wren||D.plopen||D.plback||D.plpick||D.boost||D.bmadd||D.selfdel)&&puAct(D,id))return true;
   if(D.ant){ANT=D.ant;render();window.scrollTo(0,0);return true}
-  if(D.dt){DTAB=D.dt;PLV=null;render();window.scrollTo(0,0);return true}
+  if(D.dt){DTAB=D.dt;PLV=null;selDay=null;render();window.scrollTo(0,0);return true}
   if(D.rpt){rptRun(D.rpt);return true}
   if(D.rpdf){pdfReport(D.rpdf);return true}
   if(id==='rptcp'){const e=document.getElementById('rpt');if(e&&navigator.clipboard)navigator.clipboard.writeText(e.value);return true}
@@ -95,7 +95,7 @@ document.addEventListener("click",e=>{
   if(t.id==="sbov"||t.closest(".side-nav"))document.body.classList.remove("sbopen");
   if(t.id==="sbov")return;
   if(t.dataset.proxy){const el=document.getElementById(t.dataset.proxy);if(el)el.click();return}
-  if(t.dataset.cp){CPG=t.dataset.cp;MV=false;MSEL=null;sel=null;PLV=null;render();window.scrollTo(0,0);return}
+  if(t.dataset.cp){CPG=t.dataset.cp;MV=false;MSEL=null;sel=null;PLV=null;if(CPG!=="y")ADMMSG=null;render();window.scrollTo(0,0);return}
   if(t.dataset.msgnav){MV=true;sel=null;PLV=null;loadUnr().then(()=>{render();window.scrollTo(0,0)});render();return}
   if(MV&&(t.dataset.cnav||t.dataset.gohome||t.dataset.i||t.id==="who"||t.id==="hdrhome")){MV=false;MSEL=null;if(t.dataset.gohome||t.id==="who"||t.id==="hdrhome")CPG="o";if(t.dataset.cnav)render()}
   if(t.dataset.mo){msgOpen(t.dataset.mo);return}
@@ -107,11 +107,11 @@ document.addEventListener("click",e=>{
   if(t.id==="t1"){view="s";render()}else if(t.id==="t2"){view="c";sel=null;render()}
   else if(t.dataset.cnav){const el=document.getElementById(t.dataset.cnav);if(el)el.scrollIntoView({behavior:"smooth",block:"start"});document.querySelectorAll(".side-nav [data-cnav]").forEach(b=>b.setAttribute("aria-current",String(b===t)))}else if(t.dataset.backnav){sel=null;selDay=null;render()}else if(t.dataset.me){meth=t.dataset.me;render()}
   else if(t.dataset.f){S[t.dataset.f]=+t.dataset.v;save();render()}
-  else if(t.id==="savth"){const g=id=>+document.getElementById(id).value,c=(v,a,b,d)=>isNaN(v)||!v?d:Math.min(b,Math.max(a,v));C.th={gap:c(g("th1"),1,5,2),drop:c(g("th2"),10,95,60),mood:c(g("th3"),1,4,2),sleep:c(g("th4"),3,9,6)};saveC();render()}
+  else if(t.id==="savth"){const g=id=>+document.getElementById(id).value,c=(v,a,b,d)=>isNaN(v)||!v?d:Math.min(b,Math.max(a,v));C.th={gap:c(g("th1"),1,5,2),drop:c(g("th2"),10,95,60),mood:c(g("th3"),1,4,2),sleep:c(g("th4"),3,9,6)};saveC();SET.th=Object.assign({},C.th);saveSetting("th")}
   else if(t.id==="cp"){const p=document.getElementById("pt");p.select();try{navigator.clipboard.writeText(p.value).then(()=>{t.textContent="Kopyalandı ✓"},()=>{t.textContent="Metin seçildi, kopyala"})}catch(e){t.textContent="Metin seçildi, kopyala"}}
-  else if(t.id==="setgoal"){const q=+document.getElementById("gq").value||0,m=+document.getElementById("gm").value||0;if(!q&&!m)return;const gs=document.getElementById("gs").value;C.goals[sel]={day:day(),s:gs,q,m};render();dbw(sb.from("goals").upsert({student_id:sel,day:day(),subj:gs,q,m}))}
-  else if(t.id==="delgoal"){delete C.goals[sel];render();dbw(sb.from("goals").delete().eq("student_id",sel).eq("day",day()))}
-  else if(t.id==="addnote"){const v=document.getElementById("note").value.trim();if(!v)return;(C.notes[sel]=C.notes[sel]||[]).push({t:Date.now(),x:v});render();dbw(sb.from("notes").insert({student_id:sel,body:v.slice(0,1000)}))}
+  else if(t.id==="setgoal"){const id=sel,q=Math.round(+document.getElementById("gq").value||0),m=Math.round(+document.getElementById("gm").value||0);if(q<0||m<0||q>2000||m>1440){alert("Soru 0–2000, süre 0–1440 dakika arasında olmalı.");return}if(!q&&!m){alert("Soru veya süre hedefi yaz.");return}const gs=document.getElementById("gs").value;t.disabled=true;dbw(sb.from("goals").upsert({student_id:id,day:day(),subj:gs,q,m})).then(r=>{if(r&&r.error){alert("Hedef kaydedilemedi: "+r.error.message);t.disabled=false;return}C.goals[id]={day:day(),s:gs,q,m};render()})}
+  else if(t.id==="delgoal"){const id=sel,old=C.goals[id];delete C.goals[id];render();dbw(sb.from("goals").delete().eq("student_id",id).eq("day",day())).then(r=>{if(r&&r.error){C.goals[id]=old;alert("Hedef kaldırılamadı.");render()}})}
+  else if(t.id==="addnote"){const id=sel,el=document.getElementById("note"),v=el.value.trim();if(!v)return;t.disabled=true;dbw(sb.from("notes").insert({student_id:id,body:v.slice(0,1000)})).then(r=>{if(r&&r.error){alert("Not kaydedilemedi, yazdığın not duruyor: "+r.error.message);t.disabled=false;return}(C.notes[id]=C.notes[id]||[]).push({t:Date.now(),x:v.slice(0,1000)});el.value="";el.defaultValue="";render()})}
   else if(t.id==="tgsave")targetSave(t.dataset.sid||ME);
   else if(t.id==="exgo")examExtract();
   else if(t.id==="exsave")examSave();
@@ -155,7 +155,7 @@ async function callFn(n,body){
     return r.ok?j:{error:j.error||("Sunucu hatası ("+r.status+")")};
   }catch(e){return {error:"Bağlantı kurulamadı."}}
 }
-async function loadExams(id){try{const {data,error}=await sb.from("exam_results").select("*").eq("student_id",id).order("exam_date",{ascending:true,nullsFirst:true}).order("created_at",{ascending:true});if(error)throw error;EX[id]=data||[]}catch(e){EX[id]=EX[id]||[]}}
+async function loadExams(id){try{const {data,error}=await sb.from("exam_results").select("*").eq("student_id",id).order("exam_date",{ascending:true,nullsFirst:false}).order("created_at",{ascending:true});if(error)throw error;EX[id]=data||[]}catch(e){EX[id]=EX[id]||[]}}
 async function loadTarget(id){try{const {data,error}=await sb.from("exam_targets").select("*").eq("student_id",id).order("exam_type");if(error)throw error;TG[id]=data||[]}catch(e){if(!(id in TG))TG[id]=[]}}
 const tgOf=(sid,tur)=>(TG[sid]||[]).find(g=>g.exam_type===tur)||null;
 // Yapay zekâ ile aynı seçim: son denemenin türüne uyan hedef, yoksa ilk hedef.
@@ -280,7 +280,10 @@ async function pdfPages(file){
   }
   return out;
 }
-async function examExtract(){
+// Okuma sürerken ikinci dokunuş günlük kotadan ikinci kez yemesin.
+let EXBUSY=false;
+async function examExtract(){if(EXBUSY)return;EXBUSY=true;const b=document.getElementById("exgo");if(b)b.disabled=true;try{await examExtract0()}finally{EXBUSY=false;const b2=document.getElementById("exgo");if(b2)b2.disabled=false}}
+async function examExtract0(){
   const f=document.getElementById("exf").files[0];
   if(!f){setEx("Önce bir görsel veya PDF seç.");return}
   const pdf=f.type==="application/pdf"||/\.pdf$/i.test(f.name||"");
@@ -329,8 +332,9 @@ function examForm(){
 }
 async function examSave(){
   const err=m=>{document.getElementById("exerr").textContent=m};
-  const e=PX.exam,tur=document.getElementById("ext").value,name=document.getElementById("exn").value.trim().slice(0,120),date=document.getElementById("exd").value;
+  const e=PX.exam,tur=document.getElementById("ext").value,name=document.getElementById("exn").value.trim().slice(0,120),date=document.getElementById("exd").value||day();
   if(!tur||!name){err("Deneme adı ve türü gerekli.");return}
+  if(date>day()){err("Deneme tarihi ileri bir gün olamaz.");return}
   if(!e.dersler.length){err("Kaydedilecek ders satırı yok.");return}
   const k=tur==="LGS"?3:4,subs=[];let okc=0,fixc=0,missc=0;
   for(let i=0;i<e.dersler.length;i++){
@@ -348,6 +352,7 @@ async function examSave(){
   PX=null;await loadExams(ME);setEx("Kaydedildi ✓ Analiz hazırlanıyor…");render();runInsights(ME,true);
 }
 async function runInsights(sid,force){
+  if(AIBUSY)return;
   AIBUSY=sid;render();
   const r=await callFn("exam-insights",{student_id:sid,force:!!force});
   AIBUSY=null;
@@ -397,6 +402,7 @@ function examCard(){
   ${L.length?`<div style="margin-top:10px">${examRows(L,"own")}</div><div class="row"><button class="chip" id="airun" data-sid="${ME}">📈 Gelişim analizimi yenile</button></div>`:""}</div>${aiReportCard(ME)}`;
 }
 function aiCard(sid){
+  if(!(sid in EX))return `<div class="card"><h2>Deneme sonuçları ve yapay zekâ</h2><p class="empty rd-ld"><span class="spin" aria-hidden="true"></span> Yükleniyor…</p></div>`;
   const L=EX[sid]||[];
   const M=L.map(x=>x.extraction_meta).filter(Boolean),tot=M.reduce((a,m)=>a+num(m.okunan),0),fix=M.reduce((a,m)=>a+num(m.duzeltilen),0);
   const acc=tot?`<p class="empty" style="font-size:13px;margin:8px 0 0">Yapay zekâ okuma doğruluğu: %${Math.round((tot-fix)/tot*100)} (${tot} alandan ${fix} tanesi öğrenci tarafından düzeltildi)</p>`:"";

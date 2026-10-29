@@ -19,7 +19,8 @@ async function logout(){
   try{if(DIRTY)await lim(flush(),3000)}catch(e){}
   try{if(ROLE==="student"&&"serviceWorker" in navigator){const reg=await lim(navigator.serviceWorker.ready,1500),sub=reg&&await reg.pushManager.getSubscription();if(sub){await lim(sb.from("push_subs").delete().eq("endpoint",sub.endpoint),2000);await sub.unsubscribe()}}}catch(e){}
   // Ortak cihazda sonraki kullanıcı görmesin: bekleyen kayıt yoksa yerel verileri temizle
-  try{if(!DIRTY)Object.keys(localStorage).filter(k=>k.startsWith(KEY+ME)).forEach(k=>localStorage.removeItem(k))}catch(e){}
+  // Gönderilmemiş günlük kayıt varsa yalnızca o korunur (kaybolmasın); diğer kişisel veriler her durumda silinir.
+  try{Object.keys(localStorage).filter(k=>ME&&k.includes(ME)&&!(DIRTY&&k.startsWith(KEY+ME))).forEach(k=>localStorage.removeItem(k))}catch(e){}
   sb.auth.signOut().then(()=>location.reload(),()=>location.reload());
 }
 const shift=(s,k)=>{const[y,m,d]=s.split("-").map(Number);return ymd(new Date(y,m-1,d+k))};
@@ -54,16 +55,25 @@ async function togTask(id){
   await dbw(sb.from("weekly_tasks").update({done:t.done,done_at:t.done_at}).eq("id",t.id).eq("student_id",ME));
 }
 async function delTask(id){if(!confirm("Görev silinsin mi?"))return;await dbw(sb.from("weekly_tasks").delete().eq("id",id).eq("student_id",sel));await loadTasks(sel);render()}
-async function addTask(){
-  const g=i=>document.getElementById(i).value,title=g("tkt").trim().slice(0,120);if(!title)return;
-  await dbw(sb.from("weekly_tasks").insert({student_id:sel,task_date:g("tkd")||day(),title,subject:g("tks")||null,amount:g("tka").trim().slice(0,60)||null,source:"coach",created_by:ME}));
-  await loadTasks(sel);render();
-}
+// İşlem sürerken ikinci dokunuş aynı kaydı ikinci kez eklemesin; öğrenci değişse bile doğru öğrenciye yazılsın.
+const INFL={};
+async function once(k,fn){if(INFL[k])return;INFL[k]=1;try{await fn()}finally{delete INFL[k]}}
+// Görev formunun tarih/ders seçimi ekleme sonrası korunur (art arda görev eklemek kolaylaşır).
+let TKF={d:null,s:""};
+function addTask(){const id=sel;return once("tk"+id,async()=>{
+  const g=i=>document.getElementById(i).value,title=g("tkt").trim().slice(0,120);if(!title){alert("Görev adını yaz.");return}
+  TKF={d:g("tkd")||day(),s:g("tks")||""};
+  const r=await dbw(sb.from("weekly_tasks").insert({student_id:id,task_date:TKF.d,title,subject:TKF.s||null,amount:g("tka").trim().slice(0,60)||null,source:"coach",created_by:ME}));
+  if(r&&r.error){alert("Görev eklenemedi, yazdıkların duruyor: "+r.error.message);return}
+  ["tkt","tka"].forEach(k=>{const e=document.getElementById(k);if(e){e.value="";e.defaultValue=""}});
+  await loadTasks(id);if(sel===id)render();
+})}
 function taskCard(x){
+  if(!(x.id in TK))return `<div class="card"><h2>Haftanın görevleri</h2><p class="empty rd-ld"><span class="spin" aria-hidden="true"></span> Görevler yükleniyor…</p></div>`;
   const L=selWeek(x.id).L,d=L.filter(t=>t.done).length,p=PD[x.id];
   const plan=p&&p.content?`<div class="card" style="border-color:var(--acc);margin:12px 0 0"><h2>🤖 Plan taslağı</h2><p class="empty" style="margin:0 0 6px">${esc(p.content.ozet||"")}</p>${p.content.notlar?`<p class="empty" style="margin:0 0 6px;font-size:14px">${esc(p.content.notlar)}</p>`:""}${taskList((p.content.gorevler||[]).map(g=>({...g,id:0,done:false,source:"ai"})),true).replace(/<button[^>]*data-tkdel[^>]*>.*?<\/button>/g,"")}<p class="empty" style="font-size:13px;margin:8px 0">Taslak öğrenciye henüz görünmez. İncele, uygunsa onayla.</p><div class="row"><button class="btn" style="padding:11px 16px" id="planok">Onayla ve öğrenciye ata</button><button class="chip" id="plandel">Taslağı sil</button></div></div>`:"";
   return rdDoneCard(x.id)+overdueCard(x.id,true)+`<div class="card"><h2>Haftanın görevleri</h2>${L.length?`<p class="empty" style="margin:0 0 8px">${d}/${L.length} tamamlandı · %${Math.round(d/L.length*100)}</p><div class="bar"><i style="width:${Math.round(d/L.length*100)}%"></i></div>${taskList(L,true)}`:`<p class="empty">Bu öğrenciye atanmış görev yok.</p>`}
-  <div class="row"><label>Tarih<input id="tkd" type="date" value="${day()}" style="width:150px"></label><label>Ders<select id="tks"><option value="">Ders</option>${SUBJ.map(s=>`<option>${s}</option>`).join("")}</select></label><label>Görev<input id="tkt" type="text" maxlength="120" style="width:170px"></label><label>Miktar<input id="tka" type="text" maxlength="60" placeholder="60 soru" style="width:100px"></label><button class="btn" style="padding:11px 16px" id="tkadd">Ekle</button></div>
+  <div class="row"><label>Tarih<input id="tkd" type="date" value="${TKF.d&&TKF.d>=day()?TKF.d:day()}" style="width:150px"></label><label>Ders<select id="tks"><option value="">Ders</option>${SUBJ.map(s=>`<option${s===TKF.s?" selected":""}>${s}</option>`).join("")}</select></label><label>Görev<input id="tkt" type="text" maxlength="120" style="width:170px"></label><label>Miktar<input id="tka" type="text" maxlength="60" placeholder="60 soru" style="width:100px"></label><button class="btn" style="padding:11px 16px" id="tkadd">Ekle</button></div>
   <div class="row"><button class="chip" id="planrun"${PLANBUSY?" disabled":""}>🤖 Yapay zekâyla haftalık plan taslağı üret</button></div>
   <p class="empty" style="font-size:14px;margin:6px 0 0">${PLANBUSY===x.id?"Plan hazırlanıyor, yarım dakika sürebilir…":esc(PLANMSG)}</p>${plan}</div>`;
 }
@@ -73,13 +83,13 @@ async function planRun(){
   if(r.plan){PD[sid]={student_id:sid,content:r.plan,created_at:new Date().toISOString()}}else PLANMSG=r.error||"Plan üretilemedi.";
   render();
 }
-async function planOk(){
-  const p=PD[sel];if(!p||!p.content)return;
-  const rows=(p.content.gorevler||[]).map(g=>({student_id:sel,task_date:g.task_date,title:g.title,subject:g.subject||null,amount:g.amount||null,source:"ai",created_by:ME}));
-  const r=await dbw(sb.from("weekly_tasks").insert(rows));if(!r||r.error)return;
-  await dbw(sb.from("plan_drafts").delete().eq("student_id",sel));PD[sel]=null;await loadTasks(sel);render();
-}
-async function planDel(){if(!confirm("Plan taslağı silinsin mi?"))return;await dbw(sb.from("plan_drafts").delete().eq("student_id",sel));PD[sel]=null;render()}
+function planOk(){const id=sel;return once("plan"+id,async()=>{
+  const p=PD[id];if(!p||!p.content)return;
+  const rows=(p.content.gorevler||[]).map(g=>({student_id:id,task_date:g.task_date,title:g.title,subject:g.subject||null,amount:g.amount||null,source:"ai",created_by:ME}));
+  const r=await dbw(sb.from("weekly_tasks").insert(rows));if(!r||r.error){alert("Plan atanamadı: "+(r&&r.error?r.error.message:"bağlantı hatası"));return}
+  await dbw(sb.from("plan_drafts").delete().eq("student_id",id));PD[id]=null;await loadTasks(id);if(sel===id)render();
+})}
+async function planDel(){const id=sel;if(!confirm("Plan taslağı silinsin mi?"))return;await dbw(sb.from("plan_drafts").delete().eq("student_id",id));PD[id]=null;if(sel===id)render()}
 
 /* seri, rozet, odak */
 function streakInfo(){
@@ -110,7 +120,7 @@ setInterval(()=>{if(!FZ)return;if(Date.now()>=FZ.end){const w=FZ.mode==="w";let 
 /* bildirim (web push) */
 const VAPID_PUB="BLxGZLx6y3dW1FClX4OxwHrj1c15zQ5kTn_uWWxSkDOKRKheCIR1M_oCtyvIvryHC6hmnDRsKj1lrACBTmdnK90";let PUSHON=null,PUSHMSG="";
 const b64u=t=>{const b=atob((t+"=".repeat((4-t.length%4)%4)).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from(b,c=>c.charCodeAt(0))};
-async function pushState(){try{if(!("serviceWorker" in navigator)||!("PushManager" in window)||!("Notification" in window)){PUSHON="no";return}const reg=await navigator.serviceWorker.ready;PUSHON=!!(await reg.pushManager.getSubscription())}catch(e){PUSHON="no"}}
+async function pushState(){try{if(!("serviceWorker" in navigator)||!("PushManager" in window)||!("Notification" in window)){PUSHON="no";return}const reg=await Promise.race([navigator.serviceWorker.ready,new Promise((_,no)=>setTimeout(()=>no(new Error("zaman aşımı")),5000))]);PUSHON=!!(await reg.pushManager.getSubscription())}catch(e){PUSHON="no"}}
 async function pushEnable(){
   try{
     const p=await Notification.requestPermission();if(p!=="granted"){PUSHMSG="Bildirim izni verilmedi. Tarayıcı ayarlarından açabilirsin.";render();return}

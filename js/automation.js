@@ -2,7 +2,9 @@
    geciken görevleri yapay zekâyla haftanın kalan günlerine dağıtma ===== */
 let SET={nudge:{on:true,min:60,quiet_from:0,quiet_to:7},wa:{on:false,chat:true,nudge:true}},SETMSG="",WAST=null,NUDGES=null,CMSG="";
 const pad2=n=>String(n).padStart(2,"0");
-async function loadSettings(){try{const {data,error}=await sb.from("app_settings").select("key,value");if(error)throw error;(data||[]).forEach(r=>{if(r.key in SET)SET[r.key]=Object.assign({},SET[r.key],r.value||{})})}catch(e){}}
+async function loadSettings(){try{const {data,error}=await sb.from("app_settings").select("key,value");if(error)throw error;(data||[]).forEach(r=>{if(r.key in SET||r.key==="th")SET[r.key]=Object.assign({},SET[r.key]||{},r.value||{})});
+  // Uyarı eşikleri artık tüm cihazlarda aynı (önceden yalnızca o cihazda saklanıyordu)
+  if(SET.th){Object.assign(C.th,SET.th);saveC()}}catch(e){}}
 async function saveSetting(k){SETMSG="Kaydediliyor…";render();const r=await dbw(sb.from("app_settings").upsert({key:k,value:SET[k],updated_at:new Date().toISOString()}));SETMSG=r&&r.error?"Kaydedilemedi: "+r.error.message:"Kaydedildi ✓";render()}
 async function loadWaStatus(){const r=await callFn("wa-send",{action:"status"});WAST=r&&!r.error?r:{configured:false}}
 async function loadNudges(){try{const {data}=await sb.from("break_nudges").select("student_id,break_start,sent_at,push,wa_status").order("sent_at",{ascending:false}).limit(12);NUDGES=data||[]}catch(e){NUDGES=[]}}

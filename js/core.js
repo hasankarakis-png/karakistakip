@@ -16,13 +16,15 @@ const dayRow=s=>({student_id:ME,day:s.day,state:s,snap:snap(),updated_at:new Dat
 // Gece yarısı geçildiyse dünün oturumunu 00:00'da kapatır, yeni gün için temiz durum kurar (açık ders sürüyorsa devam ettirir).
 function rollover(){
   if(!ME||ROLE!=="student"||S.day===day())return false;
-  const old=S,m=new Date();m.setHours(0,0,0,0);const mid=m.getTime(),oc=old.cur,was=oc&&(old.status==="study"||old.status==="break");
+  const old=S,m=new Date();m.setHours(0,0,0,0);const mid=m.getTime(),oc=old.cur,was=oc&&(old.status==="study"||old.status==="break"),wasBrk=old.status==="break";
   if(oc){const v=Math.max(0,mid-oc.start-oc.brk-(old.status==="break"?mid-oc.bs:0));old.done+=v;old.meth[oc.meth]=(old.meth[oc.meth]||0)+v;old.cur=null;old.status="stopped";old.log.push({t:mid-1,m:"Gece yarısı: oturum otomatik bölündü"})}
   delete old.undo;delete old.rbk;
   const sn=snap();try{localStorage.setItem(KEY+ME+"-"+old.day,JSON.stringify(old))}catch(e){}
   Promise.resolve(sb.from("daily").upsert({student_id:ME,day:old.day,state:old,snap:sn,updated_at:new Date().toISOString()})).then(r=>{if(r&&r.error)setSync("⚠️ "+r.error.message)},()=>setSync("⚠️ Bağlantı yok"));
   S=fresh();
-  if(was){S.cur={start:mid,brk:0,bs:0,subj:oc.subj,meth:oc.meth};S.status="study";S.log.push({t:mid,m:"Yeni gün: derse devam ettim ("+oc.subj+")"})}
+  // Gece yarısını molada geçiren öğrencinin molası yeni günde de mola sayılır (önceden ders sayılıyordu).
+  if(was&&wasBrk){S.cur={start:mid,brk:0,bs:mid,subj:oc.subj,meth:oc.meth};S.status="break";S.log.push({t:mid,m:"Yeni gün: moladayım ("+oc.subj+")"})}
+  else if(was){S.cur={start:mid,brk:0,bs:0,subj:oc.subj,meth:oc.meth};S.status="study";S.log.push({t:mid,m:"Yeni gün: derse devam ettim ("+oc.subj+")"})}
   return true;
 }
 async function flush(){
@@ -48,8 +50,11 @@ const correct=()=>S.qs.reduce((a,q)=>a+q.c,0);
 const log=m=>S.log.push({t:Date.now(),m});
 const LBL={idle:"Henüz başlamadı",awake:"Uyanık, derse hazır",study:"Derste",break:"Molada",stopped:"Çalışmayı noktaladı",closed:"Günü kapattı"};
 const DOT={idle:"",awake:"",study:"study",break:"break",stopped:"",closed:"done"};
+let ACTLAST=0;
 function act(a){
   const n=Date.now();
+  // Aynı yerde çıkan düğmelere çift dokunuş (ör. Uyandım → Derse başla) yanlışlıkla iki işlem yapmasın.
+  if(["wake","start","break","back","stop","close","reopen"].includes(a)){if(n-ACTLAST<500)return;ACTLAST=n}
   if(a==="undo"){undoRun();return}
   if(a==="rbk"){rbkRun();return}
   if(a==="rbkx"){if(confirm("Sıfırlamadan önceki kayıt kalıcı olarak silinsin mi? Bundan sonra geri getirilemez.")){S.rbk=null;save();render()}return}
@@ -182,7 +187,7 @@ function roster(){
   const t=day(),now=Date.now();
   return STU.map(p=>{
     const rs=ROWS.filter(r=>r.student_id===p.id),by=Object.fromEntries(rs.map(r=>[r.day,r])),td=by[t],s=td?td.state:{};
-    const first=rs.length?rs.map(r=>r.day).sort()[0]:t,days=[-6,-5,-4,-3,-2,-1,0].map(dayN).filter(k=>k>=first);
+    const days=[-6,-5,-4,-3,-2,-1,0].map(dayN);
     const cur=s.cur,net=num(s.done)+(cur?(s.status==="break"?num(cur.bs):now)-num(cur.start)-num(cur.brk):0),m=Math.round(Math.max(0,net)/60000);
     const qs=(s.qs||[]).map(q=>({s:String(q.s),n:num(q.n),c:num(q.c),b:num(q.b),k:q.k?String(q.k):""})),qn=qs.reduce((a,q)=>a+q.n,0);
     const hist=days.map(k=>{const r=by[k],a=r&&r.snap?r.snap:{};return k===t&&td?{m,q:qn,prog:s.prog?1:0,mood:num(s.mood),sleep:num(s.sleep)}:{m:num(a.m),q:num(a.q),prog:num(a.prog),mood:num(a.mood),sleep:num(a.sleep)}});
@@ -260,7 +265,8 @@ function rptFacts(x){
 async function rptRun(id){
   const x=roster().find(r=>r.id===id);if(!x||(RPT[id]&&RPT[id].busy))return;
   RPT[id]={busy:true};render();
-  const r=await callFn("weekly-report",{ad:(STU.find(p=>p.id===id)||{}).name||x.n,veri:rptFacts(x)});
+  // Gizlilik: yapay zekâya öğrencinin adı gönderilmez; taslak "öğrencimiz" diye yazılır, koç gerekirse adı ekler.
+  const r=await callFn("weekly-report",{ad:"",veri:rptFacts(x)});
   RPT[id]=r.veli?{res:r}:{err:r.error||"Rapor hazırlanamadı."};render();
 }
 function reportCard(x){

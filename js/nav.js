@@ -125,6 +125,7 @@ const refreshBtn=()=>`<button class="tb-ic" data-nrf="1" aria-label="Verileri ye
 function stuLoad(id){Promise.all([loadHist(id),loadExams(id),loadReport(id),loadTarget(id),loadTasks(id),loadPlan(id),loadContact(id)]).then(()=>{if(sel===id&&!busy())render()})}
 function openStu(id,dt){
   if(!STU.some(p=>p.id===id))return;
+  ADMMSG=null;TGMSG="";PLANMSG="";CMSG="";try{setEx("")}catch(e){}
   sel=id;selDay=null;DTAB=dt||"o";RPMODE=false;PLV=null;MV=false;MSEL=null;
   render();window.scrollTo(0,0);stuLoad(id);
 }
