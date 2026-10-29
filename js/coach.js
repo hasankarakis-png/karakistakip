@@ -54,7 +54,10 @@ function ui(t){
   if(id==="theme2"){document.getElementById("theme").click();setTimeout(render,30);return true}
   if(id==="out2"){logout();return true}
   if(id==="guideok"){try{localStorage.setItem(GK(),"1")}catch(e){}render();return true}
-  if(D.qdel!=null){const i=+D.qdel;if(S.qs[i]){const q=S.qs.splice(i,1)[0];log("Soru kaydı silindi ("+q.s+", "+q.n+")");save();render()}return true}
+  if(D.qdel!=null){const i=+D.qdel;if(S.qs[i]){const q=S.qs.splice(i,1)[0];S.undo={k:"qdel",t:Date.now(),q,i};log("Soru kaydı silindi ("+q.s+", "+q.n+")");save();render();undoToast()}return true}
+  if(id==="rstask"){RSTASK=true;render();return true}
+  if(id==="rstno"){RSTASK=false;render();return true}
+  if(id==="rstok"){resetDay();return true}
   if(D.tgsel){TGSEL[D.sid||ME]=D.tgsel;TGMSG="";render();return true}
   if(D.tgdel){targetDel(D.sid||ME,D.tgdel);return true}
   if(D.rd){ROADSEL[D.sid||ME]=D.rd;render();return true}
@@ -123,7 +126,6 @@ document.addEventListener("click",e=>{
   else if(t.dataset.d){selDay=t.dataset.d===day()?null:t.dataset.d;render();if(selDay&&!DSTATE[sel+"|"+selDay]){const id=sel,d=selDay;loadDay(id,d).then(()=>{if(sel===id&&selDay===d)render()})}}
   else if(t.dataset.i)openStu(t.dataset.i,RPMODE?"d":"o");
   else if(t.id==="addq")addQ();
-  else if(t.id==="reset"){if(confirm("Bugünün verisi silinsin mi?")){S=fresh();save();render()}}
   else if(t.dataset.s){subj=t.dataset.s;render()}
   else if(t.dataset.m){S.mood=+t.dataset.m;log("Gün puanım: "+S.mood+"/5");save();render()}
   else if(t.dataset.a)act(t.dataset.a);

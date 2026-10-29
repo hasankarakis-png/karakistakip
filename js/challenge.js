@@ -124,6 +124,6 @@ function studentView(){
   const body=tab==="g"?tasksTab():tab==="d"?analizTab():tab==="h"?`<h1 class="pg">Profilim</h1>${profileCard()}${goalRoad(ME)}${targetForm(ME,true)}${badgeCard()}${pushCard()}${accountCard()}`:tab==="k"?chatTab():tab==="t"?tercihTab():tab==="c"?konuTab():tab==="y"?yarisTab():tab==="m"?msgTab():todayTab();
   const head=tab==="b"?`<div class="sh"><span class="av">${avIn(ME,NAME)}</span><div><h1>Merhaba, ${first}</h1><p>${(h=>h<5?"İyi geceler":h<12?"Günaydın":h<18?"İyi günler":"İyi akşamlar")(new Date().getHours())} · odaklan ve devam et</p></div><span class="fire" aria-label="${st.cur} gün seri">🔥 ${st.cur}</span></div>`:tab==="g"?`<h1 class="pg">Görevlerim</h1>`:tab==="k"?stHead("Asistan"):tab==="m"?stHead("Koçum"):"";
   const nb=(k,ic,l)=>`<button class="pn" data-tab="${k}" aria-current="${tab===k}" aria-label="${l}">${IC[ic]}<span>${l.replace("Ana sayfa","Bugün")}</span></button>`;
-  return `<div class="stu-main">${head}${body}</div><nav class="pill" aria-label="Öğrenci sekmeleri">${nb("b","home","Ana sayfa")}${nb("g","cal","Görevler")}<button class="fab" id="qaopen" aria-label="Hızlı işlemler">+</button>${nb("d","bars","Analiz")}${nb("h","user","Profil")}</nav>${QA?qaSheet():""}`;
+  return `<div class="stu-main">${head}${body}</div><nav class="pill" aria-label="Öğrenci sekmeleri">${nb("b","home","Ana sayfa")}${nb("g","cal","Görevler")}<button class="fab" id="qaopen" aria-label="Hızlı işlemler">+</button>${nb("d","bars","Analiz")}${nb("h","user","Profil")}</nav>${undoToastHTML()}${QA?qaSheet():""}`;
 }
 

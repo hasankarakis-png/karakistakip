@@ -40,6 +40,6 @@ function profileCard(){
 }
 function accountCard(){
   const dark=document.documentElement.getAttribute("data-theme")!=="light";
-  return `<div class="card"><h2>Hesap</h2><div class="row" style="margin-top:6px"><button class="chip" id="theme2">${dark?"☀ Açık tema":"☾ Koyu tema"}</button><button class="chip" id="out2">Çıkış yap</button></div></div>`;
+  return `<div class="card"><h2>Hesap</h2><div class="row" style="margin-top:6px"><button class="chip" id="theme2">${dark?"☀ Açık tema":"☾ Koyu tema"}</button><button class="chip" id="out2">Çıkış yap</button></div>${resetCard()}</div>`;
 }
 

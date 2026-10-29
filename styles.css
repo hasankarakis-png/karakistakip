@@ -580,3 +580,20 @@ button.kc{text-align:left;font:inherit;color:inherit;cursor:pointer}
 .ch-top em{font-style:normal;font-size:13px;font-weight:600}
 .ch-ov>i{font-style:normal;color:var(--mute);font-size:24px}
 .side-nav .bd:not(.warn){white-space:nowrap}
+/* ===== İkinci şans: geri al, yeniden aç, güvenli sıfırlama ===== */
+.card.undo{display:flex;align-items:center;justify-content:space-between;gap:12px;border-color:var(--acc)}
+.card.undo>div:first-child{display:flex;flex-direction:column;gap:3px;min-width:0}
+.card.undo b{font-size:16px}
+.card.undo small{color:var(--mute);font-size:13px;line-height:1.4}
+.card.undo .btn{padding:11px 16px;flex:none}
+.card.undo.warn{border-color:var(--warn)}
+.undo-acts{display:flex;flex-direction:column;gap:6px;flex:none}
+.undo-acts .chip{min-height:34px;padding:6px 12px;font-size:13px}
+.undo-toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(98px + env(safe-area-inset-bottom));z-index:65;width:min(calc(100% - 32px),480px);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 12px 12px 18px;border-radius:18px;background:#f3f3ee;color:#12160a;font:700 15px var(--fb);box-shadow:0 14px 34px rgba(0,0,0,.45);animation:qaUp .25s ease}
+.undo-toast button{border:0;border-radius:12px;background:#12160a;color:#d9f24a;font:800 14px var(--fb);padding:10px 16px;cursor:pointer;flex:none}
+.qerr{margin:8px 0 0;color:var(--warn);font-size:14px;min-height:0}
+.qerr:empty{display:none}
+.chip.danger{border-color:color-mix(in srgb,var(--warn) 60%,var(--line));color:var(--warn)}
+.btn.danger{background:var(--warn);color:#1a1205}
+@media (max-width:480px){.card.undo{flex-direction:column;align-items:stretch}.undo-acts{flex-direction:row}.undo-acts>*{flex:1}}
+@media (prefers-reduced-motion:reduce){.undo-toast{animation:none}}

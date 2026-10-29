@@ -18,6 +18,7 @@ function rollover(){
   if(!ME||ROLE!=="student"||S.day===day())return false;
   const old=S,m=new Date();m.setHours(0,0,0,0);const mid=m.getTime(),oc=old.cur,was=oc&&(old.status==="study"||old.status==="break");
   if(oc){const v=Math.max(0,mid-oc.start-oc.brk-(old.status==="break"?mid-oc.bs:0));old.done+=v;old.meth[oc.meth]=(old.meth[oc.meth]||0)+v;old.cur=null;old.status="stopped";old.log.push({t:mid-1,m:"Gece yarısı: oturum otomatik bölündü"})}
+  delete old.undo;delete old.rbk;
   const sn=snap();try{localStorage.setItem(KEY+ME+"-"+old.day,JSON.stringify(old))}catch(e){}
   Promise.resolve(sb.from("daily").upsert({student_id:ME,day:old.day,state:old,snap:sn,updated_at:new Date().toISOString()})).then(r=>{if(r&&r.error)setSync("⚠️ "+r.error.message)},()=>setSync("⚠️ Bağlantı yok"));
   S=fresh();
@@ -49,6 +50,13 @@ const LBL={idle:"Henüz başlamadı",awake:"Uyanık, derse hazır",study:"Derste
 const DOT={idle:"",awake:"",study:"study",break:"break",stopped:"",closed:"done"};
 function act(a){
   const n=Date.now();
+  if(a==="undo"){undoRun();return}
+  if(a==="rbk"){rbkRun();return}
+  if(a==="rbkx"){if(confirm("Sıfırlamadan önceki kayıt kalıcı olarak silinsin mi? Bundan sonra geri getirilemez.")){S.rbk=null;save();render()}return}
+  // Yeni bir ders hareketi, kapatma/noktalama geri alma hakkını bitirir (sıfırlama yedeği gün boyu kalır).
+  if(["wake","start","break","back"].includes(a)&&S.undo&&S.undo.k!=="qdel")S.undo=null;
+  const u=a==="stop"||a==="close"?undoMark(a):null;
+  if(a==="reopen"){if(S.status!=="closed")return;S.status="stopped";S.undo=null;log("↩ Günü yeniden açtım")}
   if(a==="wake"){S.status="awake";log("Uyandım")}
   if(a==="start"){S.cur={start:n,brk:0,bs:0,subj,meth};S.status="study";log("Derse başladım: "+subj+" ("+meth+")")}
   if(a==="break"){S.cur.bs=n;S.status="break";log("Mola verdim")}
@@ -56,11 +64,80 @@ function act(a){
   if(a==="stop"){const v=curNet();S.done+=v;S.meth[S.cur.meth]=(S.meth[S.cur.meth]||0)+v;log("Çalışmayı noktaladım ("+short(v)+", "+S.cur.subj+")");BUMP={m:Math.max(1,Math.round(v/60000))};S.cur=null;S.status="stopped"}
   if(a==="prog"){S.prog=!S.prog;log(S.prog?"Programımı bitirdim":"Program işaretini kaldırdım")}
   if(a==="close"){if(S.cur){const v=curNet();S.done+=v;S.meth[S.cur.meth]=(S.meth[S.cur.meth]||0)+v;S.cur=null}S.status="closed";log("Günü kapattım")}
+  if(u){S.undo=u;undoToast()}
   save();render();
 }
+/* ===== İkinci şans =====
+   "Günü kapat", "Çalışmayı noktala" ve soru silme 10 dakika içinde geri alınabilir; kapatılan gün her zaman yeniden açılabilir.
+   "Bugünü sıfırla" öncesi günün kopyası gün boyu saklanır ve "Geri getir" ile sıfırlamadan sonra yapılanlarla birleştirilir.
+   Kopyalar günün kaydında (S.undo, S.rbk) durur ve sunucuya da yazılır; telefon değişse de kaybolmaz. Gece yarısı silinir. */
+const UNDO_WIN=10*60e3,TOAST_MS=12000;
+const UNDO_TXT={close:"Günü kapattın",stop:"Çalışmayı noktaladın",qdel:"Soru kaydını sildin"};
+let RSTASK=false;
+const clone=o=>JSON.parse(JSON.stringify(o));
+const bare=()=>{const c=clone(S);delete c.undo;delete c.rbk;return c};
+function undoMark(k){return {k,t:Date.now(),s:bare()}}
+function undoOf(){const u=S.undo;if(!u||!UNDO_TXT[u.k]||Date.now()-u.t>UNDO_WIN)return null;if(u.s&&u.s.day!==S.day)return null;return u}
+function undoToast(){setTimeout(()=>{if(!busy())render()},TOAST_MS+150)}
+const KEEPF=["mood","sleep","dist","en","str","hard"];
+function undoRun(){
+  const u=undoOf();if(!u){S.undo=null;render();return}
+  const cur=S;
+  if(u.k==="qdel"){S.qs.splice(Math.min(u.i,S.qs.length),0,u.q);S.undo=null;log("↩ Silinen soru kaydı geri alındı ("+u.q.s+", "+u.q.n+" soru)")}
+  else{
+    // Kapatmadan/noktalamadan önceki hâline dön; ders açıksa kaldığı yerden sürer. Sonradan girilen puan ve günlük durum korunur.
+    const b=Object.assign(fresh(),clone(u.s));
+    b.log=b.log.concat(cur.log.slice(u.s.log.length+1));b.qs=cur.qs;b.prog=cur.prog;KEEPF.forEach(k=>{if(cur[k])b[k]=cur[k]});b.rbk=cur.rbk||null;
+    S=b;S.undo=null;log("↩ Geri aldım: "+(u.k==="close"?"Günü kapat":"Çalışmayı noktala"));
+  }
+  save();render();
+}
+// Sıfırlama yedeği + sıfırlamadan sonra yapılanlar = birleşik gün
+function rbkMerge(bk,cur){
+  const b=Object.assign(fresh(),clone(bk.s));
+  if(b.cur){const n=bk.t,c=b.cur,v=Math.max(0,n-c.start-c.brk-(b.status==="break"?n-c.bs:0));b.done+=v;b.meth[c.meth]=(b.meth[c.meth]||0)+v;b.cur=null;if(b.status==="study"||b.status==="break")b.status="stopped"}
+  b.log=b.log.concat(cur.log).sort((x,y)=>x.t-y.t);b.qs=b.qs.concat(cur.qs||[]);b.done+=num(cur.done);
+  Object.entries(cur.meth||{}).forEach(([k,v])=>b.meth[k]=(b.meth[k]||0)+v);
+  if(cur.cur||cur.status!=="idle"){b.cur=cur.cur;b.status=cur.status}
+  b.prog=b.prog||cur.prog;KEEPF.forEach(k=>{if(cur[k])b[k]=cur[k]});
+  delete b.undo;delete b.rbk;return b;
+}
+function rbkRun(){
+  const bk=S.rbk;if(!bk||!bk.s||bk.s.day!==S.day){S.rbk=null;render();return}
+  S=rbkMerge(bk,S);log("↩ Sıfırlanan gün geri getirildi");save();render();window.scrollTo(0,0);
+}
+function resetDay(){
+  const had=S.log.length||S.qs.length||S.done||S.cur;
+  const snap0=S.rbk&&S.rbk.s&&S.rbk.s.day===S.day?rbkMerge(S.rbk,bare()):bare();
+  S=fresh();if(had||S.rbk)S.rbk={t:Date.now(),s:snap0};log("Günü sıfırladım");
+  RSTASK=false;tab="b";save();render();window.scrollTo(0,0);undoToast();
+}
+const lostTxt=s=>{const m=Math.round((num(s.done)+(s.cur?Math.max(0,Date.now()-s.cur.start-s.cur.brk):0))/60000),q=(s.qs||[]).reduce((a,x)=>a+num(x.n),0);return (m?(m>=60?Math.floor(m/60)+" sa "+(m%60)+" dk":m+" dk")+" çalışma":"")+(m&&q?", ":"")+(q?q+" soru":"")+(!m&&!q?(s.log||[]).length+" kayıt":"")};
+function undoCards(){
+  const u=undoOf(),bk=S.rbk&&S.rbk.s&&S.rbk.s.day===S.day?S.rbk:null;let o="";
+  if(u)o+=`<div class="card undo"><div><b>↩ ${UNDO_TXT[u.k]}</b><small>Saat ${hm(u.t)} · 10 dakika içinde geri alabilirsin${u.k!=="qdel"&&u.s.cur?" · ders kaldığı yerden devam eder":""}</small></div><button class="btn" data-a="undo">Geri al</button></div>`;
+  if(bk)o+=`<div class="card undo warn"><div><b>Bugünü sıfırladın (saat ${hm(bk.t)})</b><small>Önceki kayıt (${lostTxt(bk.s)}) saklı. Yanlışlıkla olduysa geri getir; sonradan girdiklerin de korunur.</small></div><div class="undo-acts"><button class="btn" data-a="rbk">↩ Geri getir</button><button class="chip" data-a="rbkx">Kalıcı sil</button></div></div>`;
+  return o;
+}
+function undoToastHTML(){
+  const u=undoOf(),bk=S.rbk;const now=Date.now();
+  if(u&&now-u.t<TOAST_MS)return `<div class="undo-toast" role="status"><span>${UNDO_TXT[u.k]}</span><button data-a="undo">Geri al</button></div>`;
+  if(bk&&now-bk.t<TOAST_MS)return `<div class="undo-toast" role="status"><span>Gün sıfırlandı</span><button data-a="rbk">Geri getir</button></div>`;
+  return "";
+}
+function resetCard(){
+  if(!RSTASK)return `<div class="row" style="margin-top:10px"><button class="chip danger" id="rstask">🗑 Bugünü sıfırla</button></div>`;
+  return `<div class="card undo warn" style="margin:12px 0 0"><div><b>Bugünün kaydı silinecek</b><small>${S.log.length||S.qs.length?lostTxt(S)+" ve bugünün akışı silinir.":"Bugün henüz kayıt yok."} Gün boyunca ana sayfadan “Geri getir” ile geri alabilirsin.</small></div><div class="undo-acts"><button class="btn danger" id="rstok">Evet, sıfırla</button><button class="chip" id="rstno">Vazgeç</button></div></div>`;
+}
 function addQ(){
-  const n=+document.getElementById("qn").value,c=+document.getElementById("qc").value||0,s=document.getElementById("qs").value;
-  if(!n||n<1)return;const b=+document.getElementById("qb").value||0,k=document.getElementById("qk").value.trim().slice(0,40);S.qs.push({s,n,c:Math.min(c,n),b,k});BUMP={q:n};log(n+" soru çözdüm ("+s+(k?", "+k:"")+")");save();render();
+  const g=id=>Math.max(0,Math.floor(+document.getElementById(id).value||0)),n=g("qn"),c=g("qc"),b=g("qb"),s=document.getElementById("qs").value;
+  const err=m=>{const e=document.getElementById("qerr");if(e)e.textContent=m;return false};
+  // Yanlış girişleri kaydetmeden önce yakala
+  if(n<1)return err("Çözdüğün soru sayısını yaz.");
+  if(n>400)return err("Tek seferde en fazla 400 soru girilebilir. Sayıyı kontrol et.");
+  if(c+b>n)return err("Doğru + boş ("+(c+b)+"), çözülen soru sayısından ("+n+") fazla olamaz.");
+  if(n>=150&&!confirm(n+" soru tek kayıtta girilecek. Doğru mu?"))return;
+  const k=document.getElementById("qk").value.trim().slice(0,40);S.qs.push({s,n,c,b,k});BUMP={q:n};log(n+" soru çözdüm ("+s+(k?", "+k:"")+")");save();render();
 }
 function dailyActivityCard(){
   const hist=HIST[ME]||{},today=day();
@@ -79,10 +156,10 @@ function todayTab(){
   const picker=(st==="awake"||st==="stopped")?`<div class="card"><h2>Hangi dersle başlıyorsun?</h2><div class="chips">${SUBJ.map(x=>`<button class="chip" data-s="${x}" aria-pressed="${x===subj}">${x}</button>`).join("")}</div><h2 style="margin-top:14px">Nasıl çalışacaksın?</h2><div class="chips">${METH.map(x=>`<button class="chip" data-me="${x}" aria-pressed="${x===meth}">${x}</button>`).join("")}</div></div>`:"";
   const qa=st!=="idle"&&st!=="closed";
   const solvedT=solved(),acc=solvedT?Math.round(correct()/solvedT*100):0;
-  return `${guideCard()}${live&&curNet()>4*3600e3?`<div class="card" style="border-color:var(--warn)"><p style="margin:0">⏰ Sayaç 4 saatten uzun süredir açık. Çalışmayı bitirdiysen <b>Çalışmayı noktala</b>'ya bas, yoksa süren fazla görünür.</p></div>`:""}
+  return `${undoCards()}${guideCard()}${live&&curNet()>4*3600e3?`<div class="card" style="border-color:var(--warn)"><p style="margin:0">⏰ Sayaç 4 saatten uzun süredir açık. Çalışmayı bitirdiysen <b>Çalışmayı noktala</b>'ya bas, yoksa süren fazla görünür.</p></div>`:""}
   ${quoteCard()}<section class="hero"><div class="st"><span class="dot ${DOT[st]}"></span>${LBL[st]}</div>
   <div class="big" id="clock">${dur(clockMs())}</div><div class="sub" id="clocksub">${clockSub()}</div>
-  ${st!=="closed"?`<div class="acts">${b}</div>`:""}${live?pomoChip():""}</section>
+  ${st!=="closed"?`<div class="acts">${b}</div>`:`<div class="acts"><button class="btn full alt" data-a="reopen">↩ Günü yeniden aç</button></div>`}${live?pomoChip():""}</section>
   ${picker}${overdueCard(ME,false)}${tasksRing()}${countdownCard()}${chHomeCard()}${msgHomeCard()}<button class="card tr" data-tab="c" aria-label="Konu takibini aç"><span class="rg" style="--p:0"><span style="font-size:30px">📚</span></span><span><h2>Konu Takibi</h2><p style="font-size:15px">Bitirdiğin konuları işaretle</p></span></button><button class="card tr" data-tab="t" aria-label="Tercih robotunu aç"><span class="rg" style="--p:0"><span style="font-size:30px">🎓</span></span><span><h2>Tercih Robotu</h2><p style="font-size:15px">Sıranla bölümleri karşılaştır</p></span></button>
   <div class="stats"><div class="stat"><b>${solvedT}</b><span>çözülen soru</span></div><div class="stat"><b>${solvedT?"%"+acc:"–"}</b><span>doğruluk</span></div><div class="stat"><b>${S.prog?"✓":"–"}</b><span>program</span></div></div>
   ${coachForMe()}${streakCard()}${(TK[ME]||[]).some(t=>t.task_date===day())?todayTasks():""}
@@ -90,12 +167,12 @@ function todayTab(){
   <label>Ders<select id="qs">${SUBJ.map(x=>`<option${x===subj?" selected":""}>${x}</option>`).join("")}</select></label>
   <label>Çözülen<input id="qn" type="number" min="1" inputmode="numeric"></label>
   <label>Doğru<input id="qc" type="number" min="0" inputmode="numeric"></label><label>Boş<input id="qb" type="number" min="0" inputmode="numeric"></label><label>Konu<input id="qk" type="text" maxlength="40" style="width:140px"></label>
-  <button class="btn" style="padding:11px 16px" id="addq">Ekle</button></div></div>`:""}
+  <button class="btn" style="padding:11px 16px" id="addq">Ekle</button></div><p id="qerr" class="qerr" role="alert"></p></div>`:""}
   ${qsCard()}
   ${st!=="idle"?dayCard():""}
   ${st!=="idle"?`<div class="card"><h2>Gün sonu</h2><div class="chips">
   <button class="chip" data-a="prog" aria-pressed="${S.prog}">✅ Programımı bitirdim</button>
-  ${st!=="closed"?`<button class="chip" data-a="close">🌙 Günü kapat</button>`:""}</div>
+  ${st!=="closed"?`<button class="chip" data-a="close">🌙 Günü kapat</button>`:`<button class="chip" data-a="reopen">↩ Günü yeniden aç</button>`}</div>
   ${st==="closed"?`<div class="row"><label>Bugün nasıldı?</label><div class="mood">${[1,2,3,4,5].map(i=>`<button class="chip" data-m="${i}" aria-pressed="${S.mood===i}">${i}</button>`).join("")}</div></div>`:""}</div>`:""}
   <div class="card"><h2>Bugünün akışı</h2>${S.log.length?`<ul class="tl">${S.log.slice().reverse().map(l=>`<li><time>${hm(l.t)}</time>${esc(l.m)}</li>`).join("")}</ul>`:`<p class="empty">Güne “Uyandım” butonuyla başla.</p>`}</div>`;
 }
@@ -109,7 +186,7 @@ function roster(){
     const cur=s.cur,net=num(s.done)+(cur?(s.status==="break"?num(cur.bs):now)-num(cur.start)-num(cur.brk):0),m=Math.round(Math.max(0,net)/60000);
     const qs=(s.qs||[]).map(q=>({s:String(q.s),n:num(q.n),c:num(q.c),b:num(q.b),k:q.k?String(q.k):""})),qn=qs.reduce((a,q)=>a+q.n,0);
     const hist=days.map(k=>{const r=by[k],a=r&&r.snap?r.snap:{};return k===t&&td?{m,q:qn,prog:s.prog?1:0,mood:num(s.mood),sleep:num(s.sleep)}:{m:num(a.m),q:num(a.q),prog:num(a.prog),mood:num(a.mood),sleep:num(a.sleep)}});
-    return {id:p.id,n:esc(p.name),st:LBL[s.status]?s.status:"idle",m,q:qn,p:s.prog?1:(cur?.5:0),L:(s.log||[]).map(l=>({t:hm(num(l.t)),m:esc(l.m)})),qs,mood:num(s.mood),sleep:num(s.sleep),dist:num(s.dist),en:num(s.en),str:num(s.str),hard:String(s.hard||""),act:num(td&&td.snap?td.snap.act:0),hist};
+    return {id:p.id,n:esc(p.name),st:LBL[s.status]?s.status:"idle",m,q:qn,p:s.prog?1:(cur?.5:0),L:(s.log||[]).map(l=>({t:hm(num(l.t)),m:esc(l.m)})),qs,mood:num(s.mood),sleep:num(s.sleep),dist:num(s.dist),en:num(s.en),str:num(s.str),hard:String(s.hard||""),act:num(td&&td.snap?td.snap.act:0),hist,rbk:s.rbk&&s.rbk.s&&s.rbk.s.day===t?{t:num(s.rbk.t),txt:lostTxt(s.rbk.s)}:null};
   });
 }
 
