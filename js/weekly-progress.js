@@ -68,7 +68,7 @@
     const html=baseCoachView.apply(this,arguments);
     if(typeof ROLE==="undefined"||ROLE!=="coach"||typeof CPG==="undefined"||CPG!=="o"||(typeof sel!=="undefined"&&sel))return html;
     if(html.includes('id="weekly-progress-card"'))return html;
-    const out=html.replace(/<\\/section>\\s*$/,reportShell()+"</section>");
+    const out=html.replace(/<\/section>\s*$/,reportShell()+"</section>");
     if(out!==html)Promise.resolve().then(()=>load(false));
     return out;
   };
