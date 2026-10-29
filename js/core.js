@@ -186,7 +186,8 @@ function roster(){
     const cur=s.cur,net=num(s.done)+(cur?(s.status==="break"?num(cur.bs):now)-num(cur.start)-num(cur.brk):0),m=Math.round(Math.max(0,net)/60000);
     const qs=(s.qs||[]).map(q=>({s:String(q.s),n:num(q.n),c:num(q.c),b:num(q.b),k:q.k?String(q.k):""})),qn=qs.reduce((a,q)=>a+q.n,0);
     const hist=days.map(k=>{const r=by[k],a=r&&r.snap?r.snap:{};return k===t&&td?{m,q:qn,prog:s.prog?1:0,mood:num(s.mood),sleep:num(s.sleep)}:{m:num(a.m),q:num(a.q),prog:num(a.prog),mood:num(a.mood),sleep:num(a.sleep)}});
-    return {id:p.id,n:esc(p.name),st:LBL[s.status]?s.status:"idle",m,q:qn,p:s.prog?1:(cur?.5:0),L:(s.log||[]).map(l=>({t:hm(num(l.t)),m:esc(l.m)})),qs,mood:num(s.mood),sleep:num(s.sleep),dist:num(s.dist),en:num(s.en),str:num(s.str),hard:String(s.hard||""),act:num(td&&td.snap?td.snap.act:0),hist,rbk:s.rbk&&s.rbk.s&&s.rbk.s.day===t?{t:num(s.rbk.t),txt:lostTxt(s.rbk.s)}:null};
+    const brk=s.status==="break"&&cur&&num(cur.bs)?Math.max(0,Math.round((now-num(cur.bs))/60000)):0;
+    return {id:p.id,n:esc(p.name),st:LBL[s.status]?s.status:"idle",m,q:qn,brk,p:s.prog?1:(cur?.5:0),L:(s.log||[]).map(l=>({t:hm(num(l.t)),m:esc(l.m)})),qs,mood:num(s.mood),sleep:num(s.sleep),dist:num(s.dist),en:num(s.en),str:num(s.str),hard:String(s.hard||""),act:num(td&&td.snap?td.snap.act:0),hist,rbk:s.rbk&&s.rbk.s&&s.rbk.s.day===t?{t:num(s.rbk.t),txt:lostTxt(s.rbk.s)}:null};
   });
 }
 

@@ -122,13 +122,13 @@ const stHead=t=>`<div class="ktbar stb"><button class="ktback" data-navback="1" 
 const refreshBtn=()=>`<button class="tb-ic" data-nrf="1" aria-label="Verileri yenile" title="Yenile">↻</button>`;
 
 /* öğrenci detayını aç (liste, bildirim, mesaj, sınıf analizinden) */
-function stuLoad(id){Promise.all([loadHist(id),loadExams(id),loadReport(id),loadTarget(id),loadTasks(id),loadPlan(id)]).then(()=>{if(sel===id)render()})}
+function stuLoad(id){Promise.all([loadHist(id),loadExams(id),loadReport(id),loadTarget(id),loadTasks(id),loadPlan(id),loadContact(id)]).then(()=>{if(sel===id&&!busy())render()})}
 function openStu(id,dt){
   if(!STU.some(p=>p.id===id))return;
   sel=id;selDay=null;DTAB=dt||"o";RPMODE=false;PLV=null;MV=false;MSEL=null;
   render();window.scrollTo(0,0);stuLoad(id);
 }
-function openMsg(id){MV=true;sel=null;PLV=null;MSEL=id;MERR="";MDRAFT="";render();window.scrollTo(0,0);msgOpen(id)}
+function openMsg(id){MV=true;sel=null;PLV=null;window.scrollTo(0,0);msgOpen(id)}
 
 /* ---- Koç bildirim merkezi ---- */
 function notifData(){
@@ -136,24 +136,25 @@ function notifData(){
   (ODL||[]).forEach(t=>{if(ok(t.student_id))(by[t.student_id]=by[t.student_id]||[]).push(t)});
   const od=Object.entries(by).sort((a,b)=>b[1].length-a[1].length||stuNm(a[0]).localeCompare(stuNm(b[0]),"tr"));
   const un=Object.entries(MU).filter(([id,n])=>n>0&&ok(id)).sort((a,b)=>String((MUL[b[0]]||{}).t||"").localeCompare(String((MUL[a[0]]||{}).t||"")));
-  const fl=roster().map(x=>({id:x.id,f:flags(x.hist)})).filter(o=>o.f.length);
-  return {od,un,fl,n:od.length+un.length+fl.length};
+  const R=roster(),fl=R.map(x=>({id:x.id,f:flags(x.hist)})).filter(o=>o.f.length);
+  const lb=R.filter(x=>x.st==="break"&&x.brk>=num(SET.nudge.min||60)).sort((a,b)=>b.brk-a.brk);
+  return {od,un,fl,lb,n:od.length+un.length+fl.length+lb.length};
 }
 const nameList=(ids,max)=>{const n=ids.map(stuNm);return n.slice(0,max||2).join(", ")+(n.length>(max||2)?" +"+(n.length-(max||2)):"")};
 const NTFX={};
 function notifCard(){
-  const {od,un,fl,n}=notifData();
+  const {od,un,fl,lb,n}=notifData();
   const who=(id,sub,attr)=>`<button class="ntf-who" ${attr}>${stuAv(id)}<span><b>${esc(stuNm(id))}</b><small>${sub}</small></span><i aria-hidden="true">›</i></button>`;
   // Uzun listede her bölüm ilk 4 öğrenciyle başlar; "Tümünü göster" açar. Böylece alttaki kartlar aşağıda kaybolmaz.
   const LIM=4,cut=(k,L)=>NTFX[k]?L:L.slice(0,LIM),more=(k,L)=>L.length>LIM?`<button class="ntf-more" data-ntfx="${k}">${NTFX[k]?"Daha az göster":"Tümünü göster ("+L.length+")"}</button>`:"";
   const sec=(ic,t,c,body)=>c?`<div class="ntf-sec"><div class="ntf-h"><span>${ic} ${t}</span><span class="bd n">${c}</span></div>${body}</div>`:"";
   const odH=cut("od",od).map(([id,L])=>`<div class="ntf-row">${who(id,L.length+" görev gecikti · en eskisi "+fd(L[0].task_date),`data-ngo="${id}" data-ndt="g"`)}
     <ul class="ntf-list">${L.slice(0,3).map(t=>`<li><span>${esc(t.title)}${t.subject?` <em>${esc(t.subject)}</em>`:""}</span><time>${fd(t.task_date)}</time></li>`).join("")}${L.length>3?`<li class="more">+${L.length-3} görev daha</li>`:""}</ul>
-    <div class="ntf-acts"><button class="chip" data-ngo="${id}" data-ndt="g">Görevlerini aç</button><button class="chip" data-nrs="${id}" data-nrd="${day()}">Bugüne al</button><button class="chip" data-nrs="${id}" data-nrd="${dayN(1)}">Yarına kaydır</button></div></div>`).join("")+more("od",od);
+    <div class="ntf-acts"><button class="chip" data-ngo="${id}" data-ndt="g">🤖 Yapay zekâyla dağıt</button><button class="chip" data-nrs="${id}" data-nrd="${day()}">Bugüne al</button><button class="chip" data-nrs="${id}" data-nrd="${dayN(1)}">Yarına kaydır</button></div></div>`).join("")+more("od",od);
   const unH=cut("un",un).map(([id,c])=>{const l=MUL[id]||{};return `<div class="ntf-row">${who(id,c+" okunmamış mesaj"+(l.t?" · "+ago(l.t):""),`data-nmsg="${id}"`)}${l.b?`<p class="ntf-q">“${esc(l.b.length>110?l.b.slice(0,109)+"…":l.b)}”</p>`:""}</div>`}).join("")+more("un",un);
   const flH=cut("fl",fl).map(o=>`<div class="ntf-row">${who(o.id,o.f.map(esc).join(" · "),`data-ngo="${o.id}" data-ndt="a"`)}</div>`).join("")+more("fl",fl);
   return `<div class="card ntf" id="coach-notifs"><div class="ntf-top"><h2>🔔 Bildirimler</h2>${refreshBtn()}</div>
-  ${n?`<p class="empty" style="margin:0 0 4px;font-size:14px">Bir öğrenciye dokun, ilgili sekmesi açılır.</p>`+sec("⏰","Geciken görevler (son 7 gün)",od.length,odH)+sec("💬","Okunmamış mesajlar",un.length,unH)+sec("🚩","Dikkat gereken öğrenciler",fl.length,flH)
+  ${n?`<p class="empty" style="margin:0 0 4px;font-size:14px">Bir öğrenciye dokun, ilgili sekmesi açılır.</p>`+sec("⏰","Geciken görevler (son 7 gün)",od.length,odH)+sec("💬","Okunmamış mesajlar",un.length,unH)+sec("☕","Uzun molada",lb.length,lb.map(x=>`<div class="ntf-row">${who(x.id,x.brk+" dakikadır molada"+(x.brk>=num(SET.nudge.min||60)&&SET.nudge.on!==false?" · 🤖 otomatik hatırlatma gider":""),`data-nmsg="${x.id}"`)}</div>`).join(""))+sec("🚩","Dikkat gereken öğrenciler",fl.length,flH)
   :`<p class="empty" style="margin:0">Şu an bekleyen bildirim yok 🎉 Geciken görev, okunmamış mesaj veya uyarı olduğunda burada öğrenci adıyla görünür.</p>`}</div>`;
 }
 async function odResched(id,date){

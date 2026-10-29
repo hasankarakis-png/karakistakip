@@ -31,6 +31,7 @@ function classCard(){
 function ui(t){
   const D=t.dataset,id=t.id;
   if(navUi(t))return true;
+  if(autoUi(t))return true;
   if(id==="who"||id==="hdrhome"||D.gohome){PLV=null;CPG="o";MV=false;if(ROLE==="coach"){sel=null;selDay=null;render()}else{tab="b";QA=false;render()}window.scrollTo(0,0);return true}
   if(D.tab){tab=D.tab;QA=false;render();window.scrollTo(0,0);return true}
   if(id==="phdel"){phDel();return true}
@@ -63,7 +64,7 @@ function ui(t){
   if(D.rd){ROADSEL[D.sid||ME]=D.rd;render();return true}
   if(D.csv){csvExport(D.csv);return true}
   if(id==="bkadd"){bulkAdd();return true}
-  if(id==="pwa"){const p=document.getElementById("pt");window.open("https://wa.me/?text="+encodeURIComponent(p.value),"_blank","noopener");return true}
+  if(id==="pwa"){const p=document.getElementById("pt"),ph=(CONTACT[sel]||{}).parent_phone||"";window.open("https://wa.me/"+ph+"?text="+encodeURIComponent(p.value),"_blank","noopener");return true}
   if(id==="psh"){const p=document.getElementById("pt");if(navigator.share)navigator.share({text:p.value}).catch(()=>{});else{const c=document.getElementById("cp");if(c)c.click()}return true}
   if((D.pugo||D.puok||D.pucancel||D.putog!=null||D.wk!=null||D.wsel||D.wren||D.plopen||D.plback||D.plpick||D.boost||D.bmadd||D.selfdel)&&puAct(D,id))return true;
   if(D.ant){ANT=D.ant;render();window.scrollTo(0,0);return true}
@@ -71,7 +72,7 @@ function ui(t){
   if(D.rpt){rptRun(D.rpt);return true}
   if(D.rpdf){pdfReport(D.rpdf);return true}
   if(id==='rptcp'){const e=document.getElementById('rpt');if(e&&navigator.clipboard)navigator.clipboard.writeText(e.value);return true}
-  if(id==='rptwa'){const e=document.getElementById('rpt');if(e)window.open('https://wa.me/?text='+encodeURIComponent(e.value),'_blank','noopener');return true}
+  if(id==='rptwa'){const e=document.getElementById('rpt'),ph=(CONTACT[sel]||{}).parent_phone||"";if(e)window.open('https://wa.me/'+ph+'?text='+encodeURIComponent(e.value),'_blank','noopener');return true}
   if(D.rs){reschedule(D.rsid||ME,D.rs);return true}
   if(D.tk){togTask(D.tk);return true}
   if(D.tkdel){delTask(D.tkdel);return true}
@@ -406,7 +407,11 @@ function aiCard(sid){
 
 const setSync=m=>{const e=document.getElementById("sync");if(e)e.textContent=m};
 const dbw=p=>Promise.resolve(p).then(r=>{if(r&&r.error)setSync("⚠️ "+r.error.message);return r},()=>setSync("⚠️ Bağlantı yok"));
-const busy=()=>/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||"");
+// Arka plan yenilemesi (realtime/zamanlayıcı) ekranı yeniden çizerken yazılanı silmesin: odakta bir alan varsa
+// ya da kaydedilmemiş bir form taslağı (not, görev, soru girişi, seçilmiş dosya…) varsa yenileme ertelenir.
+const DRAFTS=["note","gq","gm","tkt","tka","bkt","bka","cht","sname","dad","dnet","qn","qc","qb","qk","exn","cph","cpp","tgn","tgp","tgu","tgb","tgs","bmt","bma","rpt","puwn","exf","puf","chin","cin"];
+const dirty=()=>DRAFTS.some(id=>{const e=document.getElementById(id);if(!e)return false;if(e.type==="file")return !!(e.files&&e.files.length);return e.value!==e.defaultValue});
+const busy=()=>/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||"")||dirty();
 const loginView=msg=>`<div class="lgx"><div class="lgx-bg"><i class="o1"></i><i class="o2"></i><i class="o3"></i><i class="gr"></i></div>
 <section class="lgx-in"><div class="lgx-left"><div class="lgx-brand lg-u1"><span class="lgx-k">K</span><div><b>KARAKIŞ <em>TAKİP</em></b><small>Eğitim &amp; Danışmanlık</small></div></div>
 <h1 class="lg-u2">Çalışmanın her gününü <em>görünür</em> kıl.</h1>

@@ -55,7 +55,7 @@ function coachView(){
   if(CPG==="c")return `<section id="coach-challenges" class="coach-section">${hd("Yarışmalar","Oluştur, duyur; sıralamayı ve sohbeti izle")}${chCoachCard(true)}</section>`;
   if(CPG==="p")return `<section id="coach-plan" class="coach-section">${hd("Program ver","Öğrenciye haftalık plan PDF'i yükle")}${planPickCard(all)}</section>`;
   if(CPG==="a")return `<section id="coach-class" class="coach-section">${hd("Deneme analizi","Sınıfın ortak zayıf konuları")}${classCard()}</section>`;
-  if(CPG==="y")return `<section id="coach-tools" class="coach-section">${hd("Ayarlar","Öğrenci ekleme, yedek ve eşikler")}${addStudentCard()}${backupCard()}${thCard()}</section>`;
+  if(CPG==="y")return `<section id="coach-tools" class="coach-section">${hd("Ayarlar","Otomatik mesajlar, öğrenci ekleme, yedek ve eşikler")}${autoCard()}${addStudentCard()}${backupCard()}${thCard()}</section>`;
   const top=all.slice(0,6),nd=notifData(),odIds=nd.od.map(o=>o[0]),flIds=nd.fl.map(o=>o.id);
   return `<section id="coach-overview" class="coach-section">${hd("Genel bakış",esc(dt),`<button class="cta" data-cp="p"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Program ver</button>`)}<div class="kst">
   <div class="kc"><span>Bugün çalışan</span><b>${work}<em> / ${all.length}</em></b><div class="kbar"><i style="width:${all.length?Math.round(work/all.length*100):0}%"></i></div></div>
@@ -138,7 +138,7 @@ function detailView(){
   ${x.mood?`<div class="card"><h2>Gün puanı</h2><p class="empty" style="margin:0">${x.mood} / 5</p></div>`:""}`:""}
   ${!past&&DTAB==="a"?`<div id="detail-target">${aiCard(x.id)+goalRoad(x.id)+netChartsCard(x.id)+trendCard(x)+coachCards(x,sn)+ktCoachCard(x.id)+targetForm(x.id,false)}</div>`:""}
   ${!past&&DTAB==="g"?`<div id="detail-tasks">${weekGrid(x)+taskCard(x)+planUploadCard(x)}</div>`:""}
-  ${!past&&DTAB==="d"?`${denemeCard(x)+reportCard(x)+parentCard(x)+adminCard(x)}`:""}
+  ${!past&&DTAB==="d"?`${denemeCard(x)+reportCard(x)+parentCard(x)+contactCard(x)+adminCard(x)}`:""}
   ${past||DTAB==="o"?`<div class="card"><h2>Günün akışı</h2>${!past&&x.rbk?`<p class="empty" style="color:var(--warn);margin:0 0 8px;font-size:14px">⚠️ Öğrenci bugün günü sıfırladı (saat ${hm(x.rbk.t)}). Önceki kayıt (${esc(x.rbk.txt)}) saklı; öğrenci ana sayfadaki “Geri getir” ile geri alabilir.</p>`:""}${x.L.length?`<ul class="tl">${x.L.slice().reverse().map(l=>`<li><time>${l.t}</time>${l.m}</li>`).join("")}</ul>`:`<p class="empty">${past?"Bu güne ait hareket kaydı yok.":"Bugün henüz bir hareket yok."}</p>`}</div>`:""}</div>`;
 }
 const SIC={
@@ -169,12 +169,15 @@ function sideNav(){
 function render(){
     phEnsure();
     const app=document.getElementById("app");
+    // Mesaj akışının kaydırma yeri korunur (sonda ise yeni mesaja iner, eskileri okuyorsa yerinde kalır).
+    const t0=document.getElementById("mth"),keep=t0?{end:t0.scrollHeight-t0.scrollTop-t0.clientHeight<90,top:t0.scrollTop,id:ROLE==="coach"?MSEL:ME}:null;
     if(view==="s")app.innerHTML=studentView();
     else{
       const nav=sideNav();
       app.innerHTML=`<div class="dashboard-shell"><button class="sbtog" id="sbtog" aria-label="Menüyü aç${NOTN?", "+NOTN+" bildirim":""}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>${NOTN?'<i class="sbdot"></i>':""}</button><button class="sbov" id="sbov" aria-label="Menüyü kapat"></button>${nav}<div class="dashboard-main">${coachView()}</div></div>`;
     }
     const c=document.getElementById("chat");if(c)c.scrollTop=c.scrollHeight;
+    const t1=document.getElementById("mth");if(t1)t1.scrollTop=keep&&!keep.end&&keep.id===(ROLE==="coach"?MSEL:ME)?keep.top:t1.scrollHeight;
     navSync();
 }
 document.addEventListener("change",e=>{if(e.target.id==="phfile"){const f=e.target.files&&e.target.files[0];e.target.value="";phSet(f);return}if(e.target.id==="hd"){S.hard=e.target.value.slice(0,60);save()}

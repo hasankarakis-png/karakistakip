@@ -48,11 +48,16 @@ async function pullCoach(){
 }
 let rt;
 // Verileri sayfayı yenilemeden çeker. Otomatik çağrıda yazı yazılıyorsa bekler; "↻ Yenile" düğmesi hemen çalıştırır.
+// Telefon uykudan dönünce oturum anahtarının süresi dolmuş olabilir: istekten önce yenile (aksi halde 401 alınır).
+async function authFresh(){try{const {data:{session}}=await sb.auth.getSession();if(session&&session.expires_at&&session.expires_at*1000<Date.now()+90e3)await sb.auth.refreshSession()}catch(e){}}
 async function refreshRun(manual){
+  await authFresh();
   if(!ME||PX||AIBUSY||PLANBUSY||CHATBUSY){if(manual)setSync("Şu an bir işlem sürüyor, birazdan tekrar dene");return}
   try{if(ROLE==="coach"){await pullCoach();await loadOD();await loadUnr();if(MV&&MSEL)await loadMsgs(MSEL);if(sel)await Promise.all([loadHist(sel),loadTasks(sel),loadExams(sel)].concat(manual?[loadTarget(sel),loadReport(sel),loadPlan(sel)]:[]))}else await Promise.all([pullStudent(),loadTasks(ME),loadUnr(),tab==="m"?msgSync():0]);render();setSync("Güncellendi "+hm(Date.now()))}catch(e){setSync("⚠️ Yenilenemedi, bağlantını kontrol et")}
 }
-const refresh=()=>{clearTimeout(rt);rt=setTimeout(()=>{if(busy())return;refreshRun(false)},2500)};
+// Yazı yazılırken ya da kaydedilmemiş form varken yenileme atlanmaz, ertelenir (sonra yeniden denenir).
+const refresh=()=>{clearTimeout(rt);rt=setTimeout(()=>{if(busy()){refresh();return}refreshRun(false)},2500)};
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&ME)authFresh().then(refresh)});
 async function start(){
   const app=document.getElementById("app");
   const {data:{session}}=await sb.auth.getSession();
@@ -63,10 +68,17 @@ async function start(){
   if(!p){await sb.auth.signOut();ME=null;showLogin("Profil bulunamadı, koçuna haber ver.");return}
   NAME=p.name;ROLE=p.role;view=ROLE==="coach"?"c":"s";
   document.getElementById("who").textContent=NAME+" · ";document.getElementById("out").hidden=false;document.body.classList.toggle("stu",ROLE==="student");document.body.classList.toggle("coach",ROLE==="coach");if(ROLE==="student")setTimeout(()=>{try{tcInit()}catch(e){}},4500);
-  if(ROLE==="coach"){await pullCoach();await loadOD();await loadUnr();["daily","goals","notes","exam_results","weekly_tasks","messages"].reduce((ch,t)=>ch.on("postgres_changes",{event:"*",schema:"public",table:t},refresh),sb.channel("koc")).subscribe();setInterval(refresh,60000)}
-  else{await loadStudent();await loadUnr();try{sb.channel("m"+ME).on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:"student_id=eq."+ME},refresh).subscribe()}catch(e){}setInterval(refresh,45000);setInterval(()=>{if(rollover()){save();render()}},30000);pushState().then(()=>{if(tab==='h')render()})}
-  navInit();render();
+  if(ROLE==="coach"){await pullCoach();await loadOD();await Promise.all([loadUnr(),loadSettings(),loadWaStatus()]);["daily","goals","notes","exam_results","weekly_tasks"].reduce((ch,t)=>ch.on("postgres_changes",{event:"*",schema:"public",table:t},refresh),sb.channel("koc")).subscribe();
+    // Mesajlar anında işlenir (yazılan taslak silinmeden); sayaçlar ayrıca periyodik yenilemede güncellenir.
+    try{sb.channel("kocmsg").on("postgres_changes",{event:"*",schema:"public",table:"messages"},msgLive).subscribe()}catch(e){}
+    setInterval(refresh,60000)}
+  else{await loadStudent();await loadUnr();try{sb.channel("m"+ME).on("postgres_changes",{event:"*",schema:"public",table:"messages",filter:"student_id=eq."+ME},msgLive).subscribe()}catch(e){}setInterval(refresh,45000);setInterval(()=>{if(rollover()){save();render()}},30000);pushState().then(()=>{if(tab==='h')render()})}
+  navInit();
+  // Bildirime dokunulunca (#mesaj) öğrenci doğrudan Koçum sohbetinde açılır.
+  if(ROLE==="student"&&/^#mesaj/.test(location.hash)){tab="m";try{history.replaceState(history.state,"",location.pathname+location.search)}catch(e){}}
+  render();
 }
+if("serviceWorker" in navigator)navigator.serviceWorker.addEventListener("message",e=>{const u=e.data&&e.data.go;if(u&&/#mesaj/.test(u)&&ROLE==="student"){tab="m";QA=false;render();window.scrollTo(0,0)}});
 document.addEventListener("input",e=>{if(e.target.dataset&&e.target.dataset.rx!=null||e.target.id==="ext")recalcExam()});
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="lp")doLogin();if(e.key==="Enter"&&e.target.id==="cin")aiChatSend()});
 (function(){
