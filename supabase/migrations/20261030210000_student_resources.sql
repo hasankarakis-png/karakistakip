@@ -16,11 +16,8 @@ create index if not exists student_resources_student_created_idx
 alter table public.student_resources enable row level security;
 drop policy if exists student_resources_own_all on public.student_resources;
 drop policy if exists student_resources_coach_all on public.student_resources;
-create policy student_resources_own_all on public.student_resources
+drop policy if exists student_resources_access_all on public.student_resources;
+create policy student_resources_access_all on public.student_resources
   for all to authenticated
-  using (student_id = (select auth.uid()))
-  with check (student_id = (select auth.uid()));
-create policy student_resources_coach_all on public.student_resources
-  for all to authenticated
-  using ((select is_coach()))
-  with check ((select is_coach()));
+  using (student_id = (select auth.uid()) or (select is_coach()))
+  with check (student_id = (select auth.uid()) or (select is_coach()));
