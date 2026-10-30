@@ -108,7 +108,7 @@
     const key=String(id),L=CEX.meetings[key];
     if(L===undefined){CEX.meetings[key]=null;sb.from("meetings").select("id,student_id,met_on,who,summary,decisions,created_at").eq("student_id",id).order("met_on",{ascending:false}).limit(8).then(r=>{CEX.meetings[key]=r.error?[]:(r.data||[]);render()});return '<details class="ce-panel"><summary><span><b>Koç görüşme günlüğü</b><small>Görüşmeler ve takip kararları</small></span><em>Yükleniyor…</em></summary></details>'}
     return '<details class="ce-panel ce-meetings"><summary><span><b>Görüşme ve takip ajandası</b><small>'+L.length+' kayıt · kararları ve sonraki adımları izle</small></span><em>Görüşme ekle</em></summary>'+
-      '<form class="ce-meeting-form" data-ce-meeting-form="1"><div class="ce-form-grid"><label>Tarih <input id="ce-meet-date" type="date" value="'+todayCE()+'" required></label><label>Katılım <select id="ce-meet-who"><option>öğrenci</option><option>veli</option><option>öğrenci+veli</option></select></label></div><label>Görüşme özeti <textarea id="ce-meet-summary" maxlength="2000" rows="3" required placeholder="Bu görüşmede neler konuşuldu?"></textarea></label><label>Kararlar / sonraki adım <textarea id="ce-meet-decisions" maxlength="1000" rows="2" placeholder="Örn. cuma günü deneme analizi yapılacak."></textarea></label><button class="ce-primary" type="submit">Görüşmeyi kaydet</button></form>'+
+      '<button type="button" class="ce-secondary" data-ce-prep="1">AI ile görüşmeye hazırlan</button><form class="ce-meeting-form" data-ce-meeting-form="1"><div class="ce-form-grid"><label>Tarih <input id="ce-meet-date" type="date" value="'+todayCE()+'" required></label><label>Katılım <select id="ce-meet-who"><option>öğrenci</option><option>veli</option><option>öğrenci+veli</option></select></label></div><label>Görüşme özeti <textarea id="ce-meet-summary" maxlength="2000" rows="3" required placeholder="Bu görüşmede neler konuşuldu?"></textarea></label><label>Kararlar / sonraki adım <textarea id="ce-meet-decisions" maxlength="1000" rows="2" placeholder="Örn. cuma günü deneme analizi yapılacak."></textarea></label><button class="ce-primary" type="submit">Görüşmeyi kaydet</button></form>'+
       (L.length?'<div class="ce-meeting-list">'+L.map(m=>'<article><div class="ce-meeting-meta"><b>'+escCE(m.met_on)+'</b><span>'+escCE(m.who)+'</span></div><p>'+escCE(m.summary)+'</p>'+(m.decisions?'<small><b>Sonraki adım:</b> '+escCE(m.decisions)+'</small>':'')+'</article>').join('')+'</div>':'<div class="ce-empty">Henüz görüşme kaydı yok.</div>')+'</details>';
   }
   async function saveMeeting(id){
@@ -139,6 +139,7 @@
   function ceUi(t){
     const d=t&&t.dataset||{};
     if(d.ceSaveCheckin!==undefined){addCheckin();return true}
+    if(d.cePrep!==undefined){if(typeof rptRun==="function"&&sel)rptRun(sel);else alert("AI görüşme özeti şu anda kullanılamıyor.");return true}
     if(d.ceResourceStep){updateResource(d.ceResourceStep,d.ceResourceNext);return true}
     if(d.ceResourceDel){deleteResource(d.ceResourceDel);return true}
     if(d.ceFocusStart!==undefined){
