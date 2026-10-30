@@ -1,0 +1,43 @@
+/* Koç toplu analiz ve AI görev dağıtımı · mevcut açık/lacivert-altın tema */
+.ci-panel{margin:18px 0;padding:clamp(16px,3vw,24px);border:1px solid var(--line);border-radius:22px;background:var(--card);box-shadow:0 12px 30px rgba(8,15,35,.05);color:var(--ink)}
+.ci-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:18px}
+.ci-eyebrow{margin:0 0 5px;color:var(--acc);font-size:10px;letter-spacing:.14em;font-weight:900}
+.ci-head h2{margin:0;font-size:clamp(20px,3vw,25px);letter-spacing:-.035em}
+.ci-sub{margin:6px 0 0;color:var(--mute);font-size:13px;line-height:1.55;max-width:620px}
+.ci-mark{width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:14px;background:var(--goldsoft);color:var(--acc)}
+.ci-mark svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round}
+.ci-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-bottom:22px}
+.ci-stat{display:flex;flex-direction:column;gap:3px;min-width:0;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--cream)}
+.ci-stat span{font-size:11px;color:var(--mute);font-weight:700}
+.ci-stat b{font-size:25px;line-height:1.2;letter-spacing:-.04em}
+.ci-stat small{font-size:10px;color:var(--mute);line-height:1.4}
+.ci-stat.is-warn b{color:var(--warn)}
+.ci-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.ci-toolbar h3{margin:0;font-size:16px}
+.ci-toolbar p{margin:4px 0 0;font-size:12px;color:var(--mute)}
+.ci-actions{display:flex;gap:8px;flex-wrap:wrap}
+.ci-btn{appearance:none;border:1px solid var(--line);border-radius:11px;padding:10px 13px;font:inherit;font-size:12px;font-weight:800;cursor:pointer;transition:transform .15s ease,opacity .15s ease}
+.ci-btn:hover:not(:disabled){transform:translateY(-1px)}
+.ci-btn:disabled{opacity:.48;cursor:not-allowed}
+.ci-btn-primary{background:var(--ink);border-color:var(--ink);color:var(--card)}
+.ci-btn-quiet{background:var(--cream);color:var(--ink)}
+.ci-list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:15px;overflow:hidden}
+.ci-row{display:flex;align-items:center;gap:12px;padding:12px 13px;border-bottom:1px solid var(--line);cursor:pointer;min-width:0}
+.ci-row:last-child{border-bottom:0}
+.ci-row:hover{background:color-mix(in srgb,var(--cream) 65%,transparent)}
+.ci-row input{width:17px;height:17px;accent-color:var(--acc);flex:none}
+.ci-person{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.ci-person b{font-size:13px;overflow-wrap:anywhere}
+.ci-person small{font-size:11px;color:var(--mute);line-height:1.45}
+.ci-row-end{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.ci-status{font-style:normal;font-size:10px;font-weight:800;padding:5px 8px;border-radius:99px;background:var(--goldsoft);color:var(--acc);white-space:nowrap}
+.ci-status.is-done{background:color-mix(in srgb,var(--ok) 13%,var(--card));color:var(--ok)}
+.ci-status.is-error{background:color-mix(in srgb,var(--warn) 12%,var(--card));color:var(--warn)}
+.ci-undo{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:8px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer}
+.ci-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding-top:14px}
+.ci-footer>span{font-size:11px;color:var(--mute)}
+.ci-message{margin:10px 0 0;padding:10px 12px;border-radius:10px;background:var(--cream);font-size:12px;line-height:1.5}
+.ci-note{margin:12px 0 0;color:var(--mute);font-size:10px;line-height:1.55}
+.ci-empty{display:flex;flex-direction:column;gap:4px;padding:18px;border:1px dashed var(--line);border-radius:13px}
+.ci-empty b{font-size:13px}.ci-empty span{font-size:12px;color:var(--mute)}
+@media(max-width:650px){.ci-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.ci-toolbar{align-items:stretch}.ci-actions{width:100%}.ci-actions .ci-btn{flex:1}.ci-row{align-items:flex-start;padding:11px 9px;gap:9px}.ci-row-end{flex-direction:column;align-items:flex-end;gap:5px}.ci-footer{align-items:stretch}.ci-footer .ci-btn{width:100%}.ci-head h2{font-size:20px}}
