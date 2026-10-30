@@ -91,7 +91,7 @@
       }catch(e){fail++;}
       CI.message=(i+1)+" / "+rows.length+" öğrenci işlendi";render();
     }
-    CI.busy=false;CI.message="Toplu işlem tamamlandı: "+ok+" başarılı"+(fail+", "+fail+" öğrenci için kontrol gerekiyor":".");
+    CI.busy=false;CI.message="Toplu işlem tamamlandı: "+ok+" başarılı"+(fail?", "+fail+" öğrenci için kontrol gerekiyor":".");
     try{await pullCoach()}catch(e){}
     render();
   }
@@ -105,4 +105,5 @@
     return false;
   }
   ui=function(t){if(ciUi(t))return true;return previousUi.apply(this,arguments);};
+  document.addEventListener("change",function(e){const t=e.target;if(!t||!t.dataset||t.dataset.ciStudent===undefined)return;const id=String(t.dataset.ciStudent);if(t.checked)CI.selected.add(id);else CI.selected.delete(id);CI.message="";render();});
 })();
