@@ -62,7 +62,7 @@ Gemini modeli: fonksiyonlar çalışan en yeni "flash-lite/flash" modeli kendisi
 Cron ve tetikleyiciler `x-cron-secret` (public.app_secrets) kullanır. Dağıtım: Supabase MCP `deploy_edge_function` (verify_jwt=false; fonksiyon kendi doğrular).
 
 ## Şema dosyaları (sırayla uygulanmış)
-schema.sql, schema-ai.sql, schema-msg.sql, schema-resched.sql, schema-challenge.sql, schema-topics.sql, schema-nudge-wa.sql (v3.4), schema-hardening.sql (v3.5), schema-profile.sql (v3.7: student_profile, push_coverage, ders adı düzeltmesi), schema-v38.sql (v3.8: meetings, plan_templates, wrong_book, challenge_prefs, consents, parent_links, leads, packages, notes.private, student_profile.tags, MEBİ deneme haftaları, challenge_board gizlilik, parent_view), schema-v39.sql (v3.9: pin_attempts, pin_check — yalnızca service_role çağrısında sonuç döner).
+schema.sql, schema-ai.sql, schema-msg.sql, schema-resched.sql, schema-challenge.sql, schema-topics.sql, schema-nudge-wa.sql (v3.4), schema-hardening.sql (v3.5), schema-profile.sql (v3.7: student_profile, push_coverage, ders adı düzeltmesi), schema-v38.sql (v3.8: meetings, plan_templates, wrong_book, challenge_prefs, consents, parent_links, leads, packages, notes.private, student_profile.tags, MEBİ deneme haftaları, challenge_board gizlilik, parent_view), schema-v39.sql (v3.9: pin_attempts, pin_check — yalnızca service_role çalıştırabilir, ayrıca gövdede rol kontrolü).
 Canlı şema repodan ileride olabilir (bkz. Drive raporu); emin değilsen canlıdan oku.
 
 ## Test
@@ -71,5 +71,5 @@ Canlı şema repodan ileride olabilir (bkz. Drive raporu); emin değilsen canlı
 Yalnızca değiştirdiğin alanın testini çalıştır.
 
 ## Açık işler
-Raporlar: Drive "Karakış Takip – Tarama Raporu ve Yol Haritası (29 Ekim 2026)", Claude Docs "Karakış Takip — Eksikler ve Geliştirme Raporu" (30 Ekim). 1., 2. ve 3. aşama yayında (v3.7–v3.8); v3.9: öğrenci şifre değiştirme, grafikli haftalık veli PDF.
+Raporlar: Drive "Karakış Takip – Tarama Raporu ve Yol Haritası (29 Ekim 2026)", Claude Docs "Karakış Takip — Eksikler ve Geliştirme Raporu" (30 Ekim; "Güncel durum" bölümünde grafikler ve kalan 16 işin tablosu, grafikler canlı veriden elle güncellenir). 1., 2. ve 3. aşama yayında (v3.7–v3.8); v3.9: öğrenci şifre değiştirme, grafikli haftalık veli PDF.
 Kalanlar: KVKK metninin avukatça incelenmesi; isteğe bağlı anon revoke (schema-v38.sql sonu); WhatsApp Business API bağlantısı; yapay zekâ ücretsiz yedeklerinin kapatılması kararı; "kaç net lazım" hesabı (ÖSYM katsayıları yıllık değiştiği için yapılmadı; hedef bölüm ve hedef net exam_targets'ta var); koç panelinde canlı güncellemede yalnızca değişen öğrencinin yenilenmesi; yayın öncesi otomatik test (GitHub Actions).

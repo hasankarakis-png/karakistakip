@@ -31,5 +31,6 @@ begin
 end;
 $$;
 
--- İsteğe bağlı (onay ekranı çıkabilir): fonksiyonun çalıştırma yetkisini yalnızca sunucuya bırak.
--- revoke execute on function public.pin_check(uuid, text) from public, anon, authenticated;
+-- Çalıştırma yetkisi yalnızca sunucuda (30 Ekim 2026'da canlıya uygulandı).
+revoke execute on function public.pin_check(uuid, text) from public, anon, authenticated;
+grant execute on function public.pin_check(uuid, text) to service_role;
