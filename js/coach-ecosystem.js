@@ -49,6 +49,11 @@
   function interventionCard(){
     if(typeof ROLE==="undefined"||ROLE!=="coach"||typeof CPG==="undefined"||CPG!=="o"||(typeof sel!=="undefined"&&sel))return "";
     let students=[];try{students=(typeof roster==="function"?roster():[])}catch(e){}
+    const tasks=typeof TKALL!=="undefined"&&Array.isArray(TKALL)?TKALL:[];
+    const doneTasks=tasks.filter(t=>t.done).length;
+    const completion=tasks.length?Math.round(doneTasks/tasks.length*100):null;
+    const checked=students.filter(x=>getRecentCheckin(x.id)).length;
+    const statsHtml='<div class="ce-overview-stats"><div><small>Öğrenci</small><b>'+students.length+'</b></div><div><small>Haftalık görev</small><b>'+(completion==null?"–":"%"+completion)+'</b></div><div><small>Check-in yanıtı</small><b>'+checked+' / '+students.length+'</b></div></div>';
     const items=students.map(x=>{
       let late=[];try{late=overdue(x.id)||[]}catch(e){}
       let flagsNow=[];try{flagsNow=flags(x.hist||[])||[]}catch(e){}
@@ -56,8 +61,8 @@
       const score=late.length*3+flagsNow.length*2+(checkin&&Number(checkin.fit)<=2?3:0)+(checkin&&checkin.reason?1:0);
       return {id:x.id,name:safeName(x.id),late:late.length,flags:flagsNow,checkin,score,recs:recommendation({late:late.length,flags:flagsNow,checkin})};
     }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).slice(0,6);
-    return '<section class="ce-panel ce-interventions"><div class="ce-heading"><div><p class="ce-eyebrow">KARAKIŞ · AKILLI MÜDAHALE</p><h2>Öğrenciye göre sonraki adım</h2><p>Uyarılar tanı değildir; koçun değerlendirmesi için karar desteğidir.</p></div><span class="ce-icon" aria-hidden="true">✦</span></div>'+
-      (items.length?'<div class="ce-intervention-list">'+items.map(x=>'<article class="ce-intervention"><div class="ce-personline"><b>'+escCE(x.name)+'</b><span>'+x.late+' geciken görev · '+x.flags.length+' uyarı'+(x.checkin&&x.checkin.reason?' · check-in yanıtı var':'')+'</span></div><ul>'+x.recs.map(r=>'<li>'+escCE(r)+'</li>').join('')+'</ul><button class="ce-secondary" data-i="'+escCE(x.id)+'">Öğrenciyi aç <span aria-hidden="true">→</span></button></article>').join('')+'</div>':'<div class="ce-empty">Şu anda belirgin bir müdahale sinyali yok. Yeni kayıtlar geldikçe bu alan güncellenir.</div>')+
+    return '<section class="ce-panel ce-interventions"><div class="ce-heading"><div><p class="ce-eyebrow">KARAKIŞ · AKILLI MÜDAHALE</p><h2>Öğrenciye göre sonraki adım</h2><p>Uyarılar tanı değildir; koçun değerlendirmesi için karar desteğidir.</p></div><span class="ce-icon" aria-hidden="true">✦</span></div>'+statsHtml+
+      (items.length?'<div class="ce-intervention-list">'+items.map(x=>'<article class="ce-intervention"><div class="ce-personline"><b>'+escCE(x.name)+'</b><span>'+x.late+' geciken görev · '+x.flags.length+' uyarı'+(x.checkin&&x.checkin.reason?' · check-in yanıtı var':'')+'</span></div><ul>'+x.recs.map(r=>'<li>'+escCE(r)+'</li>').join('')+'</ul>'+(x.checkin&&x.checkin.support?'<p class="ce-student-note"><b>Öğrencinin destek isteği:</b> '+escCE(x.checkin.support)+'</p>':'')+'<button class="ce-secondary" data-i="'+escCE(x.id)+'">Öğrenciyi aç <span aria-hidden="true">→</span></button></article>').join('')+'</div>':'<div class="ce-empty">Şu anda belirgin bir müdahale sinyali yok. Yeni kayıtlar geldikçe bu alan güncellenir.</div>')+
       '<p class="ce-help">Öneriler yalnızca görünen çalışma ve görev verilerine dayanır. Psikolojik tanı veya otomatik öğrenci puanlaması yapılmaz.</p></section>';
   }
   async function loadResources(id){
