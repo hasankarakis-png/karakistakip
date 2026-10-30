@@ -1,0 +1,49 @@
+/* Karakış Takip · koçluk ekosistemi: mevcut kart/renk tokenlarıyla uyumlu */
+.ce-panel{margin:14px 0;padding:16px;border:1px solid var(--line);border-radius:18px;background:var(--card);color:var(--ink);box-shadow:0 8px 24px rgba(8,15,35,.035)}
+.ce-panel summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;list-style:none}
+.ce-panel summary::-webkit-details-marker{display:none}
+.ce-panel summary>span{display:flex;flex-direction:column;gap:4px;min-width:0}
+.ce-panel summary b{font-size:15px;letter-spacing:-.02em}
+.ce-panel summary small,.ce-help{font-size:11px;color:var(--mute);line-height:1.5}
+.ce-panel summary em{font-style:normal;font-size:10px;font-weight:800;color:var(--acc);background:var(--goldsoft);border-radius:99px;padding:6px 9px;white-space:nowrap}
+.ce-panel[open] summary{margin-bottom:14px}
+.ce-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:14px}
+.ce-heading h2{font-size:21px;letter-spacing:-.035em;margin:0}
+.ce-heading p:not(.ce-eyebrow){font-size:12px;color:var(--mute);line-height:1.5;margin:5px 0 0;max-width:620px}
+.ce-eyebrow{font-size:10px;letter-spacing:.14em;font-weight:900;color:var(--acc);margin:0 0 5px}
+.ce-icon{width:40px;height:40px;border-radius:13px;background:var(--goldsoft);color:var(--acc);display:grid;place-items:center;flex:none}
+.ce-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}
+.ce-form-grid label,.ce-resource-form label,.ce-meeting-form label,.ce-focus-controls label{display:flex;flex-direction:column;gap:6px;font-size:11px;font-weight:800;color:var(--mute);min-width:0}
+.ce-panel input,.ce-panel select,.ce-panel textarea{width:100%;min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--cream);color:var(--ink);font:inherit;font-size:13px;padding:10px;box-sizing:border-box}
+.ce-panel textarea{resize:vertical;line-height:1.5}
+.ce-actions,.ce-focus-controls{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:12px}
+.ce-primary,.ce-secondary{appearance:none;border:1px solid var(--line);border-radius:10px;padding:10px 13px;font:inherit;font-size:11px;font-weight:800;cursor:pointer}
+.ce-primary{background:var(--ink);border-color:var(--ink);color:var(--card)}
+.ce-secondary{background:var(--cream);color:var(--ink)}
+.ce-intervention-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.ce-intervention{border:1px solid var(--line);border-radius:13px;padding:13px;min-width:0}
+.ce-personline{display:flex;flex-direction:column;gap:4px}
+.ce-personline b{font-size:13px}
+.ce-personline span{font-size:10px;color:var(--mute)}
+.ce-intervention ul{padding-left:17px;margin:11px 0;font-size:12px;line-height:1.55}
+.ce-intervention li+li{margin-top:5px}
+.ce-empty{border:1px dashed var(--line);border-radius:12px;padding:16px;color:var(--mute);font-size:12px;line-height:1.5}
+.ce-resource-list,.ce-meeting-list{display:flex;flex-direction:column;gap:9px;margin:12px 0}
+.ce-resource,.ce-meeting-list article{border:1px solid var(--line);border-radius:12px;padding:12px}
+.ce-resource>div:first-child{display:flex;flex-direction:column;gap:4px}
+.ce-resource b,.ce-meeting-list b{font-size:12px}
+.ce-resource small,.ce-meeting-list small{font-size:10px;color:var(--mute);line-height:1.5}
+.ce-progress{margin:10px 0}
+.ce-progress>span{font-size:10px;color:var(--mute)}
+.ce-progress>div{height:5px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:5px}
+.ce-progress i{display:block;height:100%;border-radius:99px;background:var(--acc)}
+.ce-resource-actions{display:flex;gap:7px;flex-wrap:wrap}
+.ce-resource-form,.ce-meeting-form{border-top:1px solid var(--line);padding-top:13px;margin-top:14px}
+.ce-resource-form>label,.ce-meeting-form>label{margin:10px 0}
+.ce-meeting-meta{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.ce-meeting-meta span{font-size:10px;color:var(--acc);font-weight:800}
+.ce-meeting-list p{font-size:12px;line-height:1.5;margin:8px 0}
+.ce-focus-controls label{width:120px}
+.ce-focus-timer{font-size:32px;letter-spacing:-.05em;font-weight:900;margin-top:14px;font-variant-numeric:tabular-nums}
+.ce-error{font-size:12px;color:var(--warn);line-height:1.5}
+@media(max-width:650px){.ce-panel{padding:13px;border-radius:15px}.ce-form-grid,.ce-intervention-list{grid-template-columns:1fr}.ce-heading h2{font-size:19px}.ce-actions>.ce-primary{width:100%}.ce-intervention-list{gap:8px}.ce-panel summary b{font-size:14px}}
