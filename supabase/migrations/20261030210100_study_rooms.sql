@@ -11,6 +11,7 @@ create table if not exists public.study_rooms (
   check (ends_at > starts_at and ends_at <= starts_at + interval '61 minutes')
 );
 create index if not exists study_rooms_active_ends_idx on public.study_rooms(active, ends_at);
+create index if not exists study_rooms_created_by_idx on public.study_rooms(created_by);
 create table if not exists public.study_room_members (
   room_id bigint not null references public.study_rooms(id) on delete cascade,
   student_id uuid not null references public.profiles(id) on delete cascade,
