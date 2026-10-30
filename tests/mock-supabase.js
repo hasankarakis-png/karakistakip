@@ -57,7 +57,7 @@
   };
   const ch={on(){return ch},subscribe(){return ch}};
   window.supabase={createClient(){return {
-    auth:{getSession:async()=>({data:{session:{user:{id:ME},access_token:"x"}}}),signOut:async()=>({}),signInWithPassword:async()=>({error:null})},
+    auth:{getSession:async()=>(window.__NOSESS?{data:{session:null}}:{data:{session:{user:{id:ME,email:(ROLE==="coach"?"hasan":"alic")+"@takip.karakis.app"},access_token:"x"}}}),signOut:async(o)=>{window.__CALLS&&window.__CALLS.push("signOut:"+JSON.stringify(o||{}));return {}},signInWithPassword:async()=>({error:null})},
     from:t=>new Q(t),
     rpc:async(n,a)=>{window.__CALLS.push("rpc:"+n+":"+JSON.stringify(a));
       if(n==="task_reschedule"){let c=0;FX.weekly_tasks.forEach(t=>{if(a.p_ids.includes(t.id)){t.task_date=a.p_date;c++}});return {data:c,error:null}}

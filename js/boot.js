@@ -91,7 +91,7 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 async function start(){
   const app=document.getElementById("app");
   const {data:{session}}=await sb.auth.getSession();
-  if(!session){showLogin();return}
+  if(!session){showLogin(typeof pwAfterMsg==="function"?pwAfterMsg():undefined);return}
   ME=session.user.id;
   let {data:p,error:pe}=await sb.from("profiles").select("name,role").eq("id",ME).maybeSingle();
   // Bağlantı yoksa öğrenci, cihazdaki son bilgilerle çevrimdışı devam edebilir (kayıtlar bağlantı gelince gönderilir).

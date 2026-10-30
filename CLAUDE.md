@@ -30,6 +30,8 @@ Hasan Karakış'ın (Karakış Eğitim & Danışmanlık, Diyarbakır) ~18 YKS/LG
 | js/profile.js | öğrenci profili (`student_profile`: YKS/LGS, alan, sınıf, okul, hedef), `subjApply()` ders listesi, LGS tarihi (`exam_calendar`), `push_coverage` |
 | js/coach-plus.js | koç: görüşme günlüğü (`meetings`, karar → görev), gruplar + toplu duyuru, tutarlılık puanı `tScore` + `morningBlock` (sabah özeti), plan araçları (geçen haftayı kopyala, `plan_templates`, tekrar eden görev), deneme takvimi + kim girmedi (`exam_calendar` scope='deneme'), paket (`packages`), KVKK izinleri (`consents`) + veli bağlantısı (`parent_links`), ön görüşme başvuruları (`leads`) |
 | js/student-plus.js | öğrenci: yanlış defteri (sekme `w`, `wrong_book`, 3/14/30 gün tekrar), haftalık karne, ana sayfa kartları `weekHomeCards`, yarışma ayarları (`challenge_prefs`), mesajda çalışma saati bilgisi; koç için `wbCoachCard` |
+| js/account.js | öğrenci Profilim → Hesap: "Şifreni değiştir" ekranı (`PWS`, `pwRule` = sunucudaki `pinRule`), `render()`'ı sarar (yazılan şifre alanları korunur); başarıdan sonra yeniden giriş, `pwAfterMsg()` boot.js'te |
+| js/veli-pdf.js | koç: grafikli haftalık veli raporu (`vpOpen(sid,end)`, A4, geçen 7 günle karşılaştırma, ders dağılımı, görev halkası, deneme çizgisi; uyku/ruh hali/gizli not yok); `reportCard`'a "📊 Haftalık veli raporu (PDF)" düğmesi |
 | veli.html + js/veli.js | hesapsız veli özeti (`#t=belirteç` → `parent_view()` RPC; veli rızası şart, uyku/ruh hali yok), yazdır/PDF |
 | kvkk.html | aydınlatma metni TASLAĞI (avukat onayı bekliyor) |
 | js/dayflow.js | öğrenci: kurulum sihirbazı (ana ekran + bildirim), gün sonu kapanış ekranı (`DC`, `act("close")`'u sarar), uzun açık sayaç düzeltme (`fixStop`) |
@@ -55,19 +57,19 @@ Hasan Karakış'ın (Karakış Eğitim & Danışmanlık, Diyarbakır) ~18 YKS/LG
 
 ## Sunucu fonksiyonları (supabase/functions)
 exam-extract, exam-insights, plan-extract, weekly-report, tercih-ai, admin-students, send-reminders (cron 12:00/17:00 UTC), challenge-notify,
-lead-submit (tanıtım sitesi formu, giriş yok), break-nudge (cron 5 dk, uzun mola mesajı + 3 saati geçen açık sayaç bildirimi; uzun sayaç kaydı break_nudges'ta break_start = −oturum başlangıcı; `{test:true}` ile tanılama), send-reminders akşam turunda soru girmeyene hatırlatır, task-plan (geciken görev dağıtımı), wa-send (WhatsApp Cloud API; WA_TOKEN/WA_PHONE_ID yoksa pasif).
+lead-submit (tanıtım sitesi formu, giriş yok), pin-change (öğrenci kendi şifresi: mevcut şifre `pin_check` RPC ile sunucuda doğrulanır, `pin_attempts` 15 dk'da 5 hata sınırı, yönetici API'siyle yazar, tüm oturumları kapatır), break-nudge (cron 5 dk, uzun mola mesajı + 3 saati geçen açık sayaç bildirimi; uzun sayaç kaydı break_nudges'ta break_start = −oturum başlangıcı; `{test:true}` ile tanılama), send-reminders akşam turunda soru girmeyene hatırlatır, task-plan (geciken görev dağıtımı), wa-send (WhatsApp Cloud API; WA_TOKEN/WA_PHONE_ID yoksa pasif).
 Gemini modeli: fonksiyonlar çalışan en yeni "flash-lite/flash" modeli kendisi seçer (eski varsayılan model kapatıldı).
 Cron ve tetikleyiciler `x-cron-secret` (public.app_secrets) kullanır. Dağıtım: Supabase MCP `deploy_edge_function` (verify_jwt=false; fonksiyon kendi doğrular).
 
 ## Şema dosyaları (sırayla uygulanmış)
-schema.sql, schema-ai.sql, schema-msg.sql, schema-resched.sql, schema-challenge.sql, schema-topics.sql, schema-nudge-wa.sql (v3.4), schema-hardening.sql (v3.5), schema-profile.sql (v3.7: student_profile, push_coverage, ders adı düzeltmesi), schema-v38.sql (v3.8: meetings, plan_templates, wrong_book, challenge_prefs, consents, parent_links, leads, packages, notes.private, student_profile.tags, MEBİ deneme haftaları, challenge_board gizlilik, parent_view).
+schema.sql, schema-ai.sql, schema-msg.sql, schema-resched.sql, schema-challenge.sql, schema-topics.sql, schema-nudge-wa.sql (v3.4), schema-hardening.sql (v3.5), schema-profile.sql (v3.7: student_profile, push_coverage, ders adı düzeltmesi), schema-v38.sql (v3.8: meetings, plan_templates, wrong_book, challenge_prefs, consents, parent_links, leads, packages, notes.private, student_profile.tags, MEBİ deneme haftaları, challenge_board gizlilik, parent_view), schema-v39.sql (v3.9: pin_attempts, pin_check — yalnızca service_role çağrısında sonuç döner).
 Canlı şema repodan ileride olabilir (bkz. Drive raporu); emin değilsen canlıdan oku.
 
 ## Test
 `tests/` klasöründe sahte Supabase (`mock-supabase.js`) ve Playwright betikleri var. Çalıştırma:
-`cd tests && PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers python3 test_nav.py` (ayrıca test_v34.py, test_fix.py, test_undo.py, test_ch.py, test_p1.py: profil/gün sonu/sihirbaz/uzun sayaç, test_p2.py: koç araçları/yanlış defteri/veli sayfası).
+`cd tests && PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers python3 test_nav.py` (ayrıca test_v34.py, test_fix.py, test_undo.py, test_ch.py, test_p1.py: profil/gün sonu/sihirbaz/uzun sayaç, test_p2.py: koç araçları/yanlış defteri/veli sayfası, test_p3.py: şifre değiştirme + haftalık veli PDF).
 Yalnızca değiştirdiğin alanın testini çalıştır.
 
 ## Açık işler
-Raporlar: Drive "Karakış Takip – Tarama Raporu ve Yol Haritası (29 Ekim 2026)", Claude Docs "Karakış Takip — Eksikler ve Geliştirme Raporu" (30 Ekim). 1., 2. ve 3. aşama yayında (v3.7–v3.8).
+Raporlar: Drive "Karakış Takip – Tarama Raporu ve Yol Haritası (29 Ekim 2026)", Claude Docs "Karakış Takip — Eksikler ve Geliştirme Raporu" (30 Ekim). 1., 2. ve 3. aşama yayında (v3.7–v3.8); v3.9: öğrenci şifre değiştirme, grafikli haftalık veli PDF.
 Kalanlar: KVKK metninin avukatça incelenmesi; isteğe bağlı anon revoke (schema-v38.sql sonu); WhatsApp Business API bağlantısı; yapay zekâ ücretsiz yedeklerinin kapatılması kararı; "kaç net lazım" hesabı (ÖSYM katsayıları yıllık değiştiği için yapılmadı; hedef bölüm ve hedef net exam_targets'ta var); koç panelinde canlı güncellemede yalnızca değişen öğrencinin yenilenmesi; yayın öncesi otomatik test (GitHub Actions).

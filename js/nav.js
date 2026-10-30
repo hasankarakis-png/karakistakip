@@ -79,8 +79,9 @@ window.addEventListener("popstate",e=>{
   if(!ME||!ROLE)return;
   const st=e.state;
   if(NAVSKIP){NAVSKIP=false;NAVD=st&&st.d||0;return}
-  const ov=document.body.classList.contains("sbopen")||QA||!!DC||ONB.open;
-  document.body.classList.remove("sbopen");QA=false;DC=null;ONB.open=false;NAVOV=false;
+  if(PWS&&(PWS.done||PWS.busy)){NAVOV=false;if(PWS.done)pwRelog();else navOv();return}
+  const ov=document.body.classList.contains("sbopen")||QA||!!DC||ONB.open||!!PWS;
+  document.body.classList.remove("sbopen");QA=false;DC=null;ONB.open=false;PWS=null;NAVOV=false;
   if(!st||st.r!==navR()){navRoot();NAVREPL=true;render();window.scrollTo(0,0);return}
   NAVD=st.d||0;
   if(ov&&st.k===NAVK){render();return}
@@ -104,7 +105,7 @@ function navOv(){
   try{const h=history.state||{};NAVD++;history.pushState({...h,d:NAVD,ov:1},"");NAVOV=true}catch(e){}
 }
 function navOvClosed(){
-  if(!NAVOV||document.body.classList.contains("sbopen")||QA||DC||ONB.open)return;
+  if(!NAVOV||document.body.classList.contains("sbopen")||QA||DC||ONB.open||PWS)return;
   NAVOV=false;NAVSKIP=true;try{history.back()}catch(e){NAVSKIP=false}
 }
 document.addEventListener("click",()=>setTimeout(navOvClosed,0));
