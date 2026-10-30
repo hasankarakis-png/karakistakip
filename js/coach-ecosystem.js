@@ -5,7 +5,7 @@
   const escCE = v => typeof esc==="function" ? esc(String(v==null?"":v)) : String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const todayCE = () => typeof day==="function" ? day() : new Date().toISOString().slice(0,10);
   const stateCE = () => typeof S!=="undefined" && S ? S : null;
-  const CEX = {resources:{},meetings:{},busy:{},message:"",room:{active:false,started:0,minutes:25}};
+  const CEX = {resources:{},meetings:{},rooms:undefined,members:undefined,busy:{},message:"",room:{active:false,started:0,minutes:25}};
   const REASONS = ["Program çok yoğundu","Konuyu anlayamadım","Sorular zordu","Zamanımı yönetemedim","Dikkatim dağıldı","Enerjim/moralim düşüktü","Başlamayı erteledim","Başka bir durum"];
   const safeName = id => {const p=(typeof STU!=="undefined"?STU:[]).find(x=>String(x.id)===String(id));return p?p.name:"Öğrenci"};
   function checkinCard(){
@@ -119,6 +119,54 @@
     if(r.error){alert("Görüşme kaydedilemedi: "+r.error.message);return}
     delete CEX.meetings[String(id)];render();
   }
+  async function loadStudyRooms(){
+    const [rooms,members]=await Promise.all([
+      sb.from("study_rooms").select("id,created_by,title,duration_minutes,starts_at,ends_at,active,created_at").eq("active",true).gte("ends_at",new Date().toISOString()).order("starts_at",{ascending:true}).limit(12),
+      sb.from("study_room_members").select("room_id,student_id,joined_at").eq("student_id",ME)
+    ]);
+    CEX.rooms=rooms.error?[]:(rooms.data||[]);
+    CEX.members=members.error?[]:(members.data||[]);
+    if(rooms.error)CEX.rooms.error=rooms.error.message;
+    if(members.error)CEX.members.error=members.error.message;
+  }
+  function studyRoomsCard(){
+    if(typeof ROLE==="undefined"||ROLE!=="student")return "";
+    if(CEX.rooms===undefined||CEX.rooms===null){
+      CEX.rooms=null;
+      loadStudyRooms().then(()=>render()).catch(()=>{CEX.rooms=[];CEX.members=[];render()});
+      return '<details class="ce-panel"><summary><span><b>Ortak çalışma odası</b><small>Arkadaşlarınla aynı süre içinde odaklan</small></span><em>Yükleniyor…</em></summary></details>';
+    }
+    const rooms=CEX.rooms||[],members=CEX.members||[],err=CEX.rooms.error||CEX.members.error||"";
+    return '<details class="ce-panel ce-rooms"><summary><span><b>Ortak çalışma odası</b><small>Ortak sayaçla 25, 45 veya 60 dakikalık çalışma oturumu</small></span><em>'+rooms.length+' açık oda</em></summary>'+
+      (err?'<p class="ce-error">Odalar yüklenemedi: '+escCE(err)+'</p>':'')+
+      (rooms.length?'<div class="ce-room-list">'+rooms.map(r=>{
+        const joined=members.some(m=>String(m.room_id)===String(r.id)),ends=Date.parse(r.ends_at),left=Math.max(0,Math.ceil((ends-Date.now())/60000));
+        return '<article class="ce-room"><div class="ce-room-top"><div><b>'+escCE(r.title)+'</b><small>'+Number(r.duration_minutes)+' dakika · '+(joined?'Katıldın':'Açık oda')+'</small></div><strong class="ce-room-timer" data-ce-room-end="'+ends+'">'+left+' dk</strong></div><div class="ce-room-actions">'+(joined?'<button class="ce-secondary" data-ce-room-leave="'+r.id+'">Odadan ayrıl</button>':'<button class="ce-primary" data-ce-room-join="'+r.id+'">Odaya katıl</button>')+'</div></article>';
+      }).join('')+'</div>':'<div class="ce-empty">Şu anda açık oda yok. Bir çalışma oturumu başlatabilir, diğer öğrencilerin katılmasını sağlayabilirsin.</div>')+
+      '<form class="ce-room-form" data-ce-room-form="1"><label>Oda adı <input id="ce-room-title" maxlength="80" required placeholder="Örn. TYT Matematik odak oturumu"></label><div class="ce-form-grid"><label>Süre <select id="ce-room-duration"><option value="25">25 dakika</option><option value="45">45 dakika</option><option value="60">60 dakika</option></select></label><div class="ce-room-submit"><button class="ce-primary" type="submit">Oda oluştur ve başla</button></div></div></form>'+
+      '<p class="ce-help">Odada yalnızca oda adı ve ortak bitiş saati paylaşılır; katılımcı isimleri gösterilmez. Oda bitiş saatine göre tüm cihazlarda aynı sayaç çalışır.</p></details>';
+  }
+  async function createStudyRoom(){
+    const title=((document.getElementById("ce-room-title")||{}).value||"").trim().slice(0,80);
+    const duration=Number((document.getElementById("ce-room-duration")||{}).value||25);
+    if(title.length<3||![25,45,60].includes(duration)){alert("Oda adını ve süreyi kontrol et.");return}
+    const start=new Date(),end=new Date(start.getTime()+duration*60000);
+    const r=await sb.from("study_rooms").insert({created_by:ME,title,duration_minutes:duration,starts_at:start.toISOString(),ends_at:end.toISOString(),active:true}).select("id").single();
+    if(r.error){alert("Oda oluşturulamadı: "+r.error.message);return}
+    const j=await sb.from("study_room_members").insert({room_id:r.data.id,student_id:ME});
+    if(j.error){alert("Oda açıldı ancak katılım kaydedilemedi: "+j.error.message)}
+    CEX.rooms=undefined;CEX.members=undefined;await loadStudyRooms();render();
+  }
+  async function joinStudyRoom(id){
+    const r=await sb.from("study_room_members").insert({room_id:Number(id),student_id:ME});
+    if(r.error){alert(/duplicate|unique/i.test(r.error.message||"")?"Bu odaya zaten katılmışsın.":"Odaya katılınamadı: "+r.error.message);return}
+    CEX.rooms=undefined;CEX.members=undefined;await loadStudyRooms();render();
+  }
+  async function leaveStudyRoom(id){
+    const r=await sb.from("study_room_members").delete().eq("room_id",Number(id)).eq("student_id",ME);
+    if(r.error){alert("Odadan ayrılamadın: "+r.error.message);return}
+    CEX.rooms=undefined;CEX.members=undefined;await loadStudyRooms();render();
+  }
   function focusCard(){
     if(typeof ROLE==="undefined"||ROLE!=="student")return "";
     const key="karakis-focus-v1-"+ME;let saved=null;try{saved=JSON.parse(localStorage.getItem(key)||"null")}catch(e){}
@@ -139,6 +187,8 @@
   function ceUi(t){
     const d=t&&t.dataset||{};
     if(d.ceSaveCheckin!==undefined){addCheckin();return true}
+    if(d.ceRoomJoin){joinStudyRoom(d.ceRoomJoin);return true}
+    if(d.ceRoomLeave){leaveStudyRoom(d.ceRoomLeave);return true}
     if(d.cePrep!==undefined){if(typeof rptRun==="function"&&sel)rptRun(sel);else alert("AI görüşme özeti şu anda kullanılamıyor.");return true}
     if(d.ceResourceStep){updateResource(d.ceResourceStep,d.ceResourceNext);return true}
     if(d.ceResourceDel){deleteResource(d.ceResourceDel);return true}
@@ -160,10 +210,11 @@
   document.addEventListener("submit",function(e){
     const f=e.target;if(!f||!f.matches)return;
     if(f.matches("form[data-ce-resource-form]")){e.preventDefault();saveResource(typeof ROLE!=="undefined"&&ROLE==="student"?ME:sel);return}
+    if(f.matches("form[data-ce-room-form]")){e.preventDefault();createStudyRoom();return}
     if(f.matches("form[data-ce-meeting-form]")){e.preventDefault();saveMeeting(sel);return}
   });
   const baseTodayTab=todayTab;
-  todayTab=function(){const h=baseTodayTab.apply(this,arguments);return h+checkinCard()+resourceCard(ME,false)+focusCard()};
+  todayTab=function(){const h=baseTodayTab.apply(this,arguments);return h+checkinCard()+resourceCard(ME,false)+studyRoomsCard()};
   const baseCoachView=coachView;
   coachView=function(){
     let h=baseCoachView.apply(this,arguments);
@@ -174,6 +225,7 @@
     return h;
   };
   setInterval(function(){
+    document.querySelectorAll(".ce-room-timer").forEach(el=>{const end=Number(el.dataset.ceRoomEnd),left=Math.max(0,Math.ceil((end-Date.now())/60000));el.textContent=left>0?left+" dk":"Süre tamamlandı"});
     const el=document.querySelector(".ce-focus-timer");if(!el)return;
     const end=Number(el.dataset.ceFocusEnd),left=Math.max(0,Math.ceil((end-Date.now())/1000));
     el.textContent=Math.floor(left/60)+":"+String(left%60).padStart(2,"0");
