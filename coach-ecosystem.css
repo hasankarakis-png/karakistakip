@@ -47,3 +47,5 @@
 .ce-focus-timer{font-size:32px;letter-spacing:-.05em;font-weight:900;margin-top:14px;font-variant-numeric:tabular-nums}
 .ce-error{font-size:12px;color:var(--warn);line-height:1.5}
 @media(max-width:650px){.ce-panel{padding:13px;border-radius:15px}.ce-form-grid,.ce-intervention-list{grid-template-columns:1fr}.ce-heading h2{font-size:19px}.ce-actions>.ce-primary{width:100%}.ce-intervention-list{gap:8px}.ce-panel summary b{font-size:14px}}
+
+.ce-overview-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}.ce-overview-stats>div{border:1px solid var(--line);border-radius:11px;padding:10px;background:var(--cream);display:flex;flex-direction:column;gap:4px}.ce-overview-stats small{font-size:10px;color:var(--mute)}.ce-overview-stats b{font-size:20px;letter-spacing:-.04em}.ce-student-note{margin:9px 0;padding:9px 10px;border-radius:9px;background:var(--cream);font-size:11px;line-height:1.5}.ce-student-note b{display:block;margin-bottom:3px}@media(max-width:480px){.ce-overview-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.ce-overview-stats b{font-size:17px}}
