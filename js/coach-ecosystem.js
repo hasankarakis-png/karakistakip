@@ -167,11 +167,6 @@
     }catch(e){}
     return h;
   };
-  document.addEventListener("click",function(e){
-    const t=e.target.closest&&e.target.closest("[data-ce-focus-start],[data-ce-focus-stop],[data-ce-save-checkin],[data-ce-resource-step],[data-ce-resource-del]");
-    if(!t)return;
-    if(ceUi(t)){e.preventDefault();e.stopPropagation()}
-  });
   setInterval(function(){
     const el=document.querySelector(".ce-focus-timer");if(!el)return;
     const end=Number(el.dataset.ceFocusEnd),left=Math.max(0,Math.ceil((end-Date.now())/1000));
