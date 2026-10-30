@@ -131,13 +131,14 @@
   }
   function studyRoomsCard(){
     if(typeof ROLE==="undefined"||ROLE!=="student")return "";
-    if(CEX.rooms===undefined||CEX.rooms===null){
+    if(CEX.rooms===undefined){
       CEX.rooms=null;
       loadStudyRooms().then(()=>render()).catch(()=>{CEX.rooms=[];CEX.members=[];render()});
-      return '<details class="ce-panel"><summary><span><b>Ortak çalışma odası</b><small>Arkadaşlarınla aynı süre içinde odaklan</small></span><em>Yükleniyor…</em></summary></details>';
     }
+    if(CEX.rooms===null)return '<details class="ce-panel"><summary><span><b>Ortak çalışma odası</b><small>Arkadaşlarınla aynı süre içinde odaklan</small></span><em>Yükleniyor…</em></summary></details>';
     const rooms=CEX.rooms||[],members=CEX.members||[],err=CEX.rooms.error||CEX.members.error||"";
     return '<details class="ce-panel ce-rooms"><summary><span><b>Ortak çalışma odası</b><small>Ortak sayaçla 25, 45 veya 60 dakikalık çalışma oturumu</small></span><em>'+rooms.length+' açık oda</em></summary>'+
+      '<div class="ce-room-refresh"><button class="ce-secondary" data-ce-room-refresh="1">Odaları yenile</button></div>'+
       (err?'<p class="ce-error">Odalar yüklenemedi: '+escCE(err)+'</p>':'')+
       (rooms.length?'<div class="ce-room-list">'+rooms.map(r=>{
         const joined=members.some(m=>String(m.room_id)===String(r.id)),ends=Date.parse(r.ends_at),left=Math.max(0,Math.ceil((ends-Date.now())/60000));
@@ -188,6 +189,7 @@
     const d=t&&t.dataset||{};
     if(d.ceSaveCheckin!==undefined){addCheckin();return true}
     if(d.ceRoomJoin){joinStudyRoom(d.ceRoomJoin);return true}
+    if(d.ceRoomRefresh!==undefined){CEX.rooms=undefined;CEX.members=undefined;loadStudyRooms().then(()=>render());return true}
     if(d.ceRoomLeave){leaveStudyRoom(d.ceRoomLeave);return true}
     if(d.cePrep!==undefined){if(typeof rptRun==="function"&&sel)rptRun(sel);else alert("AI görüşme özeti şu anda kullanılamıyor.");return true}
     if(d.ceResourceStep){updateResource(d.ceResourceStep,d.ceResourceNext);return true}
