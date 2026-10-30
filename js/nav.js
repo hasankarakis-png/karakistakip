@@ -79,8 +79,8 @@ window.addEventListener("popstate",e=>{
   if(!ME||!ROLE)return;
   const st=e.state;
   if(NAVSKIP){NAVSKIP=false;NAVD=st&&st.d||0;return}
-  const ov=document.body.classList.contains("sbopen")||QA;
-  document.body.classList.remove("sbopen");QA=false;NAVOV=false;
+  const ov=document.body.classList.contains("sbopen")||QA||!!DC||ONB.open;
+  document.body.classList.remove("sbopen");QA=false;DC=null;ONB.open=false;NAVOV=false;
   if(!st||st.r!==navR()){navRoot();NAVREPL=true;render();window.scrollTo(0,0);return}
   NAVD=st.d||0;
   if(ov&&st.k===NAVK){render();return}
@@ -104,13 +104,13 @@ function navOv(){
   try{const h=history.state||{};NAVD++;history.pushState({...h,d:NAVD,ov:1},"");NAVOV=true}catch(e){}
 }
 function navOvClosed(){
-  if(!NAVOV||document.body.classList.contains("sbopen")||QA)return;
+  if(!NAVOV||document.body.classList.contains("sbopen")||QA||DC||ONB.open)return;
   NAVOV=false;NAVSKIP=true;try{history.back()}catch(e){NAVSKIP=false}
 }
 document.addEventListener("click",()=>setTimeout(navOvClosed,0));
 document.addEventListener("keydown",e=>{
-  if(e.key!=="Escape"||!(QA||document.body.classList.contains("sbopen")))return;
-  e.preventDefault();if(NAVOV)history.back();else{document.body.classList.remove("sbopen");if(QA){QA=false;render()}}
+  if(e.key!=="Escape"||!(QA||DC||ONB.open||document.body.classList.contains("sbopen")))return;
+  e.preventDefault();if(NAVOV)history.back();else{document.body.classList.remove("sbopen");if(QA||DC||ONB.open){QA=false;DC=null;ONB.open=false;render()}}
 });
 
 /* ortak geri düğmeleri */

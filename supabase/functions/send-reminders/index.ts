@@ -14,13 +14,15 @@ export function eq(a: string, b: string) {
   return d === 0;
 }
 
-export function messageFor(kind: string, studied: boolean, pending: number): { title: string; body: string } | null {
+// noQ: bugün çalıştı ama soru sayısı girmedi ve "Bugün soru çözmedim" de demedi (akşam hatırlatması).
+export function messageFor(kind: string, studied: boolean, pending: number, noQ = false): { title: string; body: string } | null {
   if (kind === "afternoon") {
     if (studied) return null;
     return { title: "Çalışma zamanı", body: pending > 0 ? `Bugün ${pending} görevin var. Küçük bir başlangıç yap!` : "Bugün henüz çalışmaya başlamadın. 25 dakikalık bir odakla başla!" };
   }
   if (pending > 0) return { title: "Görevlerini tamamla", body: `Bugün ${pending} görevin bekliyor. Bitirince işaretlemeyi unutma.` };
   if (!studied) return { title: "Günü kapatmadan önce", body: "Bugün çalışma kaydı yok. Kısa bir tekrar bile seriyi korur." };
+  if (noQ) return { title: "Soru sayılarını girmeyi unutma", body: "Bugün çalıştın ama soru sayısı girmedin. Günü kapatırken ders ders ekle, koçun gelişimini görsün." };
   return null;
 }
 
@@ -43,16 +45,17 @@ export async function handler(req: Request): Promise<Response> {
   const list = subs ?? [];
   if (!list.length) return J({ ok: true, sent: 0, subs: 0 });
   const ids = [...new Set(list.map((s: any) => s.student_id))];
-  const { data: daily } = await sb.from("daily").select("student_id,snap,status:state->>status").eq("day", day).in("student_id", ids);
+  const { data: daily } = await sb.from("daily").select("student_id,snap,status:state->>status,noq:state->>noq").eq("day", day).in("student_id", ids);
   const { data: tasks } = await sb.from("weekly_tasks").select("student_id,done").eq("task_date", day).eq("done", false).in("student_id", ids);
   // Çalışıyor sayılır: kayıtlı süre/soru var VEYA oturum açık/molada/noktalanmış/kapatılmış (snap.m yalnızca kayıt anında hesaplandığından).
   const ACTIVE = ["study", "break", "stopped", "closed"];
   const studied = new Set((daily ?? []).filter((d: any) => Number(d.snap?.m) > 0 || Number(d.snap?.q) > 0 || ACTIVE.includes(d.status)).map((d: any) => d.student_id));
+  const noQ = new Set((daily ?? []).filter((d: any) => Number(d.snap?.m) >= 30 && !(Number(d.snap?.q) > 0) && d.noq !== "true").map((d: any) => d.student_id));
   const pend: Record<string, number> = {};
   (tasks ?? []).forEach((t: any) => { pend[t.student_id] = (pend[t.student_id] ?? 0) + 1; });
   let sent = 0, gone = 0, failed = 0;
   const one = async (s: any) => {
-    const m = messageFor(kind, studied.has(s.student_id), pend[s.student_id] ?? 0);
+    const m = messageFor(kind, studied.has(s.student_id), pend[s.student_id] ?? 0, noQ.has(s.student_id));
     if (!m || !/^https:\/\//.test(String(s.endpoint))) return;
     try {
       await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(m), { TTL: 6 * 3600, timeout: 8000 });

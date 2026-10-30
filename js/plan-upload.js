@@ -64,7 +64,7 @@ async function puAssign(id){
   dr.rows.filter(r=>r.on).forEach(r=>{
     const d=shift(dr.week,r.gun-1);
     if(dr.skip&&d<day()){skippedPast++;return}
-    const subject=r.ders.slice(0,40),title=r.konu.slice(0,120);
+    const subject=subjNorm(r.ders),title=r.konu.slice(0,120);
     if(have.has(d+"|"+subject+"|"+title)){dup++;return}
     rows.push({student_id:id,task_date:d,title,subject,amount:[r.kaynak,r.sure,r.soru].filter(Boolean).join(" · ").slice(0,60)||null,source:"coach",created_by:ME,week_title:wt});
   });
@@ -102,8 +102,8 @@ function weekGrid(x){
   const L=(TK[x.id]||[]).filter(t=>t.task_date>=days[0]&&t.task_date<=days[6]);
   const isC=ROLE==="coach",nav=(x.notabs?"":weekTabs(x.id,isC))+`<div class="row" style="margin:0 0 8px;justify-content:space-between;align-items:center"><b>${esc(weekName(W0))} ${weekName(W0)!==wkRange(mon)?`<small style="color:var(--mute);font-weight:500">${wkRange(mon)}</small>`:""}</b>${isC?`<button class="chip" data-wren="1">✎ Adı değiştir</button>`:""}</div>`;
   if(!L.length)return `<div class="card"><h2>📊 Haftalık plan takibi</h2>${nav}<p class="empty">Bu hafta için atanmış görev yok.</p></div>`;
-  const subs=[...new Set(L.map(t=>t.subject||"Diğer"))],today=day();
-  const cell=(s,d)=>{const c=L.filter(t=>(t.subject||"Diğer")===s&&t.task_date===d);if(!c.length)return `<td class="wg0">·</td>`;const dn=c.filter(t=>t.done).length,tip=esc(c.map(t=>t.title+(t.amount?" ("+t.amount+")":"")).join(", "));
+  const subs=[...new Set(L.map(t=>subjNorm(t.subject)))],today=day();
+  const cell=(s,d)=>{const c=L.filter(t=>subjNorm(t.subject)===s&&t.task_date===d);if(!c.length)return `<td class="wg0">·</td>`;const dn=c.filter(t=>t.done).length,tip=esc(c.map(t=>t.title+(t.amount?" ("+t.amount+")":"")).join(", "));
     if(dn===c.length)return `<td class="wgok" title="${tip}">✓</td>`;if(d<today)return `<td class="wgbad" title="${tip}">${dn?dn+"/"+c.length:"✗"}</td>`;return `<td class="wgw" title="${tip}">${dn?dn+"/"+c.length:"○"}</td>`};
   const done=L.filter(t=>t.done).length,past=L.filter(t=>t.task_date<today),pm=past.filter(t=>!t.done).length;
   return `<div class="card"><h2>📊 Haftalık plan takibi</h2>${nav}<div style="overflow-x:auto"><table class="wg"><thead><tr><th></th>${days.map((d,i)=>`<th${d===today?` class="wgt"`:""}>${PDAY[i]}</th>`).join("")}</tr></thead><tbody>${subs.map(s=>`<tr><th>${esc(s)}</th>${days.map(d=>cell(s,d)).join("")}</tr>`).join("")}</tbody></table></div>

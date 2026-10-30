@@ -11,15 +11,18 @@ const quoteCard=()=>`<div class="card qt"><h2>Günün Sözü</h2><p>“${QUOTES[
 function tasksRing(){
   const L=(TK[ME]||[]).filter(t=>t.task_date===day()),d=L.filter(t=>t.done).length,p=L.length?Math.round(d/L.length*100):0;
   const last=t=>{const a=(EX[ME]||[]).filter(e=>e.exam_type===t&&e.total_net!=null);return a.length?num(a[a.length-1].total_net):null};
-  const kinds=["TYT","AYT"].concat(last("LGS")!=null?["LGS"]:[]);
+  const kinds=isLGS(ME)?["LGS"]:["TYT","AYT"].concat(last("LGS")!=null?["LGS"]:[]);
   return `<button class="card tr" data-tab="g" aria-label="Görevlerim sekmesini aç"><span class="rg" style="--p:${p}"><span>${L.length?d+"/"+L.length:"+"}</span></span><span><h2>Bugünkü Görevler</h2><p>${L.length?d+" / "+L.length+" tamamlandı":"Henüz görev yok"}</p>${L.length?"":"<small>Koçun görev atayınca burada görünür.</small>"}</span></button>
   <div class="nets">${kinds.map(k=>`<div><small>${k} son net</small><b>${last(k)==null?"—":last(k)}</b></div>`).join("")}</div>`;
 }
-const YKS=new Date(2027,5,19,10,15,0);
-const cdParts=()=>{let t=Math.max(0,YKS-Date.now());const s=Math.floor(t/1000);return [Math.floor(s/86400),Math.floor(s%86400/3600),Math.floor(s%3600/60),s%60]};
+// YKS 2027: 19 Haziran 2027 Cumartesi (ÖSYM takvimi). LGS tarihi koçun girdiği exam_calendar kaydından gelir.
+const YKS=new Date(2027,5,19,10,15,0);let CDT=YKS;
+const cdParts=()=>{let t=Math.max(0,CDT-Date.now());const s=Math.floor(t/1000);return [Math.floor(s/86400),Math.floor(s%86400/3600),Math.floor(s%3600/60),s%60]};
 function countdownCard(){
+  let ttl="YKS 2027",sub="19 Haziran 2027";CDT=YKS;
+  if(isLGS(ME)){const r=lgsCal();if(!r)return `<div class="card"><div class="cdh"><h2>LGS 2027</h2><small>Tarih bekleniyor</small></div><p class="empty" style="margin:6px 0 0;font-size:15px">MEB resmî tarihi açıklayınca koçun girecek, geri sayım burada başlayacak.</p></div>`;const [y,mo,dd]=r.exam_date.split("-").map(Number);CDT=new Date(y,mo-1,dd,0,0,0);ttl="LGS "+y;sub=CDT.toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric"})}
   const v=cdParts();
-  return `<div class="card"><div class="cdh"><h2>YKS 2027</h2><small>19 Haziran 2027</small></div><div class="cd">${["Gün","Saat","Dakika","Saniye"].map((l,i)=>`<div><b id="cd${i}">${i?String(v[i]).padStart(2,"0"):v[i]}</b><span>${l}</span></div>`).join("")}</div></div>`;
+  return `<div class="card"><div class="cdh"><h2>${ttl}</h2><small>${sub}</small></div><div class="cd">${["Gün","Saat","Dakika","Saniye"].map((l,i)=>`<div><b id="cd${i}">${i?String(v[i]).padStart(2,"0"):v[i]}</b><span>${l}</span></div>`).join("")}</div></div>`;
 }
 function heatCard(){
   const H=Object.assign({},HIST[ME]||{});H[day()]=snap();

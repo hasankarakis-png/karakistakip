@@ -16,7 +16,7 @@ with sync_playwright() as p:
     page.click("[data-a='wake']");page.wait_for_timeout(600)
     page.click("[data-a='start']");page.wait_for_timeout(600)
     E("S.cur.start-=45*60000;save()")   # 45 dk ders
-    page.click("[data-a='close']");page.wait_for_timeout(300)
+    page.click("[data-a='close']");page.wait_for_timeout(300);E("DC&&(DC.v.dcnq=true)");page.click("#dcok") if page.query_selector("#dcok") else None;page.wait_for_timeout(300)
     check(E("S.status")=="closed","Günü kapat çalıştı")
     check(page.is_visible(".undo-toast"),"Kapatınca altta 'Geri al' bildirimi çıktı")
     check(page.query_selector(".card.undo") is not None,"Ana sayfada geri al kartı var")
@@ -27,7 +27,7 @@ with sync_playwright() as p:
     # süre geçince geri alma kalkar, yeniden aç kalır
     page.click("[data-a='stop']");page.wait_for_timeout(600)
     check(E("S.undo&&S.undo.k")=="stop","Çalışmayı noktala da geri alınabilir")
-    page.click("[data-a='close']");page.wait_for_timeout(600)
+    page.click("[data-a='close']");page.wait_for_timeout(300);E("DC&&(DC.v.dcnq=true)");page.click("#dcok") if page.query_selector("#dcok") else None;page.wait_for_timeout(600)
     E("S.undo.t-=11*60000;render()")
     check(page.query_selector(".card.undo") is None,"10 dakika geçince geri al kartı kalktı")
     check(page.query_selector(".hero [data-a='reopen']") is not None,"Kapalı günde 'Günü yeniden aç' düğmesi var")

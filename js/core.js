@@ -1,15 +1,26 @@
 const SUPABASE_URL="https://ramcghaefbbwgwtgtdtt.supabase.co",SUPABASE_KEY="sb_publishable_MC44S4rXUNLDClD0RgNbaw_1unO3NAI";
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-const SUBJ=["Matematik","Geometri","Türkçe","Fizik","Kimya","Biyoloji","Tarih","Coğrafya","Edebiyat","Diğer"];
+// Ders listesi öğrencinin sınav türüne göre değişir (profile.js: subjApply). Varsayılan YKS.
+const SUBJ_YKS=["Matematik","Geometri","Türkçe","Fizik","Kimya","Biyoloji","Tarih","Coğrafya","Edebiyat","Felsefe","Din Kültürü","Diğer"];
+const SUBJ_LGS=["Matematik","Türkçe","Fen Bilimleri","İnkılap Tarihi","Din Kültürü","İngilizce","Diğer"];
+let SUBJ=SUBJ_YKS;
+// PDF'ten büyük harfle ya da bozuk okunan ders adlarını tek biçime getirir: "KİMYA" → "Kimya", "Fizik/TARİH" → "Fizik/Tarih", "_=*90" → "Diğer".
+const SUBJ_ABBR=new Set(["TYT","AYT","LGS","YDT"]);
+const trCap=w=>w?w.charAt(0).toLocaleUpperCase("tr-TR")+w.slice(1).toLocaleLowerCase("tr-TR"):w;
+function subjNorm(v){
+  const t=String(v||"").trim().replace(/\s+/g," ");
+  if((t.match(/[A-Za-zÇĞİÖŞÜçğıöşü]/g)||[]).length<2)return "Diğer";
+  return t.split("/").map(p=>p.trim().split(" ").map(w=>{const u=w.toLocaleUpperCase("tr-TR");return w!==u||SUBJ_ABBR.has(w)?w:trCap(w)}).join(" ")).join("/").slice(0,40);
+}
 const KEY="karakis-takip-v1";
 const METH=["Soru çözme","Konu çalışma","Tekrar","Kendini test","Video izleme"],ACT=["Soru çözme","Tekrar","Kendini test"],CAUSE=["Bilgi eksiği","Dikkat hatası","Süre yetmedi","Yanlış okuma","Heyecan"];
 const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 const day=()=>ymd(new Date());
 const dayN=n=>{const d=new Date();d.setDate(d.getDate()+n);return ymd(d)};
-const fresh=()=>({day:day(),status:"idle",cur:null,done:0,log:[],qs:[],prog:false,mood:0,sleep:0,dist:0,en:0,str:0,hard:"",meth:{}});
+const fresh=()=>({day:day(),status:"idle",cur:null,done:0,log:[],qs:[],prog:false,mood:0,sleep:0,dist:0,en:0,str:0,hard:"",meth:{},subt:{},noq:false,next:""});
 let S=fresh();
 let view="s",subj=SUBJ[0],meth=METH[0];
-const snap=()=>({m:Math.min(1440,Math.max(0,Math.round(total()/60000)||0)),q:Math.min(3000,Math.max(0,Math.round(solved())||0)),prog:S.prog?1:0,mood:S.mood,sleep:S.sleep,dist:S.dist,en:S.en,str:S.str,act:actPct(),c:correct(),b:S.qs.reduce((a,q)=>a+(q.b||0),0)});
+const snap=()=>({m:Math.min(1440,Math.max(0,Math.round(total()/60000)||0)),q:Math.min(3000,Math.max(0,Math.round(solved())||0)),prog:S.prog?1:0,mood:S.mood,sleep:S.sleep,dist:S.dist,en:S.en,str:S.str,act:actPct(),c:correct(),b:S.qs.reduce((a,q)=>a+(q.b||0),0),nq:S.noq?1:0});
 let pend;
 let DIRTY=false,rtry;
 const dayRow=s=>({student_id:ME,day:s.day,state:s,snap:snap(),updated_at:new Date().toISOString()});
@@ -17,7 +28,7 @@ const dayRow=s=>({student_id:ME,day:s.day,state:s,snap:snap(),updated_at:new Dat
 function rollover(){
   if(!ME||ROLE!=="student"||S.day===day())return false;
   const old=S,m=new Date();m.setHours(0,0,0,0);const mid=m.getTime(),oc=old.cur,was=oc&&(old.status==="study"||old.status==="break"),wasBrk=old.status==="break";
-  if(oc){const v=Math.max(0,mid-oc.start-oc.brk-(old.status==="break"?mid-oc.bs:0));old.done+=v;old.meth[oc.meth]=(old.meth[oc.meth]||0)+v;old.cur=null;old.status="stopped";old.log.push({t:mid-1,m:"Gece yarısı: oturum otomatik bölündü"})}
+  if(oc){const v=Math.max(0,mid-oc.start-oc.brk-(old.status==="break"?mid-oc.bs:0));old.done+=v;old.meth[oc.meth]=(old.meth[oc.meth]||0)+v;subtAdd(old,oc.subj,v);old.cur=null;old.status="stopped";old.log.push({t:mid-1,m:"Gece yarısı: oturum otomatik bölündü"})}
   delete old.undo;delete old.rbk;
   const sn=snap();try{localStorage.setItem(KEY+ME+"-"+old.day,JSON.stringify(old))}catch(e){}
   Promise.resolve(sb.from("daily").upsert({student_id:ME,day:old.day,state:old,snap:sn,updated_at:new Date().toISOString()})).then(r=>{if(r&&r.error)setSync("⚠️ "+r.error.message)},()=>setSync("⚠️ Bağlantı yok"));
@@ -48,6 +59,8 @@ const total=()=>S.done+curNet();
 const solved=()=>S.qs.reduce((a,q)=>a+q.n,0);
 const correct=()=>S.qs.reduce((a,q)=>a+q.c,0);
 const log=m=>S.log.push({t:Date.now(),m});
+// Ders bazında süre (ms): gün sonu ekranı bugün hangi derslere çalışıldığını buradan bilir.
+const subtAdd=(o,sj,v)=>{if(!sj||!(v>0))return;o.subt=o.subt&&typeof o.subt==="object"?o.subt:{};o.subt[sj]=(o.subt[sj]||0)+v};
 const LBL={idle:"Henüz başlamadı",awake:"Uyanık, derse hazır",study:"Derste",break:"Molada",stopped:"Çalışmayı noktaladı",closed:"Günü kapattı"};
 const DOT={idle:"",awake:"",study:"study",break:"break",stopped:"",closed:"done"};
 let ACTLAST=0;
@@ -66,9 +79,9 @@ function act(a){
   if(a==="start"){S.cur={start:n,brk:0,bs:0,subj,meth};S.status="study";log("Derse başladım: "+subj+" ("+meth+")")}
   if(a==="break"){S.cur.bs=n;S.status="break";log("Mola verdim")}
   if(a==="back"){S.cur.brk+=n-S.cur.bs;S.status="study";log("Moladan döndüm")}
-  if(a==="stop"){const v=curNet();S.done+=v;S.meth[S.cur.meth]=(S.meth[S.cur.meth]||0)+v;log("Çalışmayı noktaladım ("+short(v)+", "+S.cur.subj+")");BUMP={m:Math.max(1,Math.round(v/60000))};S.cur=null;S.status="stopped"}
+  if(a==="stop"){const v=curNet();S.done+=v;S.meth[S.cur.meth]=(S.meth[S.cur.meth]||0)+v;subtAdd(S,S.cur.subj,v);log("Çalışmayı noktaladım ("+short(v)+", "+S.cur.subj+")");BUMP={m:Math.max(1,Math.round(v/60000))};S.cur=null;S.status="stopped"}
   if(a==="prog"){S.prog=!S.prog;log(S.prog?"Programımı bitirdim":"Program işaretini kaldırdım")}
-  if(a==="close"){if(S.cur){const v=curNet();S.done+=v;S.meth[S.cur.meth]=(S.meth[S.cur.meth]||0)+v;S.cur=null}S.status="closed";log("Günü kapattım")}
+  if(a==="close"){if(S.cur){const v=curNet();S.done+=v;S.meth[S.cur.meth]=(S.meth[S.cur.meth]||0)+v;subtAdd(S,S.cur.subj,v);S.cur=null}S.status="closed";log("Günü kapattım")}
   if(u){S.undo=u;undoToast()}
   save();render();
 }
@@ -161,7 +174,7 @@ function todayTab(){
   const picker=(st==="awake"||st==="stopped")?`<div class="card"><h2>Hangi dersle başlıyorsun?</h2><div class="chips">${SUBJ.map(x=>`<button class="chip" data-s="${x}" aria-pressed="${x===subj}">${x}</button>`).join("")}</div><h2 style="margin-top:14px">Nasıl çalışacaksın?</h2><div class="chips">${METH.map(x=>`<button class="chip" data-me="${x}" aria-pressed="${x===meth}">${x}</button>`).join("")}</div></div>`:"";
   const qa=st!=="idle"&&st!=="closed";
   const solvedT=solved(),acc=solvedT?Math.round(correct()/solvedT*100):0;
-  return `${undoCards()}${guideCard()}${live&&curNet()>4*3600e3?`<div class="card" style="border-color:var(--warn)"><p style="margin:0">⏰ Sayaç 4 saatten uzun süredir açık. Çalışmayı bitirdiysen <b>Çalışmayı noktala</b>'ya bas, yoksa süren fazla görünür.</p></div>`:""}
+  return `${undoCards()}${setupCard()}${guideCard()}${longCard()}${nextNoteCard()}
   ${quoteCard()}<section class="hero"><div class="st"><span class="dot ${DOT[st]}"></span>${LBL[st]}</div>
   <div class="big" id="clock">${dur(clockMs())}</div><div class="sub" id="clocksub">${clockSub()}</div>
   ${st!=="closed"?`<div class="acts">${b}</div>`:`<div class="acts"><button class="btn full alt" data-a="reopen">↩ Günü yeniden aç</button></div>`}${live?pomoChip():""}</section>
@@ -190,7 +203,7 @@ function roster(){
     const days=[-6,-5,-4,-3,-2,-1,0].map(dayN);
     const cur=s.cur,net=num(s.done)+(cur?(s.status==="break"?num(cur.bs):now)-num(cur.start)-num(cur.brk):0),m=Math.round(Math.max(0,net)/60000);
     const qs=(s.qs||[]).map(q=>({s:String(q.s),n:num(q.n),c:num(q.c),b:num(q.b),k:q.k?String(q.k):""})),qn=qs.reduce((a,q)=>a+q.n,0);
-    const hist=days.map(k=>{const r=by[k],a=r&&r.snap?r.snap:{};return k===t&&td?{m,q:qn,prog:s.prog?1:0,mood:num(s.mood),sleep:num(s.sleep)}:{m:num(a.m),q:num(a.q),prog:num(a.prog),mood:num(a.mood),sleep:num(a.sleep)}});
+    const hist=days.map(k=>{const r=by[k],a=r&&r.snap?r.snap:{};return k===t&&td?{m,q:qn,prog:s.prog?1:0,mood:num(s.mood),sleep:num(s.sleep),nq:s.noq?1:0}:{m:num(a.m),q:num(a.q),prog:num(a.prog),mood:num(a.mood),sleep:num(a.sleep),nq:num(a.nq)}});
     const brk=s.status==="break"&&cur&&num(cur.bs)?Math.max(0,Math.round((now-num(cur.bs))/60000)):0;
     return {id:p.id,n:esc(p.name),st:LBL[s.status]?s.status:"idle",m,q:qn,brk,p:s.prog?1:(cur?.5:0),L:(s.log||[]).map(l=>({t:hm(num(l.t)),m:esc(l.m)})),qs,mood:num(s.mood),sleep:num(s.sleep),dist:num(s.dist),en:num(s.en),str:num(s.str),hard:String(s.hard||""),act:num(td&&td.snap?td.snap.act:0),hist,rbk:s.rbk&&s.rbk.s&&s.rbk.s.day===t?{t:num(s.rbk.t),txt:lostTxt(s.rbk.s)}:null};
   });
@@ -232,6 +245,9 @@ function flags(h){
   if(l3.length===3&&l3.every(d=>!d.prog))o.push("3 gündür program tamamlanmadı");
   const sl=l3.filter(d=>d.sleep>0);
   if(sl.length===3&&sl.reduce((s,d)=>s+d.sleep,0)/3<C.th.sleep)o.push("Uyku ortalaması "+C.th.sleep+" saatin altında");
+  // Çalıştığı hâlde soru sayısı girmeyen öğrenci ("Bugün soru çözmedim" diyen hariç): analizler eksik veriye dayanır.
+  const nq=past.slice(-5).filter(d=>d.m>=30&&!d.q&&!d.nq).length;
+  if(nq>=3)o.push("Son 5 günün "+nq+({3:"'ünde",4:"'ünde",5:"'inde"})[nq]+" soru sayısı girilmedi");
   return o;
 }
 function trendCard(x){

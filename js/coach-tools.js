@@ -132,14 +132,14 @@ function detailView(){
   return `${head}
   <section class="hero"><div class="st"><span class="dot ${DOT[x.st]}"></span>${LBL[x.st]}</div>
   <div class="big" style="font-size:34px;display:flex;align-items:center;gap:12px">${mav(x.id)}<span>${x.n}</span></div>
-  <div class="sub">Net çalışma: ${Math.floor(x.m/60)} sa ${x.m%60} dk</div></section>
+  <div class="sub">Net çalışma: ${Math.floor(x.m/60)} sa ${x.m%60} dk</div>${profBadge(x.id)}</section>
   <div class="stats"><div class="stat"><b>${sn}</b><span>çözülen soru</span></div><div class="stat"><b>${sn?"%"+acc:"–"}</b><span>doğruluk</span></div><div class="stat"><b>${x.p>=1?"✓":"–"}</b><span>program</span></div></div>
   <div class="dcols">${past||DTAB==="o"?`<div id="detail-history">${past?"":histCard(x.id,x)}</div>`:""}
   ${past||DTAB==="o"?`<div class="card"><h2>Derslere göre sorular</h2>${Object.keys(by).length?Object.entries(by).map(([k,v])=>`<div class="subj"><span>${esc(k)}${v.k.length?" ("+esc(v.k.join(", "))+")":""}</span><span>${v.n} soru · ${v.c} doğru${v.b?" · "+v.b+" boş":""}</span></div>`).join(""):`<p class="empty">Henüz soru girişi yok.</p>`}</div>
   ${x.mood?`<div class="card"><h2>Gün puanı</h2><p class="empty" style="margin:0">${x.mood} / 5</p></div>`:""}`:""}
   ${!past&&DTAB==="a"?`<div id="detail-target">${aiCard(x.id)+goalRoad(x.id)+netChartsCard(x.id)+trendCard(x)+coachCards(x,sn)+ktCoachCard(x.id)+targetForm(x.id,false)}</div>`:""}
   ${!past&&DTAB==="g"?`<div id="detail-tasks">${weekGrid(x)+taskCard(x)+planUploadCard(x)}</div>`:""}
-  ${!past&&DTAB==="d"?`${denemeCard(x)+reportCard(x)+parentCard(x)+contactCard(x)+adminCard(x)}`:""}
+  ${!past&&DTAB==="d"?`${profCard(x)+denemeCard(x)+reportCard(x)+parentCard(x)+contactCard(x)+adminCard(x)}`:""}
   ${past||DTAB==="o"?`<div class="card"><h2>Günün akışı</h2>${!past&&x.rbk?`<p class="empty" style="color:var(--warn);margin:0 0 8px;font-size:14px">⚠️ Öğrenci bugün günü sıfırladı (saat ${hm(x.rbk.t)}). Önceki kayıt (${esc(x.rbk.txt)}) saklı; öğrenci ana sayfadaki “Geri getir” ile geri alabilir.</p>`:""}${x.L.length?`<ul class="tl">${x.L.slice().reverse().map(l=>`<li><time>${l.t}</time>${l.m}</li>`).join("")}</ul>`:`<p class="empty">${past?"Bu güne ait hareket kaydı yok.":"Bugün henüz bir hareket yok."}</p>`}</div>`:""}</div>`;
 }
 const SIC={

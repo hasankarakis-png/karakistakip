@@ -719,3 +719,30 @@ body.coach,body.stu{--mbme:#2b3a10;--mbme-ink:#f3f3ee;--mbot:#1f1f1f;--mbot-ink:
 .rd-it small{display:block;color:var(--mute);font-size:11px}
 .pastbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;padding:8px 12px;border-radius:12px;border:1px solid var(--warn);background:color-mix(in srgb,var(--warn) 10%,transparent);font-size:14px}
 .pastbar .chip{margin-left:auto;min-height:34px;padding:6px 12px;font-size:13px}
+/* v3.7 · profil satırı, kurulum sihirbazı, gün sonu ekranı, uzun sayaç */
+.pr-line{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.pr-line span{font-size:12px;font-weight:800;padding:4px 10px;border-radius:999px;background:var(--goldsoft);color:var(--ink)}
+.pr-line .pr-off{background:transparent;border:1px solid var(--warn);color:var(--warn)}
+.setup-c{display:flex;align-items:center;gap:14px;width:100%;text-align:left;border:1px solid var(--acc);color:var(--ink);font:inherit;cursor:pointer}
+.setup-c h2{margin:0 0 2px}.setup-c p{margin:0;font-size:14px;color:var(--mute)}
+.setup-c>i{margin-left:auto;font-style:normal;font-size:22px;color:var(--mute)}
+.setup-n{display:grid;place-items:center;flex:none;width:46px;height:46px;border-radius:50%;background:var(--acc);color:#111;font:700 15px var(--fd)}
+.onb-step{background:var(--cream);border-radius:18px;padding:14px 16px;margin-top:10px}
+.onb-step>b{display:block;font:600 17px var(--fd);margin-bottom:8px}
+.onb-step.done{opacity:.75}
+.onb-ok{margin:0;font-weight:800;color:var(--acc)}
+.onb-ol{margin:0;padding-left:20px;font-size:15px;line-height:1.5}
+.dc-r{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;background:var(--cream);border-radius:16px;padding:10px 12px;margin-top:8px}
+.dc-r>span{flex:1 1 140px;min-width:0}
+.dc-r>span b{display:block;font:600 16px var(--fd)}
+.dc-r>span small{display:block;color:var(--mute);font-size:12px}
+.dc-r label{display:flex;flex-direction:column;font-size:12px;color:var(--mute);gap:3px}
+.dc-r input{width:78px}
+.dc-r select{max-width:100%}
+.dc-h{font:600 15px var(--fd);margin:14px 0 6px}
+.dc .mood{display:flex;gap:6px}
+.nn{display:flex;align-items:center;gap:12px}
+.nn>span{font-size:24px}.nn>div{flex:1;min-width:0}
+.nn small{display:block;color:var(--mute);font-size:12px}.nn b{display:block;font:600 16px var(--fd);overflow-wrap:anywhere}
+.long-c{border-color:var(--warn)}
+.long-c h2{color:var(--warn)}

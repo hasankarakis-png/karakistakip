@@ -16,7 +16,8 @@ export function baseUser(name: string) {
   const p = name.trim().split(/\s+/);
   return (slug(p[0] ?? "") + slug((p[p.length - 1] ?? "")[0] ?? "")) || "ogrenci";
 }
-const pin = () => String(100000 + (crypto.getRandomValues(new Uint32Array(1))[0] % 900000));
+// 8 haneli PIN (6 haneli yalnızca 1 milyon olasılık; tahmin denemesine karşı 100 kat güçlü). Eski PIN'ler sıfırlanana kadar çalışır.
+const pin = () => String(10000000 + (crypto.getRandomValues(new Uint32Array(1))[0] % 90000000));
 
 export async function handler(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });

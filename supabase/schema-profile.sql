@@ -1,4 +1,4 @@
--- v3.7 · Öğrenci profili (sınav türü, alan, sınıf, okul, hedef), bildirim kapsamı ve ders adı düzeltmesi. (HENÜZ UYGULANMADI — onay bekliyor)
+-- v3.7 · Öğrenci profili (sınav türü, alan, sınıf, okul, hedef), bildirim kapsamı ve ders adı düzeltmesi.
 -- Yalnızca ekleme yapar; mevcut tablolar ve izinler değişmez.
 
 create table if not exists public.student_profile(

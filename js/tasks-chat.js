@@ -39,7 +39,8 @@ function taskList(L,coach){
 let ODN=null,ODS=0,ODL=[];
 // Koç: son 7 günde tamamlanmamış görevler; bildirim merkezinde öğrenci adıyla listelenir.
 async function loadOD(){try{const r=await sb.from("weekly_tasks").select("id,student_id,title,subject,task_date").lt("task_date",day()).gte("task_date",dayN(-7)).eq("done",false).order("task_date").order("id").limit(1000);if(r.error){ODN=null;ODS=0;ODL=[]}else{const L=(r.data||[]).filter(x=>STU.some(p=>p.id===x.student_id));ODL=L;ODN=L.length;ODS=new Set(L.map(x=>x.student_id)).size}}catch(e){ODN=null;ODS=0;ODL=[]}}
-const overdue=id=>(TK[id]||[]).filter(t=>t.task_date<day()&&t.task_date>=dayN(-7)&&!t.done);
+// Öğrencinin görevleri henüz açılmadıysa (TK boş) koç için loadOD listesi kullanılır; yoksa genel bakışta gecikmeler 0 görünüyordu.
+const overdue=id=>TK[id]?TK[id].filter(t=>t.task_date<day()&&t.task_date>=dayN(-7)&&!t.done):ROLE==="coach"?ODL.filter(t=>t.student_id===id):[];
 function overdueCard(id,coach){
   const L=overdue(id);if(!L.length)return"";
   return `<div class="card" style="border-color:var(--warn)"><h2>⏰ Geciken görevler (${L.length})</h2>${taskList(L,coach)}<div class="row"><button class="btn" style="padding:11px 16px" data-rs="${dayN(1)}" data-rsid="${id}">Yarına kaydır</button><button class="chip" data-rs="${day()}" data-rsid="${id}">Bugüne al</button></div>${coach&&ROLE==="coach"?rdCard(id,L):""}</div>`;

@@ -11,10 +11,13 @@
       try { late=overdue(x.id).length; } catch(e) {}
       try { fl=flags(x.hist||[]).length; } catch(e) {}
       const noWork=!(num(x.m)||num(x.q)||x.st==="study"||x.st==="break");
-      const score=(late?late*4:0)+(fl?fl*2:0)+(noWork?1:0);
+      // Son 7 günde hiç görevi olmayan öğrenci programsız kalmış olabilir (TKALL: son 7 günün görevleri).
+      const noTask=Array.isArray(TKALL)&&!TKALL.some(t=>t.student_id===x.id);
+      const score=(late?late*4:0)+(fl?fl*2:0)+(noTask?2:0)+(noWork?1:0);
       const reasons=[];
       if(late) reasons.push(late+" geciken görev");
       if(fl) reasons.push(fl+" takip uyarısı");
+      if(noTask) reasons.push("son 7 günde görev atanmadı");
       if(noWork) reasons.push("bugün henüz çalışma kaydı yok");
       return {id:x.id,name:x.n||x.name||"Öğrenci",late,fl,noWork,score,reasons,st:x.st||"idle",m:num(x.m),q:num(x.q)};
     }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||b.late-a.late||b.fl-a.fl);
@@ -30,10 +33,18 @@
         <button class="cac-stat" data-cp="t"><span class="cac-icon cac-violet">⚑</span><span><small>Takip uyarısı</small><b>${warnN}</b><em>Öğrencileri incele</em></span></button>
         <button class="cac-stat" data-cp="s"><span class="cac-icon cac-teal">◷</span><span><small>Bugün kayıt yok</small><b>${idleN}</b><em>Öğrenci listesine git</em></span></button>
       </div>
+      ${pushBlock()}
       <div class="cac-list-head"><h3>Öncelikli takip listesi</h3><span>${items.length} öğrenci sinyal verdi</span></div>
       ${list.length?'<div class="cac-list">'+list.map((x,i)=>`<div class="cac-row"><span class="cac-rank">${String(i+1).padStart(2,"0")}</span><div class="cac-person"><b>${safeName(x)}</b><span>${x.reasons.map(esc).join(" · ")}</span></div><div class="cac-actions"><button class="cac-open" data-i="${esc(x.id)}">Kaydı aç <span aria-hidden="true">→</span></button></div></div>`).join("")+'</div>':`<div class="cac-empty"><span>✓</span><div><b>Öncelikli uyarı görünmüyor</b><p>Yeni görev veya çalışma kaydı geldikçe bu alan güncellenir.</p></div></div>`}
+      ${typeof window.ciPlans==="function"?window.ciPlans():""}
       <div class="cac-foot"><span><i></i> Canlı panel verileri</span><button data-cp="a">Sınıf deneme analizini aç <span aria-hidden="true">→</span></button></div>
     </section>`;
+  }
+  // Bildirimi kapalı öğrenciler: hatırlatma ve mesaj bildirimleri onlara gitmiyor.
+  function pushBlock(){
+    const ids=typeof pushOffIds==="function"?pushOffIds():[];
+    if(!ids.length)return "";
+    return `<details class="cac-push"><summary><span>🔕</span><b>${ids.length} öğrencide bildirim kapalı</b><em>Hatırlatma ve mesaj bildirimleri gitmiyor</em></summary><div class="cac-push-l">${ids.map(id=>`<button class="chip" data-i="${esc(id)}">${esc(stuNm(id))}</button>`).join("")}</div><p>Öğrenci uygulamayı açınca kurulum ekranı çıkar. Görüşmede birlikte açmak en hızlısı: iPhone'da önce “Ana Ekrana Ekle”, sonra Profil → Hatırlatmalar.</p></details>`;
   }
   coachView=function(){
     const html=baseCoachView.apply(this,arguments);

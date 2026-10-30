@@ -33,3 +33,11 @@
 .cac-foot>span i{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px color-mix(in srgb,var(--ok) 16%,transparent)}
 .cac-foot button{border:0;background:transparent;color:var(--acc);font:700 12px var(--fb);cursor:pointer;padding:7px 0}
 @media(max-width:560px){.cac-stats{grid-template-columns:1fr;gap:7px}.cac-stat{padding:10px 12px}.cac-stat b{font-size:22px}.cac-stat em{display:none}.cac-row{grid-template-columns:26px minmax(0,1fr);gap:8px}.cac-actions{grid-column:2;justify-self:start}.cac-open{padding:7px 9px}.cac-list-head{align-items:flex-start;flex-direction:column;gap:2px}.cac-head h2{font-size:20px}.cac-mark{width:36px;height:36px}}
+/* Bildirimi kapalı öğrenciler */
+.cac-push{border:1px dashed var(--warn);border-radius:16px;padding:10px 14px;margin:0 0 18px;background:var(--cream)}
+.cac-push summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;flex-wrap:wrap}
+.cac-push summary::-webkit-details-marker{display:none}
+.cac-push summary b{font-size:14px}.cac-push summary em{font-style:normal;color:var(--mute);font-size:12px}
+.cac-push-l{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 6px}
+.cac-push p{margin:4px 0 0;color:var(--mute);font-size:12px}
+.coach-action-center .ci-panel{margin:18px 0 14px}

@@ -1,8 +1,8 @@
-/* Karakış Takip · Koç için toplu analiz ve AI görev dağıtımı
-   Var olan task-plan/weekly_tasks akışını kullanır; şema veya RLS değiştirmez. */
+/* Karakış Takip · Toplu telafi planı (yapay zekâyla geciken görev dağıtımı)
+   Var olan task-plan/weekly_tasks akışını kullanır; şema veya RLS değiştirmez.
+   Kendi sayfası yok: Aksiyon Merkezi (coach-center.js) genel bakışta ciPlans() ile gösterir. Sayılar Aksiyon Merkezi'nde. */
 (function(){
   "use strict";
-  const previousCoachView = coachView;
   const previousUi = ui;
   const CI = { initialized:false, selected:new Set(), busy:false, message:"", lastResults:[] };
   const ciRoster = () => {
@@ -34,13 +34,7 @@
     const prepared=ready.filter(x=>typeof RD!=="undefined"&&RD[x.id]&&RD[x.id].st==="ok");
     const completed=rows.filter(x=>typeof RD!=="undefined"&&RD[x.id]&&RD[x.id].st==="done").length;
     return `<section class="ci-panel" aria-labelledby="ci-title">
-      <div class="ci-head"><div><p class="ci-eyebrow">KARAKIŞ · AKILLI KOÇLUK</p><h2 id="ci-title">Toplu analiz ve görev dağıtımı</h2><p class="ci-sub">Aksayan öğrencileri belirle, her biri için ayrı telafi planı oluştur ve hazır planları tek işlemle uygula.</p></div><span class="ci-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1m-8.6 8.6-2.1 2.1"/><circle cx="12" cy="12" r="4"/></svg></span></div>
-      <div class="ci-stats">
-        <div class="ci-stat"><span>Öğrenci</span><b>${rows.length}</b><small>Toplam kayıt</small></div>
-        <div class="ci-stat ${eligible.length?"is-warn":""}"><span>Geciken görev</span><b>${lateTotal}</b><small>${eligible.length} öğrencide</small></div>
-        <div class="ci-stat"><span>Takip uyarısı</span><b>${warningTotal}</b><small>Uyarı bulunan öğrenci</small></div>
-        <div class="ci-stat"><span>Bugün kaydı yok</span><b>${idleTotal}</b><small>Çalışma takibi gerekli</small></div>
-      </div>
+      <div class="ci-head"><div><p class="ci-eyebrow">YAPAY ZEKÂ · TELAFİ PLANI</p><h2 id="ci-title">Geciken görevleri dağıt</h2><p class="ci-sub">Geciken görevi olan öğrenciler için kişiye özel telafi planı hazırla, inceleyip tek işlemle uygula.</p></div><span class="ci-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1m-8.6 8.6-2.1 2.1"/><circle cx="12" cy="12" r="4"/></svg></span></div>
       <div class="ci-toolbar"><div><h3>Telafi planı oluştur</h3><p>Yalnızca geciken, henüz tamamlanmamış görevler planlanır.</p></div><div class="ci-actions"><button class="ci-btn ci-btn-quiet" data-ci-selectall="1">${ready.length===eligible.length?"Seçimi kaldır":"Tümünü seç"}</button><button class="ci-btn ci-btn-primary" data-ci-generate="1" ${CI.busy||!ready.length?"disabled":""}>${CI.busy?"Planlar hazırlanıyor…":"✦ Yapay zekâyla plan oluştur"}</button></div></div>
       ${eligible.length?`<div class="ci-list">${eligible.map(x=>{
         const chosen=CI.selected.has(x.id),status=ciStatus(x.id);
@@ -53,11 +47,8 @@
       <p class="ci-note">Güvenlik: Yapay zekâ önerileri önce önizleme durumunda hazırlanır. “Hazır planları uygula” seçilince mevcut görevlerin tarihleri değiştirilir; tamamlanmış görevler değiştirilmez. Yeni görev kaydı veya veri tabanı şeması oluşturulmaz.</p>
     </section>`;
   }
-  coachView=function(){
-    const html=previousCoachView.apply(this,arguments);
-    if(typeof ROLE==="undefined"||ROLE!=="coach"||typeof CPG==="undefined"||CPG!=="t"||typeof sel!=="undefined"&&sel)return html;
-    try{return html.replace("</section>",ciCard()+"</section>");}catch(e){return html;}
-  };
+  // Geciken görevi olan öğrenci yoksa genel bakışta yer kaplamaz.
+  window.ciPlans=function(){try{return ciRoster().some(x=>x.late>0)?ciCard():""}catch(e){return ""}};
   async function ciGenerate(){
     if(CI.busy)return;
     const rows=ciRoster().filter(x=>CI.selected.has(x.id)&&x.late>0);

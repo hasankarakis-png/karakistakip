@@ -12,6 +12,8 @@ const TZ = 3 * 3600e3; // Türkiye UTC+3 (yaz saati uygulaması yok)
 const istDay = (n = 0) => new Date(Date.now() + TZ + n * 864e5).toISOString().slice(0, 10);
 const istHour = () => new Date(Date.now() + TZ).getUTCHours();
 const DAILY_MAX = 3;
+// Unutulan sayaç: 3 saati geçen açık ders oturumuna bir kez bildirim (mesaj yazılmaz). break_nudges anahtarı: break_start = -oturum başlangıcı.
+const LONG_MS = 3 * 3600e3;
 const GUN = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
 
 export function eq(a: string, b: string) {
@@ -134,16 +136,43 @@ export async function handler(req: Request): Promise<Response> {
     const bs = Number(r?.state?.cur?.bs);
     return Number.isFinite(bs) && now - bs >= min * 60000 && now - bs <= 6 * 3600e3;
   });
-  if (!due.length) return J({ ok: true, sent: 0 });
+  const { data: srows } = await sb.from("daily").select("student_id,day,state").gte("day", istDay(-1)).eq("state->>status", "study");
+  const longs = (srows ?? []).filter((r: any) => {
+    const c = r?.state?.cur, st = Number(c?.start);
+    if (!Number.isFinite(st)) return false;
+    const net = now - st - (Number(c?.brk) || 0);
+    return net >= LONG_MS && net <= 12 * 3600e3;
+  });
+  if (!due.length && !longs.length) return J({ ok: true, sent: 0 });
 
   const pub = K.VAPID_PUBLIC_KEY, priv = K.VAPID_PRIVATE_KEY;
   if (pub && priv) webpush.setVapidDetails(K.VAPID_SUBJECT ?? "mailto:admin@karakis.app", pub, priv);
+  let long = 0;
+  if (pub && priv) for (const r of longs) {
+    const sid = r.student_id, key = -Number(r.state.cur.start);
+    const { data: ins } = await sb.from("break_nudges").upsert({ student_id: sid, break_start: key }, { onConflict: "student_id,break_start", ignoreDuplicates: true }).select("student_id");
+    if (!ins || !ins.length) continue;
+    const { data: subs } = await sb.from("push_subs").select("id,endpoint,p256dh,auth").eq("student_id", sid);
+    let ok = 0;
+    for (const p of subs ?? []) {
+      if (!/^https:\/\//.test(String(p.endpoint))) continue;
+      try {
+        await webpush.sendNotification({ endpoint: p.endpoint, keys: { p256dh: p.p256dh, auth: p.auth } }, JSON.stringify({ title: "⏰ Sayacın 3 saattir açık", body: "Hâlâ çalışıyorsan devam et. Bıraktıysan uygulamada bıraktığın saati seç, süren düzeltilsin.", url: "./", tag: "uzun" }), { TTL: 1800, timeout: 8000 });
+        ok++;
+      } catch (e: any) {
+        if (e?.statusCode === 404 || e?.statusCode === 410) await sb.from("push_subs").delete().eq("id", p.id);
+      }
+    }
+    await sb.from("break_nudges").update({ push: ok }).eq("student_id", sid).eq("break_start", key);
+    long++;
+  }
+  if (!due.length) return J({ ok: true, sent: 0, long });
   const dayStart = new Date(istDay() + "T00:00:00+03:00").toISOString();
   let sent = 0, pushed = 0;
 
   for (const r of due) {
     const s = r.state, cur = s.cur, bs = Number(cur.bs), sid = r.student_id;
-    const { count } = await sb.from("break_nudges").select("student_id", { count: "exact", head: true }).eq("student_id", sid).gte("sent_at", dayStart);
+    const { count } = await sb.from("break_nudges").select("student_id", { count: "exact", head: true }).eq("student_id", sid).gt("break_start", 0).gte("sent_at", dayStart);
     if ((count ?? 0) >= DAILY_MAX) continue;
     // Aynı mola için ikinci kez gönderme: birincil anahtar çakışırsa satır dönmez.
     const { data: ins } = await sb.from("break_nudges").upsert({ student_id: sid, break_start: bs }, { onConflict: "student_id,break_start", ignoreDuplicates: true }).select("student_id");
@@ -177,7 +206,7 @@ export async function handler(req: Request): Promise<Response> {
     await sb.from("break_nudges").update({ message_id: msg?.id ?? null, push: ok }).eq("student_id", sid).eq("break_start", bs);
     sent++; pushed += ok;
   }
-  return J({ ok: true, due: due.length, sent, pushed });
+  return J({ ok: true, due: due.length, sent, pushed, long });
 }
 
 Deno.serve(handler);

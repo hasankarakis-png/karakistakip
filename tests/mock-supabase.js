@@ -24,7 +24,7 @@
     ],
     messages:[{id:1,student_id:"s2",from_coach:false,body:"Hocam bu hafta deneme sonucum düştü, ne yapmalıyım?",created_at:new Date(now-20*60000).toISOString(),read_at:null,kind:"chat"},{id:2,student_id:"s1",from_coach:true,body:"Ayşe, molan biraz uzadı ☕ 25 dakikalık bir odakla masaya dönelim!",created_at:new Date(now-26*3600000).toISOString(),read_at:new Date(now-25*3600000).toISOString(),kind:"auto"},{id:3,student_id:"s1",from_coach:false,body:"Tamam hocam, döndüm 👍",created_at:new Date(now-25*3600000).toISOString(),read_at:new Date(now-24*3600000).toISOString(),kind:"chat"},{id:4,student_id:"s1",from_coach:true,body:"Süpersin! Akşam deneme sonucunu da yükle.",created_at:new Date(now-50*60000).toISOString(),read_at:null,kind:"chat"}],
     app_settings:[{key:"nudge",value:{on:true,min:60,quiet_from:0,quiet_to:7}},{key:"wa",value:{on:false,chat:true,nudge:true}}],student_contacts:[{student_id:"s1",phone:"905321234567",parent_phone:null,wa_ok:false}],break_nudges:[{student_id:"s3",break_start:now-9000000,sent_at:new Date(now-3600000).toISOString(),push:1,wa_status:null}],
-    goals:[],notes:[],exam_results:[],exam_targets:[],ai_reports:[],plan_drafts:[],profile_photos:[],topic_progress:[],challenges:[{id:2,title:"Yeni süre yarışması v2",metric:"minutes",start_day:dn(-3),end_day:dn(3),notified_at:"x",chat_open:true},{id:1,title:"Süre şampiyonluğu",metric:"minutes",start_day:dn(-10),end_day:dn(-4),notified_at:"x",chat_open:true}],push_subs:[]
+    goals:[],notes:[],exam_results:[],exam_targets:[],ai_reports:[],plan_drafts:[],profile_photos:[],topic_progress:[],student_profile:[{student_id:"s1",exam:"YKS",field:"SAY",grade:"12",school:null,target:"Tıp"}],exam_calendar:[],challenges:[{id:2,title:"Yeni süre yarışması v2",metric:"minutes",start_day:dn(-3),end_day:dn(3),notified_at:"x",chat_open:true},{id:1,title:"Süre şampiyonluğu",metric:"minutes",start_day:dn(-10),end_day:dn(-4),notified_at:"x",chat_open:true}],push_subs:[]
   };
   window.__CALLS=[];
   function Q(t){this.t=t;this.f=[];this.op="select";this.one=false;this.payload=null}
@@ -62,6 +62,7 @@
     rpc:async(n,a)=>{window.__CALLS.push("rpc:"+n+":"+JSON.stringify(a));
       if(n==="task_reschedule"){let c=0;FX.weekly_tasks.forEach(t=>{if(a.p_ids.includes(t.id)){t.task_date=a.p_date;c++}});return {data:c,error:null}}
       if(n==="msg_read"){FX.messages.forEach(m=>{if(m.student_id===a.p_student&&!m.from_coach)m.read_at=new Date().toISOString()});return {data:null,error:null}}
+      if(n==="push_coverage")return {data:(window.__PUSHCOV||[{student_id:"s1",n:1}]),error:null};
       if(n==="challenge_board")return {data:[{label:"Ayşe Y.",total:640,today:80,live:true},{label:"Zeynep K.",total:520,today:120},{label:"Ali Ç.",total:90,today:0}],error:null};
       return {data:[],error:null}},
     channel:()=>ch

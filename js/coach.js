@@ -1,7 +1,7 @@
 /* koç: öğrenci yönetimi ve sınıf analizi */
 function admMsg(){return ADMMSG?`<div class="card" style="border-color:${ADMMSG.err?"var(--warn)":"var(--acc)"}"><p style="margin:0 0 8px">${ADMMSG.err?esc(ADMMSG.err):esc(ADMMSG.t)}</p>${ADMMSG.err?"":`<p class="empty" style="font-size:13px;margin:0 0 8px">Bu bilgi bir daha gösterilmez; şimdi öğrenciye ilet.</p>`}<button class="chip" id="admok">Tamam</button></div>`:""}
 function addStudentCard(){
-  return `${admMsg()}<details class="card"><summary style="cursor:pointer;font-weight:700">➕ Yeni öğrenci ekle</summary><div class="row"><label>Ad Soyad<input id="sname" type="text" maxlength="60" style="width:200px"></label><button class="btn" style="padding:11px 16px" id="admadd">Hesap oluştur</button></div><p class="empty" style="font-size:13px;margin:0">Kullanıcı adı ve 6 haneli PIN otomatik üretilir.</p></details>`;
+  return `${admMsg()}<details class="card"><summary style="cursor:pointer;font-weight:700">➕ Yeni öğrenci ekle</summary><div class="row"><label>Ad Soyad<input id="sname" type="text" maxlength="60" style="width:200px"></label><button class="btn" style="padding:11px 16px" id="admadd">Hesap oluştur</button></div><p class="empty" style="font-size:13px;margin:0">Kullanıcı adı ve 8 haneli PIN otomatik üretilir.</p></details>`;
 }
 function adminCard(x){
   return `<div class="card"><h2>Hesap</h2>${admMsg()}<div class="row"><button class="chip" id="admreset">🔑 PIN sıfırla</button><button class="chip" id="admdel" style="border-color:var(--warn)">🗑 Öğrenciyi sil</button></div></div>`;
@@ -417,7 +417,8 @@ const dbw=p=>Promise.resolve(p).then(r=>{if(r&&r.error)setSync("⚠️ "+r.error
 // ya da kaydedilmemiş bir form taslağı (not, görev, soru girişi, seçilmiş dosya…) varsa yenileme ertelenir.
 const DRAFTS=["note","gq","gm","tkt","tka","bkt","bka","cht","sname","dad","dnet","qn","qc","qb","qk","exn","cph","cpp","tgn","tgp","tgu","tgb","tgs","bmt","bma","rpt","puwn","exf","puf","chin","cin"];
 const dirty=()=>DRAFTS.some(id=>{const e=document.getElementById(id);if(!e)return false;if(e.type==="file")return !!(e.files&&e.files.length);return e.value!==e.defaultValue});
-const busy=()=>/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||"")||dirty();
+// Gün sonu ekranı ya da kurulum sihirbazı açıkken de yenileme bekler (yazılanlar DC.v içinde, ama ekran zıplamasın).
+const busy=()=>/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||"")||dirty()||!!DC||ONB.open;
 const loginView=msg=>`<div class="lgx"><div class="lgx-bg"><i class="o1"></i><i class="o2"></i><i class="o3"></i><i class="gr"></i></div>
 <section class="lgx-in"><div class="lgx-left"><div class="lgx-brand lg-u1"><span class="lgx-k">K</span><div><b>KARAKIŞ <em>TAKİP</em></b><small>Eğitim &amp; Danışmanlık</small></div></div>
 <h1 class="lg-u2">Çalışmanın her gününü <em>görünür</em> kıl.</h1>

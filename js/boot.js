@@ -60,7 +60,7 @@ async function loadStudent(){
     if(S===loc&&loc.log.length&&(!srv||loc.log.length>srv.log.length))DIRTY=true;
   }
   S.day=day();if(DIRTY)save();
-  await pullStudent();await Promise.all([loadExams(ME),loadReport(ME),loadTarget(ME),loadTasks(ME),loadHist(ME)]);
+  await pullStudent();await Promise.all([loadExams(ME),loadReport(ME),loadTarget(ME),loadTasks(ME),loadHist(ME),profLoad(ME),calLoad()]);
 }
 async function pullStudent(){
   const [g,n]=await Promise.all([sb.from("goals").select("*").eq("student_id",ME).eq("day",day()).maybeSingle(),sb.from("notes").select("body,created_at").eq("student_id",ME).order("created_at")]);
@@ -73,6 +73,7 @@ async function pullCoach(){
   (g.data||[]).forEach(r=>C.goals[r.student_id]={day:r.day,s:r.subj,q:r.q,m:r.m});
   (n.data||[]).forEach(r=>(C.notes[r.student_id]=C.notes[r.student_id]||[]).push({t:Date.parse(r.created_at),x:r.body}));
   EXALL=e.data||[];TKALL=w.data||[];
+  try{await profPullCoach()}catch(x){}
 }
 let rt;
 // Verileri sayfayı yenilemeden çeker. Otomatik çağrıda yazı yazılıyorsa bekler; "↻ Yenile" düğmesi hemen çalıştırır.
