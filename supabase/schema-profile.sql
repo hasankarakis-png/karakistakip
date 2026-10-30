@@ -36,3 +36,35 @@ update public.weekly_tasks set subject = case subject
 update public.weekly_tasks set subject = case when title = 'Parabol' then 'Matematik' when title = 'Deneme' then 'Deneme' else 'Diğer' end
   where subject !~ '^[A-Za-zÇĞİÖŞÜçğıöşü]';
 alter table public.weekly_tasks enable trigger tasks_guard_trg;
+
+-- Zamanlayıcı (pg_cron → call_break_nudge): uzun mola yanında 3 saati geçen açık ders oturumu varsa da break-nudge çağrılır.
+create or replace function public.call_break_nudge()
+ returns void language plpgsql security definer set search_path to 'public', 'extensions'
+as $function$
+declare s jsonb; m int; h int; qf int; qt int; now_ms bigint := (extract(epoch from now()) * 1000)::bigint;
+begin
+  select value into s from public.app_settings where key = 'nudge';
+  if s is not null and coalesce((s->>'on')::boolean, true) is false then return; end if;
+  m := greatest(15, least(240, coalesce((s->>'min')::int, 60)));
+  h := extract(hour from (now() at time zone 'Europe/Istanbul'))::int;
+  qf := coalesce((s->>'quiet_from')::int, 0); qt := coalesce((s->>'quiet_to')::int, 7);
+  if (qf < qt and h >= qf and h < qt) or (qf > qt and (h >= qf or h < qt)) then return; end if;
+  if not exists (
+    select 1 from public.daily d
+    where d.day >= (now() at time zone 'Europe/Istanbul')::date - 1
+      and d.state->>'status' = 'break'
+      and (d.state->'cur'->>'bs') ~ '^[0-9]{12,14}$'
+      and now_ms - (d.state->'cur'->>'bs')::bigint between m * 60000 and 6 * 3600000
+      and not exists (select 1 from public.break_nudges b where b.student_id = d.student_id and b.break_start = (d.state->'cur'->>'bs')::bigint)
+  ) and not exists (
+    select 1 from public.daily d
+    where d.day >= (now() at time zone 'Europe/Istanbul')::date - 1
+      and d.state->>'status' = 'study'
+      and (d.state->'cur'->>'start') ~ '^[0-9]{12,14}$'
+      and now_ms - (d.state->'cur'->>'start')::bigint - coalesce(nullif(d.state->'cur'->>'brk','')::numeric, 0) between 3 * 3600000 and 12 * 3600000
+      and not exists (select 1 from public.break_nudges b where b.student_id = d.student_id and b.break_start = -((d.state->'cur'->>'start')::bigint))
+  ) then return; end if;
+  perform net.http_post(url := 'https://ramcghaefbbwgwtgtdtt.supabase.co/functions/v1/break-nudge',
+    headers := jsonb_build_object('Content-Type', 'application/json', 'x-cron-secret', (select value from public.app_secrets where name = 'CRON_SECRET')),
+    body := '{}'::jsonb);
+end $function$;
