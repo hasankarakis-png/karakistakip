@@ -13,7 +13,7 @@ function rpHtml(sid){
   const x=roster().find(r=>r.id===sid),st=STU.find(p=>p.id===sid)||{},ad=rpE(st.name||"Öğrenci"),h=x?x.hist:[],n=h.length||1,sum=k=>h.reduce((a,d)=>a+(d[k]||0),0);
   const L=(EX[sid]||[]).slice().sort((a,b)=>String(a.exam_date||"").localeCompare(String(b.exam_date||""))),last=L[L.length-1],tg=tgPick(sid);
   const tk=(TK[sid]||[]).filter(t=>t.task_date>=dayN(-6)&&t.task_date<=day()),tkd=tk.filter(t=>t.done).length,am=Math.round(sum("m")/n);
-  const A=AIR[sid],r=(A&&A.report)||null,s=(A&&A.stats)||null,note=((C.notes[sid]||[]).slice(-1)[0])||null;
+  const A=AIR[sid],r=(A&&A.report)||null,s=(A&&A.stats)||null,note=((C.notes[sid]||[]).filter(n=>!n.p).slice(-1)[0])||null;
   const kpi=(a,b)=>`<div class="k"><b>${a}</b><span>${b}</span></div>`;
   const li=a=>(a||[]).map(t=>`<li>${rpE(t)}</li>`).join("");
   const sec=(t,b)=>b?`<section><h2>${t}</h2>${b}</section>`:"";

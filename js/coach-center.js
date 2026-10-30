@@ -33,6 +33,7 @@
         <button class="cac-stat" data-cp="t"><span class="cac-icon cac-violet">⚑</span><span><small>Takip uyarısı</small><b>${warnN}</b><em>Öğrencileri incele</em></span></button>
         <button class="cac-stat" data-cp="s"><span class="cac-icon cac-teal">◷</span><span><small>Bugün kayıt yok</small><b>${idleN}</b><em>Öğrenci listesine git</em></span></button>
       </div>
+      ${typeof morningBlock==="function"?morningBlock():""}
       ${pushBlock()}
       <div class="cac-list-head"><h3>Öncelikli takip listesi</h3><span>${items.length} öğrenci sinyal verdi</span></div>
       ${list.length?'<div class="cac-list">'+list.map((x,i)=>`<div class="cac-row"><span class="cac-rank">${String(i+1).padStart(2,"0")}</span><div class="cac-person"><b>${safeName(x)}</b><span>${x.reasons.map(esc).join(" · ")}</span></div><div class="cac-actions"><button class="cac-open" data-i="${esc(x.id)}">Kaydı aç <span aria-hidden="true">→</span></button></div></div>`).join("")+'</div>':`<div class="cac-empty"><span>✓</span><div><b>Öncelikli uyarı görünmüyor</b><p>Yeni görev veya çalışma kaydı geldikçe bu alan güncellenir.</p></div></div>`}

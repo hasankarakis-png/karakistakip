@@ -1,11 +1,9 @@
--- v3.8 · 2. ve 3. aşama: gizli not, görüşme günlüğü, gruplar, plan şablonları, deneme takvimi, yanlış defteri, (HENÜZ UYGULANMADI — onay bekliyor)
+-- v3.8 · 2. ve 3. aşama: gizli not, görüşme günlüğü, gruplar, plan şablonları, deneme takvimi, yanlış defteri,
 -- yarışma gizliliği, KVKK izin kayıtları, veli bağlantısı, ön görüşme başvuruları, paket takibi.
 
 -- 1) Gizli koç notu: öğrenci görmez
 alter table public.notes add column if not exists private boolean not null default false;
-drop policy if exists notes_student_select on public.notes;
-create policy notes_student_select on public.notes for select to authenticated
-  using (student_id = (select auth.uid()) and not private);
+alter policy notes_student_select on public.notes using (student_id = (select auth.uid()) and not private);
 
 -- 2) Görüşme günlüğü (yalnız koç)
 create table if not exists public.meetings(
@@ -19,9 +17,7 @@ create table if not exists public.meetings(
 create index if not exists meetings_student_idx on public.meetings(student_id, met_on desc);
 
 -- 3) Gruplar: koçun öğrenciye verdiği etiketler
-alter table public.student_profile add column if not exists tags text[] not null default '{}';
-alter table public.student_profile drop constraint if exists student_profile_tags_max;
-alter table public.student_profile add constraint student_profile_tags_max check (cardinality(tags) <= 8);
+alter table public.student_profile add column if not exists tags text[] not null default '{}' check (cardinality(tags) <= 8);
 
 -- 4) Plan şablonları (yalnız koç): items = [{dow:0-6 (0=Pzt), title, subject, amount}]
 create table if not exists public.plan_templates(
@@ -105,27 +101,27 @@ create table if not exists public.packages(
   note text check (note is null or char_length(note) <= 300),
   updated_at timestamptz not null default now());
 
--- Erişim kuralları
-do $$ declare t text; begin
-  foreach t in array array['meetings','plan_templates','wrong_book','challenge_prefs','consents','parent_links','leads','packages'] loop
-    execute format('alter table public.%I enable row level security', t);
-    execute format('revoke all on public.%I from anon', t);
-    execute format('grant select, insert, update, delete on public.%I to authenticated', t);
-  end loop;
-end $$;
+-- Erişim kuralları (canlıda uygulanan biçim; MCP onay ekranı istememesi için drop/revoke içermez)
+alter table public.meetings enable row level security;
+alter table public.plan_templates enable row level security;
+alter table public.wrong_book enable row level security;
+alter table public.challenge_prefs enable row level security;
+alter table public.consents enable row level security;
+alter table public.parent_links enable row level security;
+alter table public.leads enable row level security;
+alter table public.packages enable row level security;
+grant select, insert, update, delete on public.meetings, public.plan_templates, public.wrong_book, public.challenge_prefs, public.consents, public.parent_links, public.leads, public.packages to authenticated;
 grant usage, select on sequence public.meetings_id_seq, public.plan_templates_id_seq, public.wrong_book_id_seq, public.consents_id_seq, public.leads_id_seq to authenticated;
-do $$ declare t text; begin
-  foreach t in array array['meetings','plan_templates','consents','parent_links','leads','packages'] loop
-    execute format('drop policy if exists %I on public.%I', t||'_coach_all', t);
-    execute format('create policy %I on public.%I for all to authenticated using ((select public.is_coach())) with check ((select public.is_coach()))', t||'_coach_all', t);
-  end loop;
-  foreach t in array array['wrong_book','challenge_prefs'] loop
-    execute format('drop policy if exists %I on public.%I', t||'_own', t);
-    execute format('create policy %I on public.%I for all to authenticated using (student_id = (select auth.uid())) with check (student_id = (select auth.uid()))', t||'_own', t);
-    execute format('drop policy if exists %I on public.%I', t||'_coach_select', t);
-    execute format('create policy %I on public.%I for select to authenticated using ((select public.is_coach()))', t||'_coach_select', t);
-  end loop;
-end $$;
+create policy meetings_coach_all on public.meetings for all to authenticated using ((select public.is_coach())) with check ((select public.is_coach()));
+create policy plan_templates_coach_all on public.plan_templates for all to authenticated using ((select public.is_coach())) with check ((select public.is_coach()));
+create policy consents_coach_all on public.consents for all to authenticated using ((select public.is_coach())) with check ((select public.is_coach()));
+create policy parent_links_coach_all on public.parent_links for all to authenticated using ((select public.is_coach())) with check ((select public.is_coach()));
+create policy leads_coach_all on public.leads for all to authenticated using ((select public.is_coach())) with check ((select public.is_coach()));
+create policy packages_coach_all on public.packages for all to authenticated using ((select public.is_coach())) with check ((select public.is_coach()));
+create policy wrong_book_own on public.wrong_book for all to authenticated using (student_id = (select auth.uid())) with check (student_id = (select auth.uid()));
+create policy wrong_book_coach_select on public.wrong_book for select to authenticated using ((select public.is_coach()));
+create policy challenge_prefs_own on public.challenge_prefs for all to authenticated using (student_id = (select auth.uid())) with check (student_id = (select auth.uid()));
+create policy challenge_prefs_coach_select on public.challenge_prefs for select to authenticated using ((select public.is_coach()));
 
 -- Yarışma sıralaması: takma ad, katılmayanlar gizli, "şu an çalışıyor" yalnızca koça ve öğrencinin kendisine
 create or replace function public.challenge_board(p_id bigint)
@@ -187,5 +183,9 @@ begin
       select jsonb_build_object('ad', exam_name, 'tur', exam_type, 'tarih', exam_date, 'net', total_net) x
       from public.exam_results where student_id = l.student_id order by exam_date desc nulls last, created_at desc limit 6) s));
 end $function$;
-revoke all on function public.parent_view(text) from public;
 grant execute on function public.parent_view(text) to anon, authenticated;
+
+-- İsteğe bağlı ek sıkılaştırma (Supabase SQL Editor'da çalıştırılır; MCP onay ekranı gerektirir):
+-- anon rolünün bu tablolara tablo düzeyindeki varsayılan yetkisini kaldırır. RLS zaten anon'a satır göstermez.
+-- revoke all on public.meetings, public.plan_templates, public.wrong_book, public.challenge_prefs,
+--   public.consents, public.parent_links, public.leads, public.packages from anon;

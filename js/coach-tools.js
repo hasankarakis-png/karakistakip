@@ -51,11 +51,11 @@ function coachView(){
   const hd=(t,sub,cta)=>`<div class="page-intro"><div class="pi-t">${CPG!=="o"?backBtn("Geri","pi-back"):""}<div><p>${sub}</p><h1>${t}</h1></div></div>${cta||""}</div>`;
   const rp=RPMODE?`<div class="rpban"><b>Rapor için bir öğrenci seç</b><button id="rpx">Vazgeç</button></div>`:"";
   if(CPG==="s"){const q=STQ.trim().toLocaleLowerCase("tr"),L=q?all.filter(x=>x.n.toLocaleLowerCase("tr").includes(q)):all;
-    return `<section id="coach-students" class="coach-section">${hd("Öğrenciler",all.length+" kayıt")}${rp}<div class="stu-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="stq" type="search" placeholder="Öğrenci ara…" aria-label="Öğrenci ara" autocomplete="off" value="${esc(STQ)}"></div>${L.length?grid(L):`<p class="empty">“${esc(STQ)}” ile eşleşen öğrenci yok.</p>`}</section>`}
-  if(CPG==="t")return `<section id="coach-tasks" class="coach-section">${hd("Görev yönetimi","Bildirimler, planlama ve toplu işlemler")}${notifCard()}${bulkCard()}${chOverCard()}</section>`;
+    return `<section id="coach-students" class="coach-section">${hd("Öğrenciler",all.length+" kayıt")}${rp}${leadsCard()}<div class="stu-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="stq" type="search" placeholder="Öğrenci ara…" aria-label="Öğrenci ara" autocomplete="off" value="${esc(STQ)}"></div>${L.length?grid(L):`<p class="empty">“${esc(STQ)}” ile eşleşen öğrenci yok.</p>`}</section>`}
+  if(CPG==="t")return `<section id="coach-tasks" class="coach-section">${hd("Görev yönetimi","Bildirimler, planlama ve toplu işlemler")}${notifCard()}${bulkCard()}${bcastCard()}${chOverCard()}</section>`;
   if(CPG==="c")return `<section id="coach-challenges" class="coach-section">${hd("Yarışmalar","Oluştur, duyur; sıralamayı ve sohbeti izle")}${chCoachCard(true)}</section>`;
   if(CPG==="p")return `<section id="coach-plan" class="coach-section">${hd("Program ver","Öğrenciye haftalık plan PDF'i yükle")}${planPickCard(all)}</section>`;
-  if(CPG==="a")return `<section id="coach-class" class="coach-section">${hd("Deneme analizi","Sınıfın ortak zayıf konuları")}${classCard()}</section>`;
+  if(CPG==="a")return `<section id="coach-class" class="coach-section">${hd("Deneme analizi","Takvim, eksik denemeler ve ortak zayıf konular")}${calCard()}${classCard()}</section>`;
   if(CPG==="y")return `<section id="coach-tools" class="coach-section">${hd("Ayarlar","Otomatik mesajlar, öğrenci ekleme, yedek ve eşikler")}${autoCard()}${addStudentCard()}${backupCard()}${thCard()}</section>`;
   const top=all.slice(0,6),nd=notifData(),odIds=nd.od.map(o=>o[0]),flIds=nd.fl.map(o=>o.id);
   return `<section id="coach-overview" class="coach-section">${hd("Genel bakış",esc(dt),`<button class="cta" data-cp="p"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Program ver</button>`)}<div class="kst">
@@ -113,7 +113,7 @@ function ktCoachCard(id){
   if(!(id in KTC)){KTC[id]=null;Promise.resolve(sb.from("topic_progress").select("done").eq("student_id",id).maybeSingle()).then(r=>{KTC[id]=new Set(r&&r.data&&Array.isArray(r.data.done)?r.data.done:[]);if(sel===id)render()},()=>{KTC[id]=new Set()})}
   const D=KTC[id];if(!D)return `<div class="card"><h2>Konu takibi</h2><p class="empty">Yükleniyor…</p></div>`;
   const blk=ex=>{let T=0,N=0;const rows=KT[ex].map((d,di)=>{const m=d.t.length;let n=0;d.t.forEach((_,ti)=>{if(D.has(ktId(ex,di,ti)))n++});T+=m;N+=n;const p=Math.round(n*100/m);return `<div class="ktc"><b>${esc(d.n)}</b><span class="ktpr"><i style="width:${p}%"></i></span><em>%${p}</em></div>`}).join("");return `<div class="subj"><span><b>${ex}</b></span><span>${N}/${T} konu · %${T?Math.round(N*100/T):0}</span></div>${rows}`};
-  return tekrarCard(id,D)+`<div class="card"><h2>Konu takibi</h2>${D.size?"":`<p class="empty" style="margin:0 0 6px">Öğrenci henüz konu işaretlememiş.</p>`}${blk("TYT")}<div style="height:10px"></div>${blk("AYT")}</div>`;
+  return tekrarCard(id,D)+`<div class="card"><h2>Konu takibi</h2>${D.size?"":`<p class="empty" style="margin:0 0 6px">Öğrenci henüz konu işaretlememiş.</p>`}${isLGS(id)?blk("LGS"):blk("TYT")+`<div style="height:10px"></div>`+blk("AYT")}</div>`;
 }
 let DTAB="o";
 function detTabs(){return `<div class="ktseg dtseg" role="tablist">${[["o","Özet"],["a","Analiz"],["g","Görevler"],["d","Diğer"]].map(([k,n])=>`<button data-dt="${k}" aria-pressed="${DTAB===k}">${n}</button>`).join("")}</div>`}
@@ -132,14 +132,14 @@ function detailView(){
   return `${head}
   <section class="hero"><div class="st"><span class="dot ${DOT[x.st]}"></span>${LBL[x.st]}</div>
   <div class="big" style="font-size:34px;display:flex;align-items:center;gap:12px">${mav(x.id)}<span>${x.n}</span></div>
-  <div class="sub">Net çalışma: ${Math.floor(x.m/60)} sa ${x.m%60} dk</div>${profBadge(x.id)}</section>
+  <div class="sub">Net çalışma: ${Math.floor(x.m/60)} sa ${x.m%60} dk</div>${profBadge(x.id)}${tChip(x)}</section>
   <div class="stats"><div class="stat"><b>${sn}</b><span>çözülen soru</span></div><div class="stat"><b>${sn?"%"+acc:"–"}</b><span>doğruluk</span></div><div class="stat"><b>${x.p>=1?"✓":"–"}</b><span>program</span></div></div>
   <div class="dcols">${past||DTAB==="o"?`<div id="detail-history">${past?"":histCard(x.id,x)}</div>`:""}
   ${past||DTAB==="o"?`<div class="card"><h2>Derslere göre sorular</h2>${Object.keys(by).length?Object.entries(by).map(([k,v])=>`<div class="subj"><span>${esc(k)}${v.k.length?" ("+esc(v.k.join(", "))+")":""}</span><span>${v.n} soru · ${v.c} doğru${v.b?" · "+v.b+" boş":""}</span></div>`).join(""):`<p class="empty">Henüz soru girişi yok.</p>`}</div>
   ${x.mood?`<div class="card"><h2>Gün puanı</h2><p class="empty" style="margin:0">${x.mood} / 5</p></div>`:""}`:""}
-  ${!past&&DTAB==="a"?`<div id="detail-target">${aiCard(x.id)+goalRoad(x.id)+netChartsCard(x.id)+trendCard(x)+coachCards(x,sn)+ktCoachCard(x.id)+targetForm(x.id,false)}</div>`:""}
-  ${!past&&DTAB==="g"?`<div id="detail-tasks">${weekGrid(x)+taskCard(x)+planUploadCard(x)}</div>`:""}
-  ${!past&&DTAB==="d"?`${profCard(x)+denemeCard(x)+reportCard(x)+parentCard(x)+contactCard(x)+adminCard(x)}`:""}
+  ${!past&&DTAB==="a"?`<div id="detail-target">${aiCard(x.id)+goalRoad(x.id)+netChartsCard(x.id)+trendCard(x)+coachCards(x,sn)+ktCoachCard(x.id)+wbCoachCard(x.id)+targetForm(x.id,false)}</div>`:""}
+  ${!past&&DTAB==="g"?`<div id="detail-tasks">${weekGrid(x)+taskCard(x)+planToolsCard(x)+planUploadCard(x)}</div>`:""}
+  ${!past&&DTAB==="d"?`${profCard(x)+meetCard(x)+denemeCard(x)+reportCard(x)+parentCard(x)+kvkkCard(x)+contactCard(x)+pkgCard(x)+adminCard(x)}`:""}
   ${past||DTAB==="o"?`<div class="card"><h2>Günün akışı</h2>${!past&&x.rbk?`<p class="empty" style="color:var(--warn);margin:0 0 8px;font-size:14px">⚠️ Öğrenci bugün günü sıfırladı (saat ${hm(x.rbk.t)}). Önceki kayıt (${esc(x.rbk.txt)}) saklı; öğrenci ana sayfadaki “Geri getir” ile geri alabilir.</p>`:""}${x.L.length?`<ul class="tl">${x.L.slice().reverse().map(l=>`<li><time>${l.t}</time>${l.m}</li>`).join("")}</ul>`:`<p class="empty">${past?"Bu güne ait hareket kaydı yok.":"Bugün henüz bir hareket yok."}</p>`}</div>`:""}</div>`;
 }
 const SIC={

@@ -23,6 +23,14 @@ AYT:[
 ["Coğrafya","Ekosistem|Nüfus ve Göç|Yerleşme|Türkiye'nin Yer Şekilleri|Türkiye'de İklim ve Bitki Örtüsü|Ekonomik Faaliyetler (Tarım, Hayvancılık, Sanayi)|Ulaşım ve Ticaret|Doğal Afetler|Bölgesel Kalkınma ve Projeler|Küresel Ortam|Çevre ve Toplum|Ülkeler Arası Etkileşim|Jeopolitik Konum"],
 ["Felsefe Grubu","Felsefe: Bilgi Felsefesi|Felsefe: Varlık Felsefesi|Felsefe: Ahlak ve Siyaset Felsefesi|Felsefe: Bilim, Sanat ve Din Felsefesi|Psikoloji: Bilimi ve Temel Süreçler|Psikoloji: Öğrenme, Bellek, Düşünme|Psikoloji: Ruh Sağlığı|Sosyoloji: Toplumsal Yapı|Sosyoloji: Toplumsal Değişme ve Gelişme|Sosyoloji: Kültür ve Toplumsal Kurumlar|Mantık: Önermeler|Mantık: Kıyaslar ve Akıl Yürütme"],
 ["Din Kültürü","Dünya ve Ahiret|Kur'an'a Göre Hz. Muhammed|Kur'an'da Bazı Kavramlar|İnançla İlgili Meseleler|İslam ve Bilim|Yaşayan Dinler|Din ve Hayat|Hz. Muhammed'in Örnekliği"]
+],
+LGS:[
+["Türkçe","Fiilimsiler|Cümlenin Ögeleri|Fiilde Çatı|Cümle Türleri|Sözcükte Anlam|Cümlede Anlam|Paragraf|Söz Sanatları|Yazım Kuralları|Noktalama İşaretleri|Metin Türleri|Anlatım Bozuklukları|Sözel Mantık ve Görsel Okuma"],
+["Matematik","Çarpanlar ve Katlar|Üslü İfadeler|Kareköklü İfadeler|Veri Analizi|Basit Olayların Olma Olasılığı|Cebirsel İfadeler ve Özdeşlikler|Doğrusal Denklemler|Eşitsizlikler|Üçgenler|Eşlik ve Benzerlik|Dönüşüm Geometrisi|Geometrik Cisimler"],
+["Fen Bilimleri","Mevsimler ve İklim|DNA ve Genetik Kod|Basınç|Madde ve Endüstri|Basit Makineler|Enerji Dönüşümleri ve Çevre Bilimi|Elektrik Yükleri ve Elektrik Enerjisi"],
+["İnkılap Tarihi","Bir Kahraman Doğuyor|Millî Uyanış|Millî Bir Destan: Ya İstiklal Ya Ölüm|Atatürkçülük ve Çağdaşlaşan Türkiye|Demokratikleşme Çabaları|Atatürk Dönemi Türk Dış Politikası|Atatürk'ün Ölümü ve Sonrası"],
+["Din Kültürü","Kader İnancı|Zekât ve Sadaka|Din ve Hayat|Hz. Muhammed'in Örnekliği|Kur'an-ı Kerim ve Özellikleri"],
+["İngilizce","Friendship|Teen Life|In the Kitchen|On the Phone|The Internet|Adventures|Tourism|Chores|Science|Natural Forces"]
 ]};
 const KT=Object.fromEntries(Object.entries(KT_DATA).map(([e,L])=>[e,L.map(([n,t])=>({n,t:t.split("|")}))]));
 let KTS={exam:"TYT",ders:null,done:null,st:"idle",timer:null};
@@ -70,7 +78,7 @@ function tekrarCard(id,done,lim){
   return `<div class="card"><h2>🔁 Öncelikli tekrar listesi</h2><p class="empty" style="margin:0 0 8px;font-size:14px">Son denemelerde tekrar eden yanlışlar</p>${L.map(o=>`<div class="subj"><span><b>${esc(o.ders)}</b> · ${esc(o.konu)}<br><small style="color:var(--mut)">${o.n} denemede yanlış · toplam ${o.y} yanlış${o.mt?(o.mt.done?" · konuyu bitirmişsin → soru çöz":" · konu takibinde işaretli değil → önce konuyu çalış"):""}</small></span><span>${o.mt?(o.mt.done?"✅":"📖"):""}</span></div>`).join("")}</div>`;
 }
 function konuTab(){
-  ktLoad();if(!KTS.done)return `<p class="empty">Yükleniyor…</p>`;
+  ktLoad();const EXS=isLGS(ME)?["LGS"]:["TYT","AYT"];if(!EXS.includes(KTS.exam)){KTS.exam=EXS[0];KTS.ders=null}if(!KTS.done)return `<p class="empty">Yükleniyor…</p>`;
   const ex=KTS.exam,di=KTS.ders;
   if(di!=null&&KT[ex][di]){
     const d=KT[ex][di],[n,m]=ktCount(ex,di),p=m?Math.round(n*100/m):0;
@@ -80,7 +88,7 @@ function konuTab(){
   }
   let T=0,D=0;KT[ex].forEach((_,i)=>{const [n,m]=ktCount(ex,i);D+=n;T+=m});
   return `${stHead("Konu Takibi")}${tekrarCard(ME,KTS.done)}
-  <div class="ktseg">${["TYT","AYT"].map(e=>`<button data-kte="${e}" aria-pressed="${ex===e}">${e}</button>`).join("")}</div>
+  <div class="ktseg">${EXS.map(e=>`<button data-kte="${e}" aria-pressed="${ex===e}">${e}</button>`).join("")}</div>
   <p class="sub2" style="margin:10px 2px">${ex} genel ilerleme: <b style="color:var(--ink)">${D}/${T} konu · %${T?Math.round(D*100/T):0}</b></p>
   ${KT[ex].map((d,i)=>{const [n,m]=ktCount(ex,i),p=m?Math.round(n*100/m):0;return `<button class="ktd" data-ktd="${i}"><b>${esc(d.n)}</b><span class="ktpr"><i style="width:${p}%"></i></span><em>%${p}</em><i aria-hidden="true">›</i></button>`}).join("")}`;
 }

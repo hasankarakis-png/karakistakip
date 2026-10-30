@@ -8,14 +8,14 @@ const isLGS=id=>(PROF[id]||{}).exam==="LGS";
 const subjFor=id=>isLGS(id)?SUBJ_LGS:SUBJ_YKS;
 function subjApply(){if(ROLE!=="student")return;SUBJ=subjFor(ME);if(!SUBJ.includes(subj))subj=SUBJ[0]}
 async function profLoad(id){try{const {data}=await sb.from("student_profile").select("*").eq("student_id",id).maybeSingle();PROF[id]=data||{}}catch(e){PROF[id]=PROF[id]||{}}subjApply()}
-async function calLoad(){try{const {data}=await sb.from("exam_calendar").select("id,exam_date,title,exam_type").gte("exam_date",day()).order("exam_date");EXCAL=data||[]}catch(e){}}
+async function calLoad(){try{const {data}=await sb.from("exam_calendar").select("id,exam_date,title,exam_type,scope").gte("exam_date",dayN(-6)).order("exam_date");EXCAL=data||[]}catch(e){}}
 async function profPullCoach(){
-  const [p,c,k]=await Promise.all([sb.from("student_profile").select("*"),sb.rpc("push_coverage"),sb.from("exam_calendar").select("id,exam_date,title,exam_type").gte("exam_date",day()).order("exam_date")]).catch(()=>[{},{},{}]);
+  const [p,c,k]=await Promise.all([sb.from("student_profile").select("*"),sb.rpc("push_coverage"),sb.from("exam_calendar").select("id,exam_date,title,exam_type,scope").order("exam_date")]).catch(()=>[{},{},{}]);
   if(p&&p.data){Object.keys(PROF).forEach(k=>delete PROF[k]);p.data.forEach(r=>PROF[r.student_id]=r)}
   if(c&&!c.error&&Array.isArray(c.data)){PUSHCOV={};c.data.forEach(r=>PUSHCOV[r.student_id]=num(r.n))}
   if(k&&k.data)EXCAL=k.data;
 }
-const lgsCal=()=>EXCAL.find(r=>r.exam_type==="LGS")||null;
+const lgsCal=()=>EXCAL.find(r=>r.exam_type==="LGS"&&r.scope!=="deneme")||null;
 const pushOff=id=>PUSHCOV!==null&&!PUSHCOV[id];
 const pushOffIds=()=>PUSHCOV===null?[]:STU.filter(p=>!PUSHCOV[p.id]).map(p=>p.id);
 // Kısa profil satırı: "YKS · SAY · 12. sınıf · 🎯 Tıp" (+ koç için bildirim durumu)
@@ -26,7 +26,7 @@ function profBadge(id){
   if(!a.length&&!off)return ROLE==="coach"?`<div class="pr-line"><button class="chip" data-dt="d" style="padding:4px 10px;font-size:13px">+ Profil bilgisi ekle</button></div>`:"";
   return `<div class="pr-line">${a.map(t=>`<span>${esc(t)}</span>`).join("")}${off}</div>`;
 }
-const prVal=(id,k)=>{const d=PRD[id];if(d&&k in d)return d[k];if(k==="lgs"){const r=lgsCal();return r?r.exam_date:""}return (PROF[id]||{})[k]||(k==="exam"?"YKS":"")};
+const prVal=(id,k)=>{const d=PRD[id];if(d&&k in d)return d[k];if(k==="lgs"){const r=lgsCal();return r?r.exam_date:""}if(k==="tags")return ((PROF[id]||{}).tags||[]).join(", ");return (PROF[id]||{})[k]||(k==="exam"?"YKS":"")};
 function profCard(x){
   const id=x.id,ex=prVal(id,"exam"),opt=(L,v,ph)=>(ph?`<option value="">${ph}</option>`:"")+L.map(o=>`<option value="${esc(o)}"${o===v?" selected":""}>${esc(o==="Mezun"?"Mezun":/^\d+$/.test(o)?o+". sınıf":o)}</option>`).join("");
   const m=PRMSG[id];
@@ -36,12 +36,13 @@ function profCard(x){
   <label>Sınıf<select id="prg" data-pr="grade">${opt(ex==="LGS"?["7","8"]:["9","10","11","12","Mezun"],prVal(id,"grade"),"Seçilmedi")}</select></label></div>
   <div class="row"><label>Okul<input id="prs" data-pr="school" maxlength="80" autocomplete="off" value="${esc(prVal(id,"school"))}" style="width:200px"></label><label>Hedef<input id="prt" data-pr="target" maxlength="120" autocomplete="off" placeholder="${ex==="LGS"?"ör. Fen lisesi":"ör. Dicle Üni. Tıp"}" value="${esc(prVal(id,"target"))}" style="width:220px"></label></div>
   ${ex==="LGS"?`<div class="row"><label>LGS sınav tarihi<input id="prl" data-pr="lgs" type="date" value="${esc(prVal(id,"lgs"))}"></label></div><p class="empty" style="margin:2px 0 0;font-size:12px">MEB resmî tarihi açıklayınca gir; tüm LGS öğrencilerinin geri sayımı buna göre çalışır.</p>`:""}
+  <div class="row"><label style="flex:1 1 260px">Gruplar (virgülle)<input id="prtag" data-pr="tags" maxlength="160" autocomplete="off" placeholder="ör. Pazartesi grubu, Burslu" value="${esc(prVal(id,"tags"))}" style="width:100%"></label></div>
   <div class="row"><button class="btn" style="padding:11px 16px" data-prsave="${id}">Kaydet</button></div>
   ${m?`<p class="empty" style="font-size:13px;margin:6px 0 0;${m.err?"color:var(--warn)":""}">${esc(m.t)}</p>`:""}</div>`;
 }
 async function profSave(id){
   const g=k=>String(prVal(id,k)||"").trim(),ex=g("exam")==="LGS"?"LGS":"YKS";
-  const row={student_id:id,exam:ex,field:ex==="LGS"?null:(PR_FIELDS.includes(g("field"))?g("field"):null),grade:PR_GRADES.includes(g("grade"))?g("grade"):null,school:g("school").slice(0,80)||null,target:g("target").slice(0,120)||null,updated_at:new Date().toISOString()};
+  const row={student_id:id,exam:ex,field:ex==="LGS"?null:(PR_FIELDS.includes(g("field"))?g("field"):null),grade:PR_GRADES.includes(g("grade"))?g("grade"):null,school:g("school").slice(0,80)||null,target:g("target").slice(0,120)||null,tags:[...new Set(g("tags").split(",").map(t=>t.trim().slice(0,24)).filter(Boolean))].slice(0,8),updated_at:new Date().toISOString()};
   if(ex==="LGS"&&row.grade&&!["7","8"].includes(row.grade))row.grade=null;
   if(ex==="YKS"&&["7","8"].includes(row.grade))row.grade=null;
   const r=await dbw(sb.from("student_profile").upsert(row));
@@ -59,3 +60,8 @@ async function profSave(id){
 document.addEventListener("input",e=>{const k=e.target.dataset&&e.target.dataset.pr;if(k&&sel){(PRD[sel]=PRD[sel]||{})[k]=e.target.value;PRMSG[sel]=null}});
 document.addEventListener("change",e=>{const k=e.target.dataset&&e.target.dataset.pr;if(!k||!sel)return;(PRD[sel]=PRD[sel]||{})[k]=e.target.value;PRMSG[sel]=null;if(k==="exam")render()});
 (function(){const prev=ui;ui=function(t){if(t.dataset&&t.dataset.prsave){profSave(t.dataset.prsave);return true}return prev.apply(this,arguments)}})();
+// Tarih yardımcıları (hafta Pazartesi başlar): wkMon(0)=bu haftanın Pazartesi'si, addD("2026-11-02",3), dowOf → 0=Pzt … 6=Paz
+const wkMon=(o=0)=>{const d=new Date();d.setDate(d.getDate()-(d.getDay()+6)%7+o*7);return ymd(d)};
+const addD=(s,n)=>{const d=new Date(s+"T12:00:00");d.setDate(d.getDate()+n);return ymd(d)};
+const dowOf=s=>(new Date(s+"T12:00:00").getDay()+6)%7;
+const DOWS=["Pzt","Sal","Çar","Per","Cum","Cmt","Paz"];

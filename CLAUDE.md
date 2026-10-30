@@ -28,6 +28,10 @@ Hasan Karakış'ın (Karakış Eğitim & Danışmanlık, Diyarbakır) ~18 YKS/LG
 | js/coach-center.js (+coach-center.css) | koç genel bakışındaki "Aksiyon Merkezi": `coachView`'ı sarar, öğrencileri gecikme/uyarı/görevsizliğe göre önceliklendirir, bildirimi kapalı öğrencileri listeler |
 | js/coach-intelligence.js (+css) | toplu telafi planı (yapay zekâyla geciken görev dağıtımı); kendi sayfası yok, Aksiyon Merkezi `ciPlans()` ile gösterir |
 | js/profile.js | öğrenci profili (`student_profile`: YKS/LGS, alan, sınıf, okul, hedef), `subjApply()` ders listesi, LGS tarihi (`exam_calendar`), `push_coverage` |
+| js/coach-plus.js | koç: görüşme günlüğü (`meetings`, karar → görev), gruplar + toplu duyuru, tutarlılık puanı `tScore` + `morningBlock` (sabah özeti), plan araçları (geçen haftayı kopyala, `plan_templates`, tekrar eden görev), deneme takvimi + kim girmedi (`exam_calendar` scope='deneme'), paket (`packages`), KVKK izinleri (`consents`) + veli bağlantısı (`parent_links`), ön görüşme başvuruları (`leads`) |
+| js/student-plus.js | öğrenci: yanlış defteri (sekme `w`, `wrong_book`, 3/14/30 gün tekrar), haftalık karne, ana sayfa kartları `weekHomeCards`, yarışma ayarları (`challenge_prefs`), mesajda çalışma saati bilgisi; koç için `wbCoachCard` |
+| veli.html + js/veli.js | hesapsız veli özeti (`#t=belirteç` → `parent_view()` RPC; veli rızası şart, uyku/ruh hali yok), yazdır/PDF |
+| kvkk.html | aydınlatma metni TASLAĞI (avukat onayı bekliyor) |
 | js/dayflow.js | öğrenci: kurulum sihirbazı (ana ekran + bildirim), gün sonu kapanış ekranı (`DC`, `act("close")`'u sarar), uzun açık sayaç düzeltme (`fixStop`) |
 | js/nav.js | geri tuşu (History API, `navSync`), üst çubuk, bildirim merkezi `notifCard`, `openStu`, `openMsg` |
 | js/coach.js | tıklama yönlendirme `ui()`, denemeler/yapay zekâ raporu, `busy()`/`DRAFTS` |
@@ -45,21 +49,25 @@ Hasan Karakış'ın (Karakış Eğitim & Danışmanlık, Diyarbakır) ~18 YKS/LG
 - Sarmalayıcı düzeni: profile.js / dayflow.js / coach-center.js, `ui`, `act`, `studentView`, `coachView` fonksiyonlarını sarar (önce kendi düğmesine bakar, sonra öncekini çağırır). Bu dosyalar coach.js'ten sonra, boot.js'ten önce yüklenir.
 - `overdue(id)`: öğrencinin görevleri açılmadıysa koç için `ODL` (loadOD) kullanılır.
 - `scripts/bump.sh` js/*.js (vendor hariç) ve kökteki tüm .css dosyalarının sürümünü yeniler.
+- Gizli not: `notes.private`; öğrenci RLS ile göremez; veli özeti, PDF rapor ve yapay zekâ raporu `!n.p` ile filtreler.
+- MCP `apply_migration` drop/revoke içeren SQL'de onay ister ve bu istemcide onay ekranı kendiliğinden iptal olabiliyor: mümkünse yalnızca ekleme yapan SQL yaz (alter policy, create policy); drop/revoke gerekiyorsa SQL'i Hasan'a ver.
+- Tanıtım sitesi (site/) iletişim formu → `lead-submit` fonksiyonu (Origin kontrolü, tuzak alan, IP özeti başına saatte 3). site/_headers connect-src Supabase adresini içerir.
 
 ## Sunucu fonksiyonları (supabase/functions)
 exam-extract, exam-insights, plan-extract, weekly-report, tercih-ai, admin-students, send-reminders (cron 12:00/17:00 UTC), challenge-notify,
-break-nudge (cron 5 dk, uzun mola mesajı + 3 saati geçen açık sayaç bildirimi; uzun sayaç kaydı break_nudges'ta break_start = −oturum başlangıcı; `{test:true}` ile tanılama), send-reminders akşam turunda soru girmeyene hatırlatır, task-plan (geciken görev dağıtımı), wa-send (WhatsApp Cloud API; WA_TOKEN/WA_PHONE_ID yoksa pasif).
+lead-submit (tanıtım sitesi formu, giriş yok), break-nudge (cron 5 dk, uzun mola mesajı + 3 saati geçen açık sayaç bildirimi; uzun sayaç kaydı break_nudges'ta break_start = −oturum başlangıcı; `{test:true}` ile tanılama), send-reminders akşam turunda soru girmeyene hatırlatır, task-plan (geciken görev dağıtımı), wa-send (WhatsApp Cloud API; WA_TOKEN/WA_PHONE_ID yoksa pasif).
 Gemini modeli: fonksiyonlar çalışan en yeni "flash-lite/flash" modeli kendisi seçer (eski varsayılan model kapatıldı).
 Cron ve tetikleyiciler `x-cron-secret` (public.app_secrets) kullanır. Dağıtım: Supabase MCP `deploy_edge_function` (verify_jwt=false; fonksiyon kendi doğrular).
 
 ## Şema dosyaları (sırayla uygulanmış)
-schema.sql, schema-ai.sql, schema-msg.sql, schema-resched.sql, schema-challenge.sql, schema-topics.sql, schema-nudge-wa.sql (v3.4), schema-hardening.sql (v3.5), schema-profile.sql (v3.7: student_profile, push_coverage, ders adı düzeltmesi).
+schema.sql, schema-ai.sql, schema-msg.sql, schema-resched.sql, schema-challenge.sql, schema-topics.sql, schema-nudge-wa.sql (v3.4), schema-hardening.sql (v3.5), schema-profile.sql (v3.7: student_profile, push_coverage, ders adı düzeltmesi), schema-v38.sql (v3.8: meetings, plan_templates, wrong_book, challenge_prefs, consents, parent_links, leads, packages, notes.private, student_profile.tags, MEBİ deneme haftaları, challenge_board gizlilik, parent_view).
 Canlı şema repodan ileride olabilir (bkz. Drive raporu); emin değilsen canlıdan oku.
 
 ## Test
 `tests/` klasöründe sahte Supabase (`mock-supabase.js`) ve Playwright betikleri var. Çalıştırma:
-`cd tests && PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers python3 test_nav.py` (ayrıca test_v34.py, test_fix.py, test_undo.py, test_ch.py, test_p1.py: profil/gün sonu/sihirbaz/uzun sayaç).
+`cd tests && PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers python3 test_nav.py` (ayrıca test_v34.py, test_fix.py, test_undo.py, test_ch.py, test_p1.py: profil/gün sonu/sihirbaz/uzun sayaç, test_p2.py: koç araçları/yanlış defteri/veli sayfası).
 Yalnızca değiştirdiğin alanın testini çalıştır.
 
 ## Açık işler
-Drive: "Karakış Takip – Tarama Raporu ve Yol Haritası (29 Ekim 2026)" ve Claude Docs raporu "Karakış Takip — Eksikler ve Geliştirme Raporu" (30 Ekim). 1. aşama (v3.7) yayında; sıradaki: 2. aşama (gizli görüşme notları, toplu duyuru/gruplar, tutarlılık puanı, plan şablonları, deneme takvimi), 3. aşama (KVKK izin modülü, veli sayfası, yanlış defteri, hedef/kaç net, LGS konu listesi, ön görüşme formu).
+Raporlar: Drive "Karakış Takip – Tarama Raporu ve Yol Haritası (29 Ekim 2026)", Claude Docs "Karakış Takip — Eksikler ve Geliştirme Raporu" (30 Ekim). 1., 2. ve 3. aşama yayında (v3.7–v3.8).
+Kalanlar: KVKK metninin avukatça incelenmesi; isteğe bağlı anon revoke (schema-v38.sql sonu); WhatsApp Business API bağlantısı; yapay zekâ ücretsiz yedeklerinin kapatılması kararı; "kaç net lazım" hesabı (ÖSYM katsayıları yıllık değiştiği için yapılmadı; hedef bölüm ve hedef net exam_targets'ta var); koç panelinde canlı güncellemede yalnızca değişen öğrencinin yenilenmesi; yayın öncesi otomatik test (GitHub Actions).

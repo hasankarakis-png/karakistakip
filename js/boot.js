@@ -68,12 +68,13 @@ async function pullStudent(){
   C.notes[ME]=(n.data||[]).map(r=>({t:Date.parse(r.created_at),x:r.body}));
 }
 async function pullCoach(){
-  const [p,d,g,n,e,w]=await Promise.all([sb.from("profiles").select("id,name").eq("role","student").order("name"),sb.from("daily").select("student_id,day,state,snap").gte("day",dayN(-6)),sb.from("goals").select("*").eq("day",day()),sb.from("notes").select("student_id,body,created_at").order("created_at"),sb.from("exam_results").select("student_id,topics").order("exam_date").order("created_at"),sb.from("weekly_tasks").select("student_id,done").gte("task_date",dayN(-6)).lte("task_date",day())]);
+  const [p,d,g,n,e,w]=await Promise.all([sb.from("profiles").select("id,name").eq("role","student").order("name"),sb.from("daily").select("student_id,day,state,snap").gte("day",dayN(-6)),sb.from("goals").select("*").eq("day",day()),sb.from("notes").select("student_id,body,created_at,private").order("created_at"),sb.from("exam_results").select("student_id,topics,exam_date").order("exam_date").order("created_at"),sb.from("weekly_tasks").select("student_id,done,task_date").gte("task_date",dayN(-6)).lte("task_date",day())]);
   STU=p.data||[];ROWS=d.data||[];C.goals={};C.notes={};C.den={};
   (g.data||[]).forEach(r=>C.goals[r.student_id]={day:r.day,s:r.subj,q:r.q,m:r.m});
-  (n.data||[]).forEach(r=>(C.notes[r.student_id]=C.notes[r.student_id]||[]).push({t:Date.parse(r.created_at),x:r.body}));
+  (n.data||[]).forEach(r=>(C.notes[r.student_id]=C.notes[r.student_id]||[]).push({t:Date.parse(r.created_at),x:r.body,p:!!r.private}));
   EXALL=e.data||[];TKALL=w.data||[];
   try{await profPullCoach()}catch(x){}
+  try{await plusPullCoach()}catch(x){}
 }
 let rt;
 // Verileri sayfayı yenilemeden çeker. Otomatik çağrıda yazı yazılıyorsa bekler; "↻ Yenile" düğmesi hemen çalıştırır.
@@ -101,7 +102,7 @@ async function start(){
   else if(p){try{localStorage.setItem(PK,JSON.stringify({name:p.name,role:p.role}))}catch(e){}}
   if(!p){await sb.auth.signOut();ME=null;showLogin("Profil bulunamadı, koçuna haber ver.");return}
   NAME=p.name;ROLE=p.role;view=ROLE==="coach"?"c":"s";
-  document.getElementById("who").textContent=NAME+" · ";document.getElementById("out").hidden=false;document.body.classList.toggle("stu",ROLE==="student");document.body.classList.toggle("coach",ROLE==="coach");if(ROLE==="student")setTimeout(()=>{try{tcInit()}catch(e){}},4500);
+  document.getElementById("who").textContent=NAME+" · ";document.getElementById("out").hidden=false;document.body.classList.toggle("stu",ROLE==="student");document.body.classList.toggle("coach",ROLE==="coach");
   if(ROLE==="coach"){await pullCoach();await loadOD();await Promise.all([loadUnr(),loadSettings(),loadWaStatus()]);["daily","goals","notes","exam_results","weekly_tasks"].reduce((ch,t)=>ch.on("postgres_changes",{event:"*",schema:"public",table:t},refresh),sb.channel("koc")).subscribe();
     // Mesajlar anında işlenir (yazılan taslak silinmeden); sayaçlar ayrıca periyodik yenilemede güncellenir.
     try{sb.channel("kocmsg").on("postgres_changes",{event:"*",schema:"public",table:"messages"},msgLive).subscribe()}catch(e){}

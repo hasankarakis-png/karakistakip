@@ -111,7 +111,7 @@ document.addEventListener("click",e=>{
   else if(t.id==="cp"){const p=document.getElementById("pt");p.select();try{navigator.clipboard.writeText(p.value).then(()=>{t.textContent="Kopyalandı ✓"},()=>{t.textContent="Metin seçildi, kopyala"})}catch(e){t.textContent="Metin seçildi, kopyala"}}
   else if(t.id==="setgoal"){const id=sel,q=Math.round(+document.getElementById("gq").value||0),m=Math.round(+document.getElementById("gm").value||0);if(q<0||m<0||q>2000||m>1440){alert("Soru 0–2000, süre 0–1440 dakika arasında olmalı.");return}if(!q&&!m){alert("Soru veya süre hedefi yaz.");return}const gs=document.getElementById("gs").value;t.disabled=true;dbw(sb.from("goals").upsert({student_id:id,day:day(),subj:gs,q,m})).then(r=>{if(r&&r.error){alert("Hedef kaydedilemedi: "+r.error.message);t.disabled=false;return}C.goals[id]={day:day(),s:gs,q,m};render()})}
   else if(t.id==="delgoal"){const id=sel,old=C.goals[id];delete C.goals[id];render();dbw(sb.from("goals").delete().eq("student_id",id).eq("day",day())).then(r=>{if(r&&r.error){C.goals[id]=old;alert("Hedef kaldırılamadı.");render()}})}
-  else if(t.id==="addnote"){const id=sel,el=document.getElementById("note"),v=el.value.trim();if(!v)return;t.disabled=true;dbw(sb.from("notes").insert({student_id:id,body:v.slice(0,1000)})).then(r=>{if(r&&r.error){alert("Not kaydedilemedi, yazdığın not duruyor: "+r.error.message);t.disabled=false;return}(C.notes[id]=C.notes[id]||[]).push({t:Date.now(),x:v.slice(0,1000)});el.value="";el.defaultValue="";render()})}
+  else if(t.id==="addnote"){const id=sel,el=document.getElementById("note"),v=el.value.trim(),pv=!!(document.getElementById("notep")||{}).checked;if(!v)return;t.disabled=true;dbw(sb.from("notes").insert({student_id:id,body:v.slice(0,1000),private:pv})).then(r=>{if(r&&r.error){alert("Not kaydedilemedi, yazdığın not duruyor: "+r.error.message);t.disabled=false;return}(C.notes[id]=C.notes[id]||[]).push({t:Date.now(),x:v.slice(0,1000),p:pv});el.value="";el.defaultValue="";render()})}
   else if(t.id==="tgsave")targetSave(t.dataset.sid||ME);
   else if(t.id==="exgo")examExtract();
   else if(t.id==="exsave")examSave();
@@ -415,7 +415,7 @@ const setSync=m=>{const e=document.getElementById("sync");if(e)e.textContent=m};
 const dbw=p=>Promise.resolve(p).then(r=>{if(r&&r.error)setSync("⚠️ "+r.error.message);return r},()=>setSync("⚠️ Bağlantı yok"));
 // Arka plan yenilemesi (realtime/zamanlayıcı) ekranı yeniden çizerken yazılanı silmesin: odakta bir alan varsa
 // ya da kaydedilmemiş bir form taslağı (not, görev, soru girişi, seçilmiş dosya…) varsa yenileme ertelenir.
-const DRAFTS=["note","gq","gm","tkt","tka","bkt","bka","cht","sname","dad","dnet","qn","qc","qb","qk","exn","cph","cpp","tgn","tgp","tgu","tgb","tgs","bmt","bma","rpt","puwn","exf","puf","chin","cin"];
+const DRAFTS=["note","gq","gm","tkt","tka","bkt","bka","cht","sname","dad","dnet","qn","qc","qb","qk","exn","cph","cpp","tgn","tgp","tgu","tgb","tgs","bmt","bma","rpt","puwn","exf","puf","chin","cin","mts","mtk","dyt","pltn","rgt","rga","evt","pkn","pkt","csn","wbk","wbn","chpa"];
 const dirty=()=>DRAFTS.some(id=>{const e=document.getElementById(id);if(!e)return false;if(e.type==="file")return !!(e.files&&e.files.length);return e.value!==e.defaultValue});
 // Gün sonu ekranı ya da kurulum sihirbazı açıkken de yenileme bekler (yazılanlar DC.v içinde, ama ekran zıplamasın).
 const busy=()=>/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||"")||dirty()||!!DC||ONB.open;

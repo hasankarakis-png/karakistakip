@@ -717,6 +717,17 @@ a.crow:hover .cgo{transform:translate(4px,-4px)}
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
           WhatsApp'tan yaz
         </a>
+        <form id="leadf" class="leadf" novalidate>
+          <p class="lf-t">ya da bilgilerini bırak, seni arayayım</p>
+          <label>Ad Soyad<input name="name" maxlength="80" autocomplete="name" required></label>
+          <label>Telefon<input name="phone" type="tel" inputmode="tel" maxlength="20" autocomplete="tel" placeholder="05xx xxx xx xx" required></label>
+          <div class="lf-r"><label>Sınav<select name="exam"><option>YKS</option><option>LGS</option><option>Diğer</option></select></label><label>Sınıf<input name="grade" maxlength="20" placeholder="ör. 12. sınıf"></label></div>
+          <label>Not (isteğe bağlı)<textarea name="note" maxlength="500" rows="2"></textarea></label>
+          <label class="lf-hp" aria-hidden="true">Bu alanı boş bırakın<input name="hp" tabindex="-1" autocomplete="off"></label>
+          <label class="lf-c"><input type="checkbox" name="consent"><span>Benimle iletişime geçilmesini kabul ediyorum. <a href="https://takip.hasankarakis.com/kvkk.html" target="_blank" rel="noopener">Aydınlatma metni</a></span></label>
+          <button class="btn btn-gold" type="submit" style="min-height:52px;padding:0 26px;width:max-content">Ön görüşme iste</button>
+          <p class="lf-m" role="status" aria-live="polite"></p>
+        </form>
       </div>
       <div class="reveal" style="flex:999 1 540px;min-width:0;border-top:1px solid rgba(243,236,221,.12)">
         <a class="crow" href="tel:+905446490099">
@@ -851,6 +862,35 @@ a.crow:hover .cgo{transform:translate(4px,-4px)}
     },{threshold:.35});
     demoIO.observe(d.getElementById('demo'));
   }
+})();
+</script>
+<style>
+.leadf{display:flex;flex-direction:column;gap:12px;margin-top:10px;padding-top:22px;border-top:1px solid rgba(243,236,221,.12);max-width:440px}
+.leadf .lf-t{margin:0;color:rgba(243,236,221,.7);font-size:14px;letter-spacing:.02em}
+.leadf label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:rgba(243,236,221,.75)}
+.leadf input,.leadf select,.leadf textarea{font:inherit;font-size:16px;color:#F3ECDD;background:rgba(243,236,221,.05);border:1px solid rgba(243,236,221,.18);border-radius:12px;padding:12px 14px}
+.leadf input:focus,.leadf select:focus,.leadf textarea:focus{outline:2px solid #C9A45C;outline-offset:1px}
+.leadf select option{color:#0B1628}
+.leadf .lf-r{display:flex;gap:12px}.leadf .lf-r label{flex:1;min-width:0}
+.leadf .lf-c{flex-direction:row;align-items:flex-start;gap:10px;font-size:13px;line-height:1.45}.leadf .lf-c input{width:18px;height:18px;margin:2px 0 0;accent-color:#C9A45C}
+.leadf .lf-c a{color:#C9A45C}
+.leadf .lf-hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.leadf .lf-m{margin:0;font-size:14px;color:#C9A45C;min-height:1.2em}
+</style>
+<script>
+(function(){
+  var f=document.getElementById("leadf");if(!f)return;var m=f.querySelector(".lf-m"),b=f.querySelector("button");
+  f.addEventListener("submit",function(e){
+    e.preventDefault();var v=function(n){return (f.elements[n].value||"").trim()};
+    if(v("name").length<2){m.textContent="Adını yaz.";return}
+    if(v("phone").replace(/\D/g,"").length<10){m.textContent="Telefon numaranı kontrol et.";return}
+    if(!f.elements.consent.checked){m.textContent="Devam etmek için iletişim onayını işaretle.";return}
+    b.disabled=true;m.textContent="Gönderiliyor…";
+    fetch("https://ramcghaefbbwgwtgtdtt.supabase.co/functions/v1/lead-submit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:v("name"),phone:v("phone"),exam:v("exam"),grade:v("grade"),note:v("note"),hp:v("hp"),consent:true})})
+      .then(function(r){return r.json().catch(function(){return {}}).then(function(j){return {ok:r.ok,j:j}})})
+      .then(function(x){if(x.ok&&x.j.ok){f.reset();m.textContent="Teşekkürler! En kısa sürede seni arayacağım.";}else{m.textContent=(x.j&&x.j.error)||"Gönderilemedi. WhatsApp'tan yazabilirsin.";}b.disabled=false})
+      .catch(function(){m.textContent="Bağlantı hatası. WhatsApp'tan yazabilirsin.";b.disabled=false});
+  });
 })();
 </script>
 </body>

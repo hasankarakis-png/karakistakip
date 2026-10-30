@@ -51,6 +51,7 @@ function qaSheet(){
   ${it("⏱","Kronometre","Derse başla, mola ver, süreni gör","b")}
   ${it("✍️","Soru girişi","Çözdüğün soruları kaydet","b","qcard")}
   ${it("➕","Yeni Sınav Sonucu","Görseli ya da PDF'i yükle","d")}
+  ${it("📕","Yanlış defteri","Yanlış sorunu fotoğrafla, tekrar et","w")}
   ${it("✅","Haftalık Görevler","Koçunun verdiği görevler","g")}
   ${it("🏆","Yarışma","Arkadaşlarınla sıralamayı gör","y")}
   ${it("📚","Konu Takibi","Bitirdiğin konuları işaretle","c")}
@@ -61,6 +62,6 @@ function qaSheet(){
 let ANT="o";
 function analizTab(){
   const seg=`<div class="ktseg" role="tablist" style="margin:0 0 12px">${[["o","Özet"],["n","Denemeler"],["t","Hedef ve tekrar"]].map(([k,n])=>`<button data-ant="${k}" aria-pressed="${ANT===k}">${n}</button>`).join("")}</div>`;
-  const b=ANT==="n"?examCard()+netChartsCard(ME):ANT==="t"?goalRoad(ME)+(ktLoad(),tekrarCard(ME,KTS.done,6))+`<button class="card tr" data-tab="c" aria-label="Konu takibini aç"><span class="rg" style="--p:0"><span style="font-size:30px">📚</span></span><span><h2>Konu Takibi</h2><p style="font-size:15px">Bitirdiğin konuları işaretle</p></span></button>`:dailyActivityCard()+heatCard();
+  const b=ANT==="n"?examCard()+netChartsCard(ME):ANT==="t"?goalRoad(ME)+(ktLoad(),tekrarCard(ME,KTS.done,6))+`<button class="card tr" data-tab="c" aria-label="Konu takibini aç"><span class="rg" style="--p:0"><span style="font-size:30px">📚</span></span><span><h2>Konu Takibi</h2><p style="font-size:15px">Bitirdiğin konuları işaretle</p></span></button>`:karneCard()+dailyActivityCard()+heatCard();
   return `<h1 class="pg">Analiz</h1>${seg}${b}`;
 }

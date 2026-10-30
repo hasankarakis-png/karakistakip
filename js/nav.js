@@ -6,7 +6,7 @@
 
 let NAVK=null,NAVD=0,NAVPOP=false,NAVOV=false,NAVSKIP=false,NAVREPL=false,NAVY=0,NAVLAST="";
 const CPL={o:"Genel bakış",s:"Öğrenciler",t:"Görev yönetimi",c:"Yarışmalar",a:"Deneme analizi",p:"Program ver",y:"Ayarlar"};
-const STL={b:"Bugün",g:"Görevler",d:"Analiz",h:"Profil",k:"Asistan",t:"Tercih Robotu",c:"Konu Takibi",y:"Yarışma",m:"Koçum"};
+const STL={b:"Bugün",g:"Görevler",d:"Analiz",h:"Profil",k:"Asistan",t:"Tercih Robotu",c:"Konu Takibi",y:"Yarışma",m:"Koçum",w:"Yanlış defteri"};
 const stuNm=id=>(STU.find(p=>p.id===id)||{}).name||"Öğrenci";
 const stuAv=(id,cls)=>`<span class="${cls||"oav"}">${PH[id]?`<img src="${PH[id]}" alt="">`:esc(initials(stuNm(id)))}</span>`;
 const navR=()=>ROLE==="coach"?"c":"s";

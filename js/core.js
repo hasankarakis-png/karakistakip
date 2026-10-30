@@ -178,7 +178,7 @@ function todayTab(){
   ${quoteCard()}<section class="hero"><div class="st"><span class="dot ${DOT[st]}"></span>${LBL[st]}</div>
   <div class="big" id="clock">${dur(clockMs())}</div><div class="sub" id="clocksub">${clockSub()}</div>
   ${st!=="closed"?`<div class="acts">${b}</div>`:`<div class="acts"><button class="btn full alt" data-a="reopen">↩ Günü yeniden aç</button></div>`}${live?pomoChip():""}</section>
-  ${picker}${overdueCard(ME,false)}${tasksRing()}${countdownCard()}${chHomeCard()}${msgHomeCard()}<button class="card tr" data-tab="c" aria-label="Konu takibini aç"><span class="rg" style="--p:0"><span style="font-size:30px">📚</span></span><span><h2>Konu Takibi</h2><p style="font-size:15px">Bitirdiğin konuları işaretle</p></span></button><button class="card tr" data-tab="t" aria-label="Tercih robotunu aç"><span class="rg" style="--p:0"><span style="font-size:30px">🎓</span></span><span><h2>Tercih Robotu</h2><p style="font-size:15px">Sıranla bölümleri karşılaştır</p></span></button>
+  ${picker}${overdueCard(ME,false)}${tasksRing()}${countdownCard()}${weekHomeCards()}${chHomeCard()}${msgHomeCard()}<button class="card tr" data-tab="c" aria-label="Konu takibini aç"><span class="rg" style="--p:0"><span style="font-size:30px">📚</span></span><span><h2>Konu Takibi</h2><p style="font-size:15px">Bitirdiğin konuları işaretle</p></span></button><button class="card tr" data-tab="t" aria-label="Tercih robotunu aç"><span class="rg" style="--p:0"><span style="font-size:30px">🎓</span></span><span><h2>Tercih Robotu</h2><p style="font-size:15px">Sıranla bölümleri karşılaştır</p></span></button>
   <div class="stats"><div class="stat"><b>${solvedT}</b><span>çözülen soru</span></div><div class="stat"><b>${solvedT?"%"+acc:"–"}</b><span>doğruluk</span></div><div class="stat"><b>${S.prog?"✓":"–"}</b><span>program</span></div></div>
   ${coachForMe()}${streakCard()}${(TK[ME]||[]).some(t=>t.task_date===day())?todayTasks():""}
   ${qa?`<div class="card" id="qcard"><h2>Soru girişi</h2><div class="row">
@@ -230,7 +230,7 @@ function coachCards(x,sn){
   const g=goalOf(x.id),notes=(C.notes[x.id]||[]).slice().reverse();
   const form=`<div class="row"><label>Odak ders<select id="gs">${SUBJ.map(s=>`<option>${s}</option>`).join("")}</select></label><label>Soru<input id="gq" type="number" min="1" inputmode="numeric"></label><label>Süre (dk)<input id="gm" type="number" min="1" inputmode="numeric"></label><button class="btn" style="padding:11px 16px" id="setgoal">Hedefi ata</button></div>`;
   return `<div class="card"><h2>Bugünün hedefi</h2>${g?`<div class="empty">Odak: ${esc(g.s)}</div>`+goalHTML(g,x.m,sn)+`<div class="row"><button class="chip" id="delgoal">Hedefi kaldır</button></div>`:form}</div>
-  <div class="card"><h2>Koç notu</h2><textarea id="note" placeholder="Öğrenciye not yaz…"></textarea><div class="row"><button class="btn" style="padding:11px 16px" id="addnote">Notu kaydet</button></div>${notes.map(n=>`<div class="nt"><time>${ntime(n.t)}</time>${esc(n.x)}</div>`).join("")}</div>`;
+  <div class="card"><h2>Koç notu</h2><textarea id="note" placeholder="Öğrenciye not yaz…"></textarea><label class="ckl"><input type="checkbox" id="notep"><span>🔒 Gizli not: öğrenci görmez, veli özetine ve yapay zekâya gitmez</span></label><div class="row"><button class="btn" style="padding:11px 16px" id="addnote">Notu kaydet</button></div>${notes.map(n=>`<div class="nt${n.p?" ntp":""}"><time>${ntime(n.t)}${n.p?" · 🔒 gizli":""}</time>${esc(n.x)}</div>`).join("")}</div>`;
 }
 function dayCard(){
   const sc=(f,v,l)=>`<div class="chips">${v.map((a,i)=>`<button class="chip" data-f="${f}" data-v="${a}" aria-pressed="${S[f]===a}">${l?l[i]:a}</button>`).join("")}</div>`;
@@ -272,7 +272,7 @@ function thCard(){
 /* Haftalık rapor taslağı (yapay zekâ, yalnızca koç) */
 const RPT={};
 function rptFacts(x){
-  const h=x.hist,n=h.length||1,sum=k=>h.reduce((a,d)=>a+(d[k]||0),0),ex=(EX[x.id]||[]),E=ex[ex.length-1],P=ex[ex.length-2],tg=tgPick(x.id),note=(C.notes[x.id]||[]).slice(-1)[0];
+  const h=x.hist,n=h.length||1,sum=k=>h.reduce((a,d)=>a+(d[k]||0),0),ex=(EX[x.id]||[]),E=ex[ex.length-1],P=ex[ex.length-2],tg=tgPick(x.id),note=(C.notes[x.id]||[]).filter(n=>!n.p).slice(-1)[0];
   const tk=(TK[x.id]||[]).filter(t=>t.task_date>=dayN(-6)&&t.task_date<=day());
   return {gun:n,ort_dk:Math.round(sum("m")/n),calisilan:h.filter(d=>d.m>0).length,soru:sum("q"),prog:sum("prog"),gorev_ok:tk.filter(t=>t.done).length,gorev_top:tk.length,geciken:overdue(x.id).length,
     son_deneme:E?(E.exam_name||E.exam_type||""):"",son_net:E&&E.total_net!=null?+E.total_net:null,onceki_net:P&&P.total_net!=null?+P.total_net:null,
@@ -291,7 +291,7 @@ function reportCard(x){
   return `<div class="card"><h2>🤖 Haftalık rapor taslağı</h2><p class="empty" style="margin:0 0 8px;font-size:14px">Son 7 günün verisinden koç değerlendirmesi ve veliye gidecek mesaj taslağı hazırlar.</p><div class="row" style="margin-top:0"><button class="btn" style="padding:11px 16px" data-rpt="${x.id}"${R.busy?" disabled":""}>${R.busy?"Hazırlanıyor…":"Taslak hazırla"}</button><button class="chip" data-rpdf="${x.id}">📄 Kurumsal PDF rapor</button></div>${R.err?`<p style="color:var(--warn);margin:8px 0 0">${esc(R.err)}</p>`:""}${out}</div>`;
 }
 function parentCard(x){
-  const h=x.hist,n=h.length,sum=k=>h.reduce((a,d)=>a+(d[k]||0),0),am=Math.round(sum("m")/n),sl=h.filter(d=>d.sleep>0),note=(C.notes[x.id]||[]).slice(-1)[0];
+  const h=x.hist,n=h.length,sum=k=>h.reduce((a,d)=>a+(d[k]||0),0),am=Math.round(sum("m")/n),sl=h.filter(d=>d.sleep>0),note=(C.notes[x.id]||[]).filter(n=>!n.p).slice(-1)[0];
   const E=(EX[x.id]||[]).slice(-1)[0],tg=tgPick(x.id),tk=(TK[x.id]||[]).filter(t=>t.task_date>=dayN(-6)&&t.task_date<=day()),tkd=tk.filter(t=>t.done).length;
   const extra=(E?`• Son deneme: ${E.exam_name||E.exam_type}${E.total_net!=null?" — "+E.total_net+" net":""}\n`:"")+(tg&&tg.target_net!=null?`• Hedef net: ${tg.target_net}${tg.university?" ("+[tg.university,tg.department].filter(Boolean).join(" – ")+")":""}\n`:"")+(tk.length?`• Haftalık görev tamamlama: ${tkd}/${tk.length}\n`:"");
   const tx=`Sayın veli,\n${(STU.find(p=>p.id===x.id)||{}).name||x.n} için son ${n} günün özeti:\n• Günlük ortalama net çalışma: ${Math.floor(am/60)} sa ${am%60} dk\n• Çalışılan gün: ${h.filter(d=>d.m>0).length}/${n}\n• Çözülen soru: ${sum("q")}\n• Programı tamamlanan gün: ${sum("prog")}/${n}\n`+(sl.length?`• Ortalama uyku: yaklaşık ${(sl.reduce((a,d)=>a+d.sleep,0)/sl.length).toFixed(1)} saat\n`:"")+extra+(note?`• Koç notu: ${note.x}\n`:"")+`Saygılarımla,\nHasan Karakış · Karakış Eğitim & Danışmanlık`;
