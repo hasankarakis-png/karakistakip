@@ -50,7 +50,7 @@
     if(this.op==="select"){let d=L.filter(r=>this.f.every(f=>f(r)));if(this.ord){const [k,desc]=this.ord;d=d.slice().sort((a,b)=>{const x=a[k]??"",y=b[k]??"";return (x<y?-1:x>y?1:0)*(desc?-1:1)})}res={data:this.one?(d[0]||null):d,error:null}}
     else if(this.op==="insert"){const ins=[].concat(this.payload).map(r=>Object.assign({id:Math.round(Math.random()*1e6),created_at:new Date().toISOString(),read_at:null,kind:"chat",wa_status:null},r));ins.forEach(r=>L.push(r));res={data:this.one?ins[0]:ins,error:null}}
     else if(this.op==="update"){L.filter(r=>this.f.every(f=>f(r))).forEach(r=>Object.assign(r,this.payload));res={data:null,error:null}}
-    else if(this.op==="upsert"){[].concat(this.payload).forEach(r=>{const k=r.student_id&&!r.day&&!r.key?"student_id":r.key?"key":null;const i=k?L.findIndex(x=>x[k]===r[k]):-1;if(i>=0)Object.assign(L[i],r);else L.push(r)});res={data:null,error:null}}
+    else if(this.op==="upsert"){[].concat(this.payload).forEach(r=>{const k=r.student_id&&!r.day&&!r.key?"student_id":r.key?"key":null;const i=this.t==="challenge_manual"?L.findIndex(x=>x.student_id===r.student_id&&x.day===r.day):(k?L.findIndex(x=>x[k]===r[k]):-1);if(i>=0)Object.assign(L[i],r);else L.push(r)});res={data:null,error:null}}
     else if(this.op==="delete"){FX[this.t]=L.filter(r=>!this.f.every(f=>f(r)));res={data:null,error:null}}
     else res={data:null,error:null};
     return Promise.resolve(res).then(ok,no);

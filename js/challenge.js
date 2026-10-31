@@ -1,11 +1,49 @@
 /* Yarışma (challenge): koç oluşturur ve duyurur, herkes sıralamayı görür */
 let CH={st:"idle",list:[],sel:null,board:null,busy:false,msg:""};
+/* Koç: internete bağlanamayan öğrenciler için elle süre/soru girişi (challenge_manual, yalnızca koç yazar/okur) */
+let CM={open:false,rows:[],msg:"",sid:"",d:""};
 const chDays=(a,b)=>{const p=s=>{const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d).getTime()};return Math.round((p(b)-p(a))/864e5)};
 const chActive=c=>c&&c.start_day<=day()&&c.end_day>=day();
 const chVal=(c,v)=>c.metric==="minutes"?hmin(Math.round(v)):Math.round(v)+" soru";
 async function chBoardLoad(){
   const c=CH.list.find(x=>x.id===CH.sel);if(!c){CH.board=null;return}
   try{const r=await sb.rpc("challenge_board",{p_id:c.id});CH.board=r&&!r.error&&Array.isArray(r.data)?{id:c.id,rows:r.data}:{id:c.id,rows:[]}}catch(e){CH.board={id:c.id,rows:[]}}
+  if(ROLE==="coach")await chManLoad(c);
+}
+async function chManLoad(c){
+  try{const m=await sb.from("challenge_manual").select("student_id,day,minutes,questions,note").gte("day",c.start_day).lte("day",c.end_day).order("day",{ascending:false});CM.rows=m&&Array.isArray(m.data)?m.data:[]}catch(e){CM.rows=[]}
+}
+function chManHTML(c){
+  if(ROLE!=="coach")return "";
+  const isM=c.metric==="minutes",nm=id=>{const p=STU.find(x=>x.id===id);return p?esc(p.name):"?"};
+  const tgl=`<div class="row"><button class="chip" data-chman="1">${CM.open?"✖ Kapat":"⏱ Elle süre ekle"}</button></div>`;
+  const list=CM.rows.length?CM.rows.map(r=>`<div class="chr"><span class="chn"><b>${nm(r.student_id)}</b><small style="display:block;color:var(--mute)">${fd(r.day)}${r.note?" · "+esc(r.note):""}</small></span><span style="display:flex;gap:8px;align-items:center"><span class="chv">${isM?hmin(r.minutes):r.questions+" soru"}</span><button class="chip" data-chmdel="${r.student_id}|${r.day}">Sil</button></span></div>`).join(""):`<p class="empty" style="font-size:13px;margin:6px 0 0">Bu yarışma için elle giriş yok.</p>`;
+  if(!CM.open)return tgl+(CM.rows.length?`<p class="sub2" style="margin:6px 2px 0;font-size:12px">${CM.rows.length} elle giriş var, sıralamaya dahil.</p>`:"");
+  const d0=CM.d&&CM.d>=c.start_day&&CM.d<=c.end_day?CM.d:(day()<c.start_day?c.start_day:day()>c.end_day?c.end_day:day());
+  const opts=STU.slice().sort((a,b)=>String(a.name).localeCompare(String(b.name),"tr")).map(p=>`<option value="${p.id}"${p.id===CM.sid?" selected":""}>${esc(p.name)}</option>`).join("");
+  const fld=isM?`<label>Saat<input id="cmh" type="number" inputmode="numeric" min="0" max="24" placeholder="0" style="width:80px"></label><label>Dakika<input id="cmm" type="number" inputmode="numeric" min="0" max="59" placeholder="0" style="width:80px"></label>`:`<label>Soru sayısı<input id="cmq" type="number" inputmode="numeric" min="0" max="3000" placeholder="0" style="width:110px"></label>`;
+  return tgl+`<div class="chdet" style="margin-top:8px"><h3 style="margin:4px 0 6px">⏱ Elle ${isM?"süre":"soru"} ekle</h3>
+  <p class="sub2" style="margin:0 0 8px;font-size:13px">İnternete bağlanamayan öğrencinin o günkü ${isM?"çalışma süresini":"soru sayısını"} gir. Aynı öğrenci ve gün için tekrar girersen önceki değerin yerine geçer. Değer, öğrencinin uygulamadan gelen kaydına eklenir; öğrenci bunu görmez ve değiştiremez.</p>
+  <div class="row"><label>Öğrenci<select id="cmst"><option value="">Seç…</option>${opts}</select></label><label>Gün<input id="cmd" type="date" value="${d0}" min="${c.start_day}" max="${c.end_day}" style="width:150px"></label>${fld}<label>Not<input id="cmn" type="text" maxlength="200" placeholder="isteğe bağlı" style="width:150px"></label><button class="btn" style="padding:11px 16px" id="cmsave" data-chmsave="1">Kaydet</button></div>
+  <p class="empty" style="font-size:13px;margin:6px 0 0">${CM.msg?esc(CM.msg):""}</p>
+  <div style="margin-top:8px">${list}</div></div>`;
+}
+async function chManSave(){
+  const c=CH.list.find(x=>x.id===CH.sel);if(!c)return;
+  const g=i=>document.getElementById(i),isM=c.metric==="minutes",sid=(g("cmst")||{}).value,d=(g("cmd")||{}).value;
+  const note=((g("cmn")||{}).value||"").trim().slice(0,200)||null;
+  const mins=isM?(parseInt((g("cmh")||{}).value,10)||0)*60+(parseInt((g("cmm")||{}).value,10)||0):0,qn=isM?0:(parseInt((g("cmq")||{}).value,10)||0);
+  if(!sid){CM.msg="Önce öğrenciyi seç.";render();return}
+  if(!d||d<c.start_day||d>c.end_day){CM.msg="Gün, yarışmanın tarih aralığında olmalı.";render();return}
+  if(isM?(mins<1||mins>1440):(qn<1||qn>3000)){CM.msg=isM?"Süre 1 dakika ile 24 saat arasında olmalı.":"Soru sayısı 1-3000 arasında olmalı.";render();return}
+  const old=CM.rows.find(r=>r.student_id===sid&&r.day===d)||{};
+  const row={student_id:sid,day:d,minutes:isM?mins:(old.minutes||0),questions:isM?(old.questions||0):qn,note,created_by:ME,updated_at:new Date().toISOString()};
+  CM.sid=sid;CM.d=d;CM.msg="Kaydediliyor…";render();
+  const r=await sb.from("challenge_manual").upsert(row,{onConflict:"student_id,day"});
+  if(r&&r.error){CM.msg="Kaydedilemedi: "+r.error.message;render();return}
+  const p=STU.find(x=>x.id===sid);
+  CM.msg="Kaydedildi: "+(p?p.name:"öğrenci")+" · "+fd(d)+" · "+(isM?hmin(mins):qn+" soru");
+  await chBoardLoad();render();
 }
 async function chLoad(force){
   if(CH.busy||(CH.st!=="idle"&&!force))return;CH.busy=true;CH.st="load";
@@ -57,6 +95,7 @@ async function chatSend(){
 }
 setInterval(()=>{if(document.hidden)return;const el=document.getElementById("chm");if(el&&CHT.id)chatLoad(CHT.id)},7000);
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target&&e.target.id==="chin"){e.preventDefault();chatSend()}});
+document.addEventListener("change",e=>{const t=e.target;if(!t)return;if(t.id==="cmst")CM.sid=t.value;else if(t.id==="cmd")CM.d=t.value});
 function chBoardHTML(c){
   const B=CH.board&&CH.board.id===c.id?CH.board.rows:null;
   if(!B)return `<p class="empty">Yükleniyor…</p>`;
@@ -82,7 +121,7 @@ function yarisTab(){
 }
 function chCoachCard(page){
   chLoad();
-  const board=c=>`<div class="chdet"><h3 style="margin:4px 0 6px">${esc(c.title)} · sıralama</h3>${chBoardHTML(c)}<div class="row"><button class="chip" data-chtog="${c.id}">${c.chat_open===false?"💬 Sohbeti aç":"🔒 Sohbeti kapat"}</button></div>${chatBox(c)}</div>`;
+  const board=c=>`<div class="chdet"><h3 style="margin:4px 0 6px">${esc(c.title)} · sıralama</h3>${chBoardHTML(c)}<div class="row"><button class="chip" data-chtog="${c.id}">${c.chat_open===false?"💬 Sohbeti aç":"🔒 Sohbeti kapat"}</button></div>${chManHTML(c)}${chatBox(c)}</div>`;
   const rows=CH.list.map(c=>`<div class="chr${c.id===CH.sel?" me":""}"><button class="chsel" data-chsel="${c.id}" aria-expanded="${c.id===CH.sel}"><span class="chn"><b>${esc(c.title)}</b><small style="display:block;color:var(--mute)">${chInfo(c)}</small></span></button><span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${c.notified_at?`<span class="bd g">duyuruldu</span>`:`<button class="chip" data-chnot="${c.id}">📣 Duyur</button>`}<button class="chip" data-chdel="${c.id}">Sil</button></span></div>`+(c.id===CH.sel?board(c):"")).join("")
   const sel=CH.list.find(x=>x.id===CH.sel);
   const form=`<div class="row"><label>Başlık<input id="cht" type="text" maxlength="80" placeholder="Hafta şampiyonu" style="width:170px"></label><label>Ölçüt<select id="chmet"><option value="minutes">Çalışma süresi</option><option value="questions">Çözülen soru</option></select></label><label>Başlangıç<input id="chs" type="date" value="${day()}" style="width:150px"></label><label>Bitiş<input id="che" type="date" value="${dayN(6)}" style="width:150px"></label><button class="btn" style="padding:11px 16px" id="chmk">Oluştur ve duyur</button></div>
@@ -113,7 +152,14 @@ async function chCreate(){
   await chLoad(true);
 }
 async function chAct(D){
-  if(D.chsel){CH.sel=+D.chsel;CH.board=null;render();await chBoardLoad();render();return}
+  if(D.chman){CM.open=!CM.open;CM.msg="";render();return}
+  if(D.chmsave){await chManSave();return}
+  if(D.chmdel){
+    const[sid,d]=String(D.chmdel).split("|");if(!sid||!d)return;
+    if(!confirm("Bu elle giriş silinsin mi?"))return;
+    const r=await sb.from("challenge_manual").delete().eq("student_id",sid).eq("day",d);
+    CM.msg=r&&r.error?"Silinemedi: "+r.error.message:"Elle giriş silindi.";await chBoardLoad();render();return}
+  if(D.chsel){CH.sel=+D.chsel;CH.board=null;CM.msg="";render();await chBoardLoad();render();return}
   if(D.chnot){const n=await callFn("challenge-notify",{id:+D.chnot});CH.msg=n.error?n.error:"Bildirim gönderildi: "+n.sent+" öğrenci.";await chLoad(true);return}
   if(D.chhide){await sb.rpc("challenge_msg_hide",{p_msg:+D.chhide});CHT.sig="";await chatLoad(CHT.id);return}
   if(D.chtog){const c=CH.list.find(x=>x.id===+D.chtog);if(!c)return;await dbw(sb.from("challenges").update({chat_open:c.chat_open===false}).eq("id",c.id));CH.msg=c.chat_open===false?"Sohbet açıldı.":"Sohbet kapatıldı.";await chLoad(true);return}

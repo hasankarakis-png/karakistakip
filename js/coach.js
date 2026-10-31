@@ -38,7 +38,7 @@ function ui(t){
   if(id==="taask"){taAsk();return true}
   if(id==="chmk"){chCreate();return true}
   if(id==="chrf"){chLoad(true);return true}
-  if(D.chsel||D.chnot||D.chdel||D.chhide||D.chtog){chAct(D);return true}
+  if(D.chsel||D.chnot||D.chdel||D.chhide||D.chtog||D.chman||D.chmsave||D.chmdel){chAct(D);return true}
   if(id==="chsend"){chatSend();return true}
   if(id==="qaopen"){QA=true;render();navOv();return true}
   if(id==="qabg"){QA=false;render();return true}
@@ -415,7 +415,7 @@ const setSync=m=>{const e=document.getElementById("sync");if(e)e.textContent=m};
 const dbw=p=>Promise.resolve(p).then(r=>{if(r&&r.error)setSync("⚠️ "+r.error.message);return r},()=>setSync("⚠️ Bağlantı yok"));
 // Arka plan yenilemesi (realtime/zamanlayıcı) ekranı yeniden çizerken yazılanı silmesin: odakta bir alan varsa
 // ya da kaydedilmemiş bir form taslağı (not, görev, soru girişi, seçilmiş dosya…) varsa yenileme ertelenir.
-const DRAFTS=["note","gq","gm","tkt","tka","bkt","bka","cht","sname","dad","dnet","qn","qc","qb","qk","exn","cph","cpp","tgn","tgp","tgu","tgb","tgs","bmt","bma","rpt","puwn","exf","puf","chin","cin","mts","mtk","dyt","pltn","rgt","rga","evt","pkn","pkt","csn","wbk","wbn","chpa"];
+const DRAFTS=["note","gq","gm","tkt","tka","bkt","bka","cht","sname","dad","dnet","qn","qc","qb","qk","exn","cph","cpp","tgn","tgp","tgu","tgb","tgs","bmt","bma","rpt","puwn","exf","puf","chin","cin","mts","mtk","dyt","pltn","rgt","rga","evt","pkn","pkt","csn","wbk","wbn","chpa","cmh","cmm","cmq","cmn"];
 const dirty=()=>DRAFTS.some(id=>{const e=document.getElementById(id);if(!e)return false;if(e.type==="file")return !!(e.files&&e.files.length);return e.value!==e.defaultValue});
 // Gün sonu ekranı ya da kurulum sihirbazı açıkken de yenileme bekler (yazılanlar DC.v içinde, ama ekran zıplamasın).
 const busy=()=>/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||"")||dirty()||!!DC||ONB.open;
