@@ -62,7 +62,10 @@
     rpc:async(n,a)=>{window.__CALLS.push("rpc:"+n+":"+JSON.stringify(a));
       if(n==="task_reschedule"){let c=0;FX.weekly_tasks.forEach(t=>{if(a.p_ids.includes(t.id)){t.task_date=a.p_date;c++}});return {data:c,error:null}}
       if(n==="msg_read"){FX.messages.forEach(m=>{if(m.student_id===a.p_student&&!m.from_coach)m.read_at=new Date().toISOString()});return {data:null,error:null}}
-      if(n==="parent_view")return {data:(window.__PV||{ad:"Ayşe",bugun:dn(0),bitis:new Date(now+20*864e5).toISOString(),gunler:[{gun:dn(-1),dk:120,soru:80},{gun:dn(-3),dk:200,soru:150}],gorev:{toplam:10,tamam:7},denemeler:[{ad:"MEBİ 1",tur:"TYT",tarih:dn(-13),net:72.5}]}),error:null};
+      if(n==="parent_view")return {data:(window.__PV||{v:2,ad:"Ayşe",bugun:dn(0),bitis:new Date(now+20*864e5).toISOString(),gunler:[{gun:dn(-1),dk:120,soru:80},{gun:dn(-3),dk:200,soru:150}],gorev:{toplam:10,tamam:7},
+        detay:[{gun:dn(-1),dk:120,soru:80,dogru:60,ders:{"Matematik":70,"Türkçe":50},qs:[{s:"Matematik",n:50,c:40},{s:"Türkçe",n:30,c:20}]},{gun:dn(-3),dk:200,soru:150,dogru:120,ders:{"Fizik":200},qs:[{s:"Fizik",n:150,c:120}]},{gun:dn(-9),dk:90,soru:40,dogru:30,ders:{},qs:[]}],
+        gorevler:[{tarih:dn(-2),baslik:"Paragraf 30 soru",ders:"Türkçe",tamam:true},{tarih:dn(-1),baslik:"Türev 40 soru",ders:"Matematik",tamam:false}],
+        denemeler:[{ad:"MEBİ 2",tur:"TYT",tarih:dn(-2),net:75},{ad:"MEBİ 1",tur:"TYT",tarih:dn(-13),net:72.5}],hedef:85,hedef_tur:"TYT"}),error:null};
       if(n==="push_coverage")return {data:(window.__PUSHCOV||[{student_id:"s1",n:1}]),error:null};
       if(n==="challenge_board")return {data:[{label:"Ayşe Y.",total:640,today:80,live:true},{label:"Zeynep K.",total:520,today:120},{label:"Ali Ç.",total:90,today:0}],error:null};
       return {data:[],error:null}},
