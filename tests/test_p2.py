@@ -129,9 +129,9 @@ with sync_playwright() as p:
     check("Haftalık karnen" in page.inner_text(".stu-main"), "Analiz'de haftalık karne")
     # yarışma ayarları
     E("tab='y';render()"); wait(page, 600)
-    page.click("text=Yarışma ayarlarım"); page.check("#chph"); page.fill("#chpa", "Kartal"); page.click("#chpsave"); wait(page, 500)
+    page.click("text=Yarışma ayarlarım"); check(page.query_selector("#chph") is None, "Öğrencide yarışmadan çıkma kutusu yok"); page.fill("#chpa", "Kartal"); page.click("#chpsave"); wait(page, 500)
     cp = E("__FX.challenge_prefs[0]")
-    check(cp and cp["hidden"] is True and cp["alias"] == "Kartal", f"Yarışma tercihi kaydedildi: {cp}")
+    check(cp and not cp.get("hidden") and cp["alias"] == "Kartal", f"Yarışma tercihi kaydedildi: {cp}")
     # mesajda çalışma saatleri
     E("coachOff=()=>true;tab='m';render()"); wait(page, 500)
     check(page.query_selector(".hrs") is not None and "çalışma saatleri dışında" in txt(page, ".hrs"), "Çalışma saati dışında bilgi görünüyor")

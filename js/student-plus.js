@@ -67,14 +67,15 @@ function weekHomeCards(){
 /* ---- yarışma ayarları ---- */
 function chPrefCard(){
   if(CHP===null){CHP={};Promise.resolve(sb.from("challenge_prefs").select("*").eq("student_id",ME).maybeSingle()).then(r=>{CHP=(r&&r.data)||{};if(tab==="y")render()},()=>{})}
-  return `<details class="card"${CHPMSG?" open":""}><summary style="cursor:pointer;font-weight:700">⚙️ Yarışma ayarlarım</summary><label class="ckl"><input type="checkbox" id="chph"${CHP.hidden?" checked":""}><span>Sıralamada görünmek istemiyorum (koçun yine görür)</span></label>
+  return `<details class="card"${CHPMSG?" open":""}><summary style="cursor:pointer;font-weight:700">⚙️ Yarışma ayarlarım</summary>
   <div class="row"><label>Takma ad (isteğe bağlı)<input id="chpa" maxlength="20" autocomplete="off" placeholder="ör. Kartal" value="${esc(CHP.alias||"")}" style="width:160px"></label><button class="btn" style="padding:11px 16px" id="chpsave">Kaydet</button></div><p class="empty" style="font-size:12px;margin:6px 0 0">Arkadaşların “şu an çalışıyor” bilgini görmez; bunu yalnızca koçun görür.</p>${CHPMSG?`<p class="empty" style="font-size:13px;margin:6px 0 0">${esc(CHPMSG)}</p>`:""}</details>`;
 }
 async function chPrefSave(){
-  const a=((document.getElementById("chpa")||{}).value||"").trim(),h=!!(document.getElementById("chph")||{}).checked;
+  const a=((document.getElementById("chpa")||{}).value||"").trim();
   if(a&&!/^[0-9A-Za-zÇĞİÖŞÜçğıöşü ._-]{2,20}$/.test(a)){CHPMSG="Takma ad 2–20 harf/rakam olmalı.";render();return}
-  const row={student_id:ME,hidden:h,alias:a||null,updated_at:new Date().toISOString()};const r=await dbw(sb.from("challenge_prefs").upsert(row));
-  CHPMSG=r&&r.error?"Kaydedilemedi: "+r.error.message:"Kaydedildi ✓";if(!(r&&r.error)){CHP=row;try{chLoad(true)}catch(e){}}render();
+  /* hidden gönderilmez: yarışmaya katılım yalnızca koçun yetkisinde (sunucu da öğrencinin değiştirmesini engeller) */
+  const row={student_id:ME,alias:a||null,updated_at:new Date().toISOString()};const r=await dbw(sb.from("challenge_prefs").upsert(row));
+  CHPMSG=r&&r.error?"Kaydedilemedi: "+r.error.message:"Kaydedildi ✓";if(!(r&&r.error)){CHP=Object.assign({},CHP,row);try{chLoad(true)}catch(e){}}render();
 }
 
 /* ---- mesajda çalışma saatleri ---- */
