@@ -1,0 +1,21 @@
+name: Public site availability
+on:
+  schedule:
+    - cron: '13 5 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  homepage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check public app HTML (no login or personal data)
+        shell: bash
+        run: |
+          set -euo pipefail
+          status="$(curl --silent --show-error --location --max-time 20 --retry 2 --output /tmp/karakis-home.html --write-out '%{http_code}' https://takip.hasankarakis.com/)"
+          test "$status" = "200" || { echo "Unexpected HTTP status: $status"; exit 1; }
+          grep -qi '<html' /tmp/karakis-home.html || { echo 'HTML not returned'; exit 1; }
+          grep -qi 'Karakış' /tmp/karakis-home.html || { echo 'Expected app brand not found'; exit 1; }
+          echo 'Public homepage responded with expected HTML.'

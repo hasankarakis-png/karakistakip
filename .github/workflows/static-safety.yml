@@ -1,0 +1,68 @@
+name: Karakis static safety checks
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - audit/**
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check application JavaScript syntax
+        run: |
+          set -e
+          find js -type f -name '*.js' ! -path '*/vendor/*' -print0 | while IFS= read -r -d '' file; do
+            node --check "$file"
+          done
+          node --check sw.js
+      - name: Run coach data safety regression test
+        run: node --test tests/coach-fetch.test.cjs
+      - name: Validate local script references
+        run: |
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          class Scripts(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.sources=[]
+              def handle_starttag(self,tag,attrs):
+                  if tag=="script":
+                      src=dict(attrs).get("src")
+                      if src and not src.startswith(("https://","http://","//")):
+                          self.sources.append(src.split("?")[0].split("#")[0])
+          doc=Scripts()
+          doc.feed(Path("index.html").read_text(encoding="utf-8"))
+          missing=[p for p in doc.sources if not Path(p.lstrip("/")).is_file()]
+          print(f"Checked {len(doc.sources)} local script references.")
+          if missing:
+              raise SystemExit("Missing scripts: "+", ".join(missing))
+          PY
+      - name: Check for obvious secret keys in tracked application files
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, subprocess
+          paths=subprocess.check_output(["git","ls-files"],text=True).splitlines()
+          forbidden=re.compile(r"(?:sb_secret_[A-Za-z0-9_-]{12,}|sk-proj-[A-Za-z0-9_-]{12,}|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----)")
+          hits=[]
+          for name in paths:
+              p=Path(name)
+              if not p.is_file() or p.stat().st_size>1000000:
+                  continue
+              try: text=p.read_text(encoding="utf-8")
+              except (UnicodeError,OSError): continue
+              if forbidden.search(text): hits.append(name)
+          if hits:
+              raise SystemExit("Potential secret material found in: "+", ".join(hits))
+          print("No obvious secret key patterns detected; manual secret review still required.")
+          PY

@@ -1,17 +1,51 @@
-// Ağ öncelikli; çevrimdışıyken uygulama kabuğunu (ve Supabase istemci kütüphanesini) önbellekten açar. Supabase veri istekleri önbelleğe alınmaz.
-const K="takip-v3";
-const CDN="cdn.jsdelivr.net";
-self.addEventListener("install",e=>{self.skipWaiting()});
-self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==K).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
-self.addEventListener("fetch",e=>{
-  const u=new URL(e.request.url);
-  // Büyük tercih verisi: önce önbellekten hemen aç, arkada yenile.
-  if(e.request.method==="GET"&&u.origin===location.origin&&u.pathname.endsWith("/tercih.json")){
-    e.respondWith(caches.open(K).then(c=>c.match(e.request).then(hit=>{const net=fetch(e.request).then(r=>{if(r.ok)c.put(e.request,r.clone());return r}).catch(()=>hit);return hit||net})));return;
-  }
-  if(e.request.method!=="GET"||(u.origin!==location.origin&&u.hostname!==CDN))return;
-  e.respondWith(fetch(e.request).then(r=>{if(r.ok||r.type==="opaque"){const c=r.clone();caches.open(K).then(x=>x.put(e.request,c))}return r}).catch(()=>caches.match(e.request).then(r=>r||caches.match("index.html")||caches.match("./"))));
+// Karakış Takip: cache only public app shell. Never serve HTML as a JS/CSS/JSON fallback.
+const CACHE = "takip-v4-safe";
+const SHELL = ["./", "./index.html", "./styles.css", "./manifest.webmanifest"];
+self.addEventListener("install", event => {
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
 });
-// Bildirim hangi ekranı açacağını (url, ör. "./#mesaj") taşıyabilir; açık uygulama varsa ona iletilir.
-self.addEventListener("push",e=>{let d={};try{d=e.data.json()}catch(x){}const url=typeof d.url==="string"&&/^\.\/(#[a-z]+)?$/.test(d.url)?d.url:"./";e.waitUntil(self.registration.showNotification(d.title||"Karakış Takip",{body:d.body||"",icon:"icon-192.png",badge:"icon-192.png",tag:d.tag||undefined,data:{url}}))});
-self.addEventListener("notificationclick",e=>{e.notification.close();const url=(e.notification.data&&e.notification.data.url)||"./";e.waitUntil(clients.matchAll({type:"window",includeUncontrolled:true}).then(cs=>{for(const c of cs){if("focus" in c){try{c.postMessage({go:url})}catch(x){}return c.focus()}}return clients.openWindow(url)}))});
+self.addEventListener("activate", event => {
+  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k.startsWith("takip-") && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+});
+self.addEventListener("fetch", event => {
+  const req = event.request;
+  if (req.method !== "GET" || req.mode === "navigate" && new URL(req.url).origin !== self.location.origin) return;
+  const url = new URL(req.url);
+  // Never cache Supabase, APIs, authentication, cross-origin resources, or user-generated responses.
+  if (url.origin !== self.location.origin || /\/functions\/|\/rest\/|\/auth\/|\/storage\//.test(url.pathname)) return;
+  if (req.mode === "navigate") {
+    event.respondWith(fetch(req).catch(async () => (await caches.match("./index.html")) || Response.error()));
+    return;
+  }
+  // Cache only known, static asset extensions. No HTML fallback for missing scripts.
+  if (!/\.(?:js|css|png|jpg|jpeg|svg|webp|ico|webmanifest|woff2?|json)$/i.test(url.pathname)) return;
+  event.respondWith(fetch(req).then(response => {
+    if (response.ok && response.type === "basic") {
+      const copy = response.clone();
+      event.waitUntil(caches.open(CACHE).then(cache => cache.put(req, copy)));
+    }
+    return response;
+  }).catch(async () => (await caches.match(req)) || Response.error()));
+});
+self.addEventListener("push", event => {
+  let data = {};
+  try { data = event.data.json(); } catch (_) {}
+  const url = typeof data.url === "string" && /^\.\/(#[a-z]+)?$/.test(data.url) ? data.url : "./";
+  event.waitUntil(self.registration.showNotification(data.title || "Karakış Takip", {
+    body: data.body || "", icon: "icon-192.png", badge: "icon-192.png",
+    tag: data.tag || undefined, data: { url }
+  }));
+});
+self.addEventListener("notificationclick", event => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || "./";
+  event.waitUntil(clients.matchAll({ type: "window", includeUncontrolled: true }).then(windows => {
+    for (const client of windows) {
+      if ("focus" in client) {
+        try { client.postMessage({ go: url }); } catch (_) {}
+        return client.focus();
+      }
+    }
+    return clients.openWindow(url);
+  }));
+});
