@@ -1,0 +1,31 @@
+name: Lighthouse public-page baseline
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Lighthouse CI (no app dependency)
+        run: npm install --no-save --no-package-lock @lhci/cli@0.15.1
+      - name: Audit the public login shell
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/karakis-server.log 2>&1 &
+          npx lhci collect --url=http://127.0.0.1:8765/ --numberOfRuns=1 --settings.chromeFlags="--no-sandbox --headless"
+          npx lhci assert --assertions.categories:accessibility=warn --assertions.categories:best-practices=warn
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-public-page
+          path: .lighthouseci/
+          if-no-files-found: ignore
+          retention-days: 7
