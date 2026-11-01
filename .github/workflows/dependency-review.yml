@@ -1,7 +1,8 @@
-name: Dependency vulnerability review
+# Requires GitHub Dependency Graph to be enabled in repository Security settings.
+# Activate pull_request trigger after Dependency Graph is enabled.
+name: Dependency vulnerability review (manual until configured)
 on:
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
