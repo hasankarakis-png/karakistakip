@@ -24,6 +24,8 @@ jobs:
             node --check "$file"
           done
           node --check sw.js
+      - name: Run coach data safety regression test
+        run: node --test tests/coach-fetch.test.cjs
       - name: Validate local script references
         run: |
           python3 - <<'PY'
