@@ -12,7 +12,8 @@ module.exports = defineConfig({
     { name: 'mobile-chromium', use: { ...devices['Pixel 7'] } }
   ],
   webServer: {
-    command: 'python3 -m http.server 8765 --bind 127.0.0.1',
+    command: 'python3 -m http.server 8765 --bind 127.0.0.1 --directory .',
+    cwd: process.env.GITHUB_WORKSPACE || require('path').resolve(__dirname, '..'),
     url: 'http://127.0.0.1:8765/',
     reuseExistingServer: !process.env.CI,
     timeout: 15000
