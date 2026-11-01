@@ -80,10 +80,15 @@ let rt;
 // Verileri sayfayı yenilemeden çeker. Otomatik çağrıda yazı yazılıyorsa bekler; "↻ Yenile" düğmesi hemen çalıştırır.
 // Telefon uykudan dönünce oturum anahtarının süresi dolmuş olabilir: istekten önce yenile (aksi halde 401 alınır).
 async function authFresh(){try{const {data:{session}}=await sb.auth.getSession();if(session&&session.expires_at&&session.expires_at*1000<Date.now()+90e3)await sb.auth.refreshSession()}catch(e){}}
+let refreshInFlight=false;
 async function refreshRun(manual){
+  if(refreshInFlight){if(manual)setSync("Yenileme devam ediyor, birazdan tekrar dene");return;}
+  refreshInFlight=true;
+  try{
   await authFresh();
   if(!ME||PX||AIBUSY||PLANBUSY||CHATBUSY){if(manual)setSync("Şu an bir işlem sürüyor, birazdan tekrar dene");return}
   try{if(ROLE==="coach"){await pullCoach();await loadOD();await loadUnr();if(MV&&MSEL)await loadMsgs(MSEL);if(sel)await Promise.all([loadHist(sel),loadTasks(sel),loadExams(sel)].concat(manual?[loadTarget(sel),loadReport(sel),loadPlan(sel)]:[]))}else await Promise.all([pullStudent(),loadTasks(ME),loadUnr(),tab==="m"?msgSync():0]);render();setSync("Güncellendi "+hm(Date.now()))}catch(e){setSync("⚠️ Yenilenemedi, bağlantını kontrol et")}
+  }finally{refreshInFlight=false;}
 }
 // Yazı yazılırken ya da kaydedilmemiş form varken yenileme atlanmaz, ertelenir (sonra yeniden denenir).
 const refresh=()=>{clearTimeout(rt);rt=setTimeout(()=>{if(busy()){refresh();return}refreshRun(false)},2500)};
