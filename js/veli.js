@@ -18,11 +18,12 @@
     const ex=(data.denemeler||[]).map(e=>({exam_name:e.ad,exam_type:e.tur,exam_date:e.tarih,total_net:e.net}))
       .sort((a,b)=>(a.exam_date?0:1)-(b.exam_date?0:1)||String(a.exam_date||"").localeCompare(String(b.exam_date||"")));
     const tasks=(data.gorevler||[]).map(t=>({title:t.baslik,subject:t.ders,task_date:t.tarih,done:!!t.tamam}));
+    const kn=Array.isArray(data.konular)?data.konular.map(o=>({d:o.ders,k:o.konu,y:o.y,b:o.b,n:o.n})):[];
     const tg=data.hedef!=null?{target_net:data.hedef,exam_type:data.hedef_tur}:null;
     const today=String(data.bugun).slice(0,10),W=[["Bu hafta",0],["Geçen hafta",1],["2 hafta önce",2]];
     let off=0;
     const draw=()=>{
-      const D=vpBuild({name:data.ad,end:vpAdd(today,-7*off),days,tasks,ex,tg});
+      const D=vpBuild({name:data.ad,end:vpAdd(today,-7*off),days,tasks,ex,tg,kn});
       document.title=`${D.name} – Haftalık rapor (${vpFmt(D.s7,{day:"numeric",month:"short"})}–${vpFmt(D.end,{day:"numeric",month:"short"})})`;
       app.innerHTML=`<div class="bar" role="toolbar" aria-label="Hafta seçimi">${W.map(([l,o])=>`<button class="wk" data-off="${o}" aria-pressed="${o===off}">${l}</button>`).join("")}<button id="pr">📄 PDF olarak kaydet</button></div>
 ${vpBody(D,{logo:"logo.png"})}

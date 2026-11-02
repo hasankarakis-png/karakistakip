@@ -40,7 +40,26 @@ function vpBuild(o){
   const subj=Object.entries(sub).map(([n,v])=>({n,m:Math.round(v.m),q:Math.round(v.q),c:Math.round(v.c)})).filter(v=>v.m>=5||v.q>0).sort((a,b)=>b.m-a.m||b.q-a.q);
   const tasks=(o.tasks||[]).filter(t=>{const d=String(t.task_date||"").slice(0,10);return d>=s7&&d<=end}).sort((a,b)=>String(a.task_date).localeCompare(String(b.task_date)));
   const ex=(o.ex||[]).filter(e=>e.total_net!=null&&(!e.exam_date||String(e.exam_date).slice(0,10)<=end)).slice(-8);
-  return {name:o.name||"Öğrencimiz",end,s7,cur,prev,weeks,subj,tasks,ex,tg:o.tg||null};
+  return {name:o.name||"Öğrencimiz",end,s7,cur,prev,weeks,subj,tasks,ex,tg:o.tg||null,kn:o.kn||vpKn(o.ex)};
+}
+
+/* Konu eksik haritası verisi: son 3 denemede yanlış/boş bırakılan konular → [{d,k,y,b,n}] (en çok eksik önce).
+   exam satırlarında topics: [{ders,konu,yanlis,bos}] */
+function vpKn(exams){
+  const L=(exams||[]).filter(e=>Array.isArray(e.topics)&&e.topics.length).slice(-3),m=new Map();
+  L.forEach(e=>{const seen=new Set();e.topics.forEach(t=>{
+    if(!t||!t.konu)return;const y=vpN(t.yanlis),b=vpN(t.bos);if(y+b<=0)return;
+    const key=String(t.ders||"")+"|"+String(t.konu).toLocaleLowerCase("tr"),o=m.get(key)||{d:String(t.ders||"Diğer"),k:String(t.konu),y:0,b:0,n:0};
+    o.y+=y;o.b+=b;if(!seen.has(key)){o.n++;seen.add(key)}m.set(key,o)})});
+  return [...m.values()].sort((a,b)=>b.y+b.b-(a.y+a.b)||b.n-a.n).slice(0,80);
+}
+function vpKnHTML(kn){
+  if(!kn||!kn.length)return "";
+  const by=new Map();kn.forEach(o=>{const a=by.get(o.d)||[];a.push(o);by.set(o.d,a)});
+  const cards=[...by.entries()].sort((a,b)=>b[1].reduce((x,o)=>x+o.y+o.b,0)-a[1].reduce((x,o)=>x+o.y+o.b,0)).slice(0,8).map(([d,L])=>{
+    const tot=L.reduce((x,o)=>x+o.y+o.b,0);
+    return `<div class="kc"><b>${vpX(d)}</b><span class="kt">${L.length} konu · ${tot} soru</span><ul>${L.slice(0,4).map(o=>`<li>${vpX(o.k)}<em>${o.y?o.y+" yanlış":""}${o.y&&o.b?" · ":""}${o.b?o.b+" boş":""}${o.n>1?" · "+o.n+" denemede":""}</em></li>`).join("")}</ul>${L.length>4?`<span class="kt">+${L.length-4} konu daha</span>`:""}</div>`}).join("");
+  return `<section><h3>Konu eksik haritası</h3><p class="sub">Son denemelerde yanlış ya da boş bırakılan konular, ders ders. Birden çok denemede görülenler öncelikli çalışılmalıdır.</p><div class="kg">${cards}</div></section>`;
 }
 
 /* ---- grafikler (SVG; W = çizim genişliği, 700 geniş / 360 dar) ---- */
@@ -180,6 +199,7 @@ function vpBody(D,o){
 <section><h3>Derslere göre dağılım</h3><p class="sub">Sayaçta seçilen derse göre süre; yanında soru sayısı ve doğru oranı.</p>${vpDual(W=>vpSubj(D.subj,W))}</section>
 <section><h3>Görevler</h3>${tt?`<div class="two">${vpRing(td,tt)}<div>${open.length?`<p style="margin:0 0 4px"><b>Tamamlanmayan ${open.length} görev</b></p><ol class="tl">${open.slice(0,6).map(t=>`<li>${vpX(t.title)}${t.subject?` <small>· ${vpX(t.subject)}</small>`:""} <small>· ${vpX(vpFmt(String(t.task_date).slice(0,10),{day:"numeric",month:"short"}))}</small></li>`).join("")}</ol>${open.length>6?`<p class="nd" style="margin-left:0">ve ${open.length-6} görev daha</p>`:""}`:`<p style="margin:0"><b>Haftanın tüm görevleri tamamlandı.</b> 👏</p>`}</div></div>`:`<p class="nd">Bu hafta için görev atanmadı.</p>`}</section>
 <section><h3>Deneme netleri</h3><p class="sub">Son ${Math.min(8,D.ex.length)} deneme; kırmızı noktalar bu haftanın denemeleri.${D.tg&&D.tg.target_net!=null&&D.tg.target_net!==""?" Yeşil kesikli çizgi hedef net.":""}</p>${D.ex.length<2?vpExams(D.ex,D.s7,D.tg,700):vpDual(W=>vpExams(D.ex,D.s7,D.tg,W))}</section>
+${vpKnHTML(D.kn)}
 ${note}
 <div class="ft"><span>Bu rapor öğrencinin uygulamaya girdiği çalışma, görev ve deneme kayıtlarından hazırlanmıştır. Uyku ve ruh hali bilgileri paylaşılmaz.${o.foot?" "+o.foot:""}</span><span>© Karakış Eğitim &amp; Danışmanlık</span></div></div>`;
 }
@@ -195,6 +215,7 @@ function vpCss(){
 .lead{font-size:15px;margin:4px 0 12px}.ks{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.k{background:${VP.S};border-radius:12px;padding:10px 12px}.k span{display:block;font-size:11px;color:${VP.M};font-weight:700;text-transform:uppercase;letter-spacing:.04em}.k b{display:block;font-size:21px;line-height:1.25;color:${VP.C}}.k i{font-style:normal;font-size:11px;font-weight:700}.up{color:${VP.OK}}.dn{color:${VP.DN}}.z{color:${VP.M}}
 section{margin-top:16px;break-inside:avoid}h3{font-size:14.5px;margin:0 0 4px;padding-left:9px;border-left:4px solid ${VP.C}}.sub{margin:0 0 6px 13px;color:${VP.M};font-size:12px}
 .an2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}.an2>div{border-radius:12px;padding:10px 12px 8px}.an2>div>b{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.05em}.an2 ul{margin:4px 0 0;padding-left:17px}.an2 li{margin:3px 0}
+.kg{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:4px}.kc{background:${VP.S};border-radius:12px;padding:9px 12px;break-inside:avoid}.kc>b{display:block;font-size:13px;color:${VP.N}}.kt{display:block;font-size:11px;color:${VP.M};font-weight:700}.kc ul{margin:4px 0 2px;padding-left:16px}.kc li{margin:2px 0;font-size:12.5px}.kc em{display:block;font-style:normal;color:${VP.DN};font-size:11px;font-weight:700}@media(max-width:640px){.kg{grid-template-columns:1fr}}
 .ag{background:${VP.OKS}}.ag>b{color:${VP.OK}}.ag>b::before{content:"✓ "}.aw{background:${VP.DNS}}.aw>b{color:${VP.DN}}.aw>b::before{content:"→ "}.an2>div:only-child{grid-column:1/-1}
 .lg{display:inline-flex;align-items:center;gap:5px;margin-right:12px}.lg i{display:inline-block;width:12px;height:10px;border-radius:3px;background:${VP.C}}.lg i.p{background:none;border-top:2.2px dashed ${VP.N};opacity:.55;height:0;border-radius:0;width:16px}
 .two{display:grid;grid-template-columns:150px 1fr;gap:16px;align-items:center}.tl{margin:0;padding-left:18px}.tl li{margin:2px 0}.tl small{color:${VP.M}}

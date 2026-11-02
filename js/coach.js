@@ -359,8 +359,9 @@ function reportHTML(R,title,sid){
   const yor=(r.ders_yorumlari||[]).map(d=>`<div class="empty" style="font-size:14px;margin-top:4px"><b>${esc(d.ders)}:</b> ${esc(d.yorum)}</div>`).join("");
   const pr=(r.oncelikler||[]).map(o=>`<div class="card" style="margin:10px 0 0;padding:12px"><b>${esc(o.ders)}${o.konu?" · "+esc(o.konu):""}</b> <span class="empty">· öncelik: ${esc(lv[o.seviye]||"Orta")}${o.kanit_turu==="DERS_NETI"?" · ders neti temelli":""}</span><div class="empty" style="margin-top:6px">${esc(o.gerekce)}</div><div style="margin-top:6px;font-size:15px"><b>Yöntem:</b> ${esc(o.calisma_yontemi)}<br><b>Miktar:</b> ${esc(o.miktar)}<br><b>Mini test:</b> ${esc(o.mini_test)}</div></div>`).join("");
   const h2=t=>`<h2 style="font-size:15px;margin-top:14px">${t}</h2>`;
-  const tek=(s.tekrar_eden_konular||[]).slice(0,8).map(o=>`<div class="subj"><span>${esc(o.ders)} · ${esc(o.konu)}</span><span>${num(o.yanlis_sinav)} denemede yanlış</span></div>`).join("");
-  const zay=(s.konular||[]).slice(0,12).map(o=>`<div class="subj"><span>${esc(o.ders)} · ${esc(o.konu)}</span><span>${num(o.yanlis)} yanlış${num(o.bos)?" · "+num(o.bos)+" boş":""}${o.sinav>1?" · "+num(o.sinav)+" denemede":""}</span></div>`).join("");
+  const em=sid!=null&&typeof emHas==="function"&&emHas(sid);
+  const tek=em?"":(s.tekrar_eden_konular||[]).slice(0,8).map(o=>`<div class="subj"><span>${esc(o.ders)} · ${esc(o.konu)}</span><span>${num(o.yanlis_sinav)} denemede yanlış</span></div>`).join("");
+  const zay=em?"":(s.konular||[]).slice(0,12).map(o=>`<div class="subj"><span>${esc(o.ders)} · ${esc(o.konu)}</span><span>${num(o.yanlis)} yanlış${num(o.bos)?" · "+num(o.bos)+" boş":""}${o.sinav>1?" · "+num(o.sinav)+" denemede":""}</span></div>`).join("");
   const alt=(s.dersler||[]).filter(d=>d.kurumun_altinda===true).map(d=>`<div class="subj"><span>${esc(d.ders)}</span><span>%${num(d.son_ogrenci_yuzde)} (kurum %${num(d.son_kurum_yuzde)})</span></div>`).join("");
   return `<div class="card"><h2>${title||"Yapay zekâ gelişim analizi"}</h2><p style="margin:0 0 6px">${esc(r.ozet)}</p><p class="empty" style="margin:0">${esc(r.egilim)}</p>
   ${ders?h2("Ders bazlı değişim (kayıtlı denemelerden hesaplandı)")+ders+yor:""}
@@ -387,7 +388,7 @@ function examCard(){
   <p class="empty" style="margin:0 0 10px">Deneme sonuç PDF'ini yükle: uygulama PDF'i doğrudan okur (yapay zekâ yok), saniyeler sürer. Okunanı sen kontrol edip onaylarsan kaydedilir.</p>
   <div class="row" style="margin-top:0"><input id="exf" type="file" accept="application/pdf,.pdf" style="width:100%"><button class="btn" style="padding:11px 16px" id="exgo">Dosyayı oku</button></div>
   <p class="empty" id="exmsg" style="margin:8px 0 0;font-size:14px">${esc(EXMSG)}</p>
-  ${L.length?`<div style="margin-top:10px">${examRows(L,"own")}</div><div class="row"><button class="chip" id="airun" data-sid="${ME}">📈 Gelişim analizimi yenile</button></div>`:""}</div>${aiReportCard(ME)}`;
+  ${L.length?`<div style="margin-top:10px">${examRows(L,"own")}</div><div class="row"><button class="chip" id="airun" data-sid="${ME}">📈 Gelişim analizimi yenile</button></div>`:""}</div>${typeof emHTML==="function"?emHTML(ME):""}${aiReportCard(ME)}`;
 }
 function aiCard(sid){
   if(!(sid in EX))return `<div class="card"><h2>Deneme sonuçları ve yapay zekâ</h2><p class="empty rd-ld"><span class="spin" aria-hidden="true"></span> Yükleniyor…</p></div>`;
@@ -396,7 +397,7 @@ function aiCard(sid){
   const acc=tot?`<p class="empty" style="font-size:13px;margin:8px 0 0">Yapay zekâ okuma doğruluğu: %${Math.round((tot-fix)/tot*100)} (${tot} alandan ${fix} tanesi öğrenci tarafından düzeltildi)</p>`:"";
   return `<div class="card"><h2>Deneme sonuçları ve yapay zekâ</h2>${L.length?examRows(L,"coach"):`<p class="empty">Öğrenci henüz deneme sonucu yüklemedi.</p>`}
   ${acc}<p class="empty" id="exmsg" style="margin:8px 0 0;font-size:14px">${esc(EXMSG)}</p>
-  ${L.length?`<div class="row"><button class="chip" id="airun" data-sid="${sid}" data-force="1">🤖 Yapay zekâ koç raporunu üret</button></div>`:""}</div>${aiReportCard(sid,"Yapay zekâ koç raporu")}`;
+  ${L.length?`<div class="row"><button class="chip" id="airun" data-sid="${sid}" data-force="1">🤖 Yapay zekâ koç raporunu üret</button></div>`:""}</div>${typeof emHTML==="function"?emHTML(sid):""}${aiReportCard(sid,"Yapay zekâ koç raporu")}`;
 }
 
 const setSync=m=>{const e=document.getElementById("sync");if(e)e.textContent=m};

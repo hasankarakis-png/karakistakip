@@ -792,3 +792,13 @@ body.coach,body.stu{--mbme:#2b3a10;--mbme-ink:#f3f3ee;--mbot:#1f1f1f;--mbot-ink:
 
 /* Yarışma: saniye sayacı zıplamasın */
 .chv,.chv small{font-variant-numeric:tabular-nums}
+/* Konu eksik haritası (exam-map.js) */
+.emtabs{display:flex;gap:8px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+.emt{flex:0 0 auto;display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:8px 8px 8px 14px;min-height:40px;font:700 14px var(--fb);cursor:pointer;white-space:nowrap}
+.emt.on{background:var(--press);color:var(--press-ink);border-color:var(--press)}
+.emb{min-width:24px;height:24px;border-radius:12px;background:var(--acc);color:var(--acc-ink);font:800 12px/24px var(--fb);text-align:center;padding:0 6px}.emb.z{background:var(--ok);color:#fff}
+.ems{display:flex;flex-wrap:wrap;gap:6px 14px;margin:6px 0 2px;font-size:14px;color:var(--mute)}.ems b{color:var(--ink)}
+.emr{padding:8px 0;border-bottom:1px solid var(--line)}.emr:last-child{border-bottom:0}.emn{font-weight:600;font-size:15px}.emr small{color:var(--mute);font-size:13px}
+.emtag{margin-left:8px;background:var(--goldsoft);color:var(--ink);border-radius:999px;padding:2px 9px;font:700 12px var(--fb)}
+.emp{height:7px;border-radius:4px;background:var(--line);margin:5px 0 3px;overflow:hidden}.emp i{display:block;height:100%;border-radius:4px;background:var(--acc)}
+.emok{margin-top:10px}.emok summary{cursor:pointer;color:var(--mute);font-weight:600;font-size:14px;min-height:36px}.emr.ok .emn{font-weight:500;color:var(--mute)}
