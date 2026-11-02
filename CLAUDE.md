@@ -36,6 +36,7 @@ Hasan Karakış'ın (Karakış Eğitim & Danışmanlık, Diyarbakır) ~18 YKS/LG
 | veli.html + js/veli.js | hesapsız veli sayfası (`#t=belirteç` → `parent_view()` RPC v2; veli rızası şart, uyku/ruh hali yok): koçun PDF'iyle aynı grafikli haftalık rapor, Bu hafta / Geçen hafta / 2 hafta önce, PDF olarak kaydet |
 | kvkk.html | aydınlatma metni TASLAĞI (avukat onayı bekliyor) |
 | js/dayflow.js | öğrenci: kurulum sihirbazı (ana ekran + bildirim), gün sonu kapanış ekranı (`DC`, `act("close")`'u sarar), uzun açık sayaç düzeltme (`fixStop`) |
+| js/student-simple.js | öğrenci Bugün sayfasını sadeleştirir: `todayTab()`'ı sarar; sıra sayaç → görevler → soru girişi → gün sonu; Yarışma/Konu/Tercih kartları "Kısayollar" karosuna, söz/karne/istatistik/seri/akış katlanır "Daha fazla"ya iner (`localStorage karakis-sade-more`). Bilgi silmez, tanınmayan kart görünür kalır; yapı değişirse eski ekranı çizer. Kapatmak: dosyadaki `SADE_AKTIF=false`. Stil: styles.css sonu `.sx-*` |
 | js/nav.js | geri tuşu (History API, `navSync`), üst çubuk, bildirim merkezi `notifCard`, `openStu`, `openMsg` |
 | js/coach.js | tıklama yönlendirme `ui()`, denemeler/yapay zekâ raporu, `busy()`/`DRAFTS` |
 | js/boot.js | giriş (Turnstile), `start()`, `loadStudent()`/`pushPast()`, `refreshRun()`, realtime kanalları |
