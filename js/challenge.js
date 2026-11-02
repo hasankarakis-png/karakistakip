@@ -96,7 +96,18 @@ async function chatSend(){
 setInterval(()=>{if(document.hidden)return;const el=document.getElementById("chm");if(el&&CHT.id)chatLoad(CHT.id)},7000);
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target&&e.target.id==="chin"){e.preventDefault();chatSend()}});
 document.addEventListener("change",e=>{const t=e.target;if(!t)return;if(t.id==="cmst")CM.sid=t.value;else if(t.id==="cmd")CM.d=t.value});
-function chBoardHTML(c){
+/* Sıralama kutusu: data-chbd ile işaretlenir; 15 sn'de bir yalnızca bu kutunun içi yenilenir (yazı alanları bozulmaz). */
+function chBoardHTML(c){return `<div data-chbd="${c.id}">${chBoardRows(c)}</div>`}
+async function chBoardRefresh(){
+  if(document.hidden)return;const el=document.querySelector("[data-chbd]");if(!el)return;
+  const c=CH.list.find(x=>x.id===+el.dataset.chbd);if(!c)return;
+  try{const r=await sb.rpc("challenge_board",{p_id:c.id});
+    if(r&&!r.error&&Array.isArray(r.data)){CH.board={id:c.id,rows:r.data};const e2=document.querySelector("[data-chbd]");if(e2&&+e2.dataset.chbd===c.id)e2.innerHTML=chBoardRows(c)}
+  }catch(e){}
+}
+setInterval(chBoardRefresh,15000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)chBoardRefresh()});
+function chBoardRows(c){
   const B=CH.board&&CH.board.id===c.id?CH.board.rows:null;
   if(!B)return `<p class="empty">Yükleniyor…</p>`;
   if(!B.length)return `<p class="empty">Henüz sıralama yok.</p>`;

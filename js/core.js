@@ -47,7 +47,9 @@ async function flush(){
 }
 const save=()=>{rollover();try{localStorage.setItem(KEY+ME,JSON.stringify(S))}catch(e){}if(!ME||ROLE!=="student")return;clearTimeout(pend);DIRTY=true;setSync("Kaydediliyor…");pend=setTimeout(flush,300)};
 // Uygulama arka plana alınırken bekleyen kaydı hemen gönder; öne dönünce gün değiştiyse yenile.
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"){if(DIRTY){clearTimeout(pend);flush()}}else if(ROLE==="student"&&rollover()){save();render()}});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"){if(DIRTY||(ROLE==="student"&&S.status==="study")){clearTimeout(pend);flush()}}else if(ROLE==="student"&&rollover()){save();render()}});
+// Canlı yarışma: ders sürerken dakikada bir kayıt gönder; sunucu sıralamada çalışan oturumu bu kayıtla hesaplar (updated_at tazelenir).
+setInterval(()=>{if(ROLE==="student"&&ME&&S.status==="study"&&S.day===day()&&!document.hidden&&!DIRTY)flush()},60000);
 window.addEventListener("pagehide",()=>{if(DIRTY)flush()});
 window.addEventListener("online",()=>{if(DIRTY)flush()});
 const actPct=()=>{const m={...S.meth};if(S.cur)m[S.cur.meth]=(m[S.cur.meth]||0)+curNet();const t=Object.values(m).reduce((a,b)=>a+b,0);return t?Math.round(ACT.reduce((a,k)=>a+(m[k]||0),0)/t*100):0};
