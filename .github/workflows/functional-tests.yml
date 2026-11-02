@@ -1,0 +1,39 @@
+name: İşlev testleri (sahte Supabase)
+# tests/test_*.py tarayıcı testlerini her push'ta çalıştırır: koç/öğrenci ekranları, görevler, yarışma,
+# veli raporu, şifre değiştirme, PDF okuyucu. Gerçek veritabanına dokunmaz (tests/mock-supabase.js).
+on:
+  push:
+    branches: [main, "audit/**", "ci/**", "claude/**"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: functional-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Playwright (Python) ve Pillow
+        run: |
+          pip install playwright==1.58.0 pillow
+          python -m playwright install --with-deps chromium
+      - name: Testleri çalıştır
+        env:
+          TZ: Europe/Istanbul
+        run: python tests/run_all.py
+      - name: Ekran görüntüleri
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-ekranlari
+          path: tests/shots/
+          if-no-files-found: ignore
+          retention-days: 7
