@@ -1,7 +1,7 @@
 /* ===== Öğrenci özellikleri (v3.8) =====
    Yanlış defteri (fotoğraf, ders, konu, neden; 3 / 14 / 30 gün sonra tekrar), haftalık karne, deneme haftası kartı,
-   yarışma ayarları (katılmama, takma ad), mesajda koçun çalışma saatleri bilgisi. Koç: öğrencinin yanlış defteri özeti. */
-let WB=null,WBF={img:null,err:"",busy:false},WBV="due",WBC={},CHP=null,CHPMSG="";
+   mesajda koçun çalışma saatleri bilgisi. Koç: öğrencinin yanlış defteri özeti. */
+let WB=null,WBF={img:null,err:"",busy:false},WBV="due",WBC={};
 const WB_STEP=[3,14,30];
 async function wbLoad(){if(WB!==null)return;WB=[];try{const r=await sb.from("wrong_book").select("*").eq("student_id",ME).order("created_at",{ascending:false}).limit(300);WB=(r&&r.data)||[]}catch(e){}if(tab==="w"||tab==="b")render()}
 const wbDue=()=>(WB||[]).filter(w=>w.stage<3&&w.next_review&&w.next_review<=day());
@@ -64,20 +64,6 @@ function weekHomeCards(){
   return h;
 }
 
-/* ---- yarışma ayarları ---- */
-function chPrefCard(){
-  if(CHP===null){CHP={};Promise.resolve(sb.from("challenge_prefs").select("*").eq("student_id",ME).maybeSingle()).then(r=>{CHP=(r&&r.data)||{};if(tab==="y")render()},()=>{})}
-  return `<details class="card"${CHPMSG?" open":""}><summary style="cursor:pointer;font-weight:700">⚙️ Yarışma ayarlarım</summary>
-  <div class="row"><label>Takma ad (isteğe bağlı)<input id="chpa" maxlength="20" autocomplete="off" placeholder="ör. Kartal" value="${esc(CHP.alias||"")}" style="width:160px"></label><button class="btn" style="padding:11px 16px" id="chpsave">Kaydet</button></div><p class="empty" style="font-size:12px;margin:6px 0 0">Arkadaşların “şu an çalışıyor” bilgini görmez; bunu yalnızca koçun görür.</p>${CHPMSG?`<p class="empty" style="font-size:13px;margin:6px 0 0">${esc(CHPMSG)}</p>`:""}</details>`;
-}
-async function chPrefSave(){
-  const a=((document.getElementById("chpa")||{}).value||"").trim();
-  if(a&&!/^[0-9A-Za-zÇĞİÖŞÜçğıöşü ._-]{2,20}$/.test(a)){CHPMSG="Takma ad 2–20 harf/rakam olmalı.";render();return}
-  /* hidden gönderilmez: yarışmaya katılım yalnızca koçun yetkisinde (sunucu da öğrencinin değiştirmesini engeller) */
-  const row={student_id:ME,alias:a||null,updated_at:new Date().toISOString()};const r=await dbw(sb.from("challenge_prefs").upsert(row));
-  CHPMSG=r&&r.error?"Kaydedilemedi: "+r.error.message:"Kaydedildi ✓";if(!(r&&r.error)){CHP=Object.assign({},CHP,row);try{chLoad(true)}catch(e){}}render();
-}
-
 /* ---- mesajda çalışma saatleri ---- */
 function coachOff(){const d=new Date(),h=d.getHours()+d.getMinutes()/60,we=d.getDay()===0||d.getDay()===6;return we?(h<10||h>=20):(h<17||h>=22)}
 
@@ -91,10 +77,8 @@ function coachOff(){const d=new Date(),h=d.getHours()+d.getMinutes()/60,we=d.get
     if(id==="wbimx"){WBF.img=null;render();return true}
     if(D.wbok){once("wbo",()=>wbOk(D.wbok));return true}
     if(D.wbdel){wbDel(D.wbdel);return true}
-    if(id==="chpsave"){once("chp",chPrefSave);return true}
     return pv.apply(this,arguments);
   };
-  const py=yarisTab;yarisTab=function(){return py.apply(this,arguments)+chPrefCard()};
   const pm=msgTab;msgTab=function(){const h=pm.apply(this,arguments);return coachOff()?h.replace('<div class="mth" id="mth">','<p class="hrs">🕔 Koçun şu an çalışma saatleri dışında (hafta içi 17:00–22:00, hafta sonu 10:00–20:00). Yazabilirsin; çalışma saatinde yanıt verir.</p><div class="mth" id="mth">'):h};
   document.addEventListener("change",e=>{if(e.target.id==="wbimg"){const f=e.target.files&&e.target.files[0];e.target.value="";wbPick(f)}});
 })();

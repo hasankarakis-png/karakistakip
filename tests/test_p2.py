@@ -127,11 +127,9 @@ with sync_playwright() as p:
     # karne
     E("tab='d';ANT='o';render()"); wait(page)
     check("Haftalık karnen" in page.inner_text(".stu-main"), "Analiz'de haftalık karne")
-    # yarışma ayarları
+    # yarışmada takma ad / ayar kartı yok (öğrenci kendini gizleyemez)
     E("tab='y';render()"); wait(page, 600)
-    page.click("text=Yarışma ayarlarım"); check(page.query_selector("#chph") is None, "Öğrencide yarışmadan çıkma kutusu yok"); page.fill("#chpa", "Kartal"); page.click("#chpsave"); wait(page, 500)
-    cp = E("__FX.challenge_prefs[0]")
-    check(cp and not cp.get("hidden") and cp["alias"] == "Kartal", f"Yarışma tercihi kaydedildi: {cp}")
+    check(page.query_selector("#chpa") is None and "Yarışma ayarlarım" not in page.inner_text(".stu-main"), "Yarışmada takma ad seçeneği yok")
     # mesajda çalışma saatleri
     E("coachOff=()=>true;tab='m';render()"); wait(page, 500)
     check(page.query_selector(".hrs") is not None and "çalışma saatleri dışında" in txt(page, ".hrs"), "Çalışma saati dışında bilgi görünüyor")
