@@ -67,16 +67,18 @@ with sync_playwright() as p:
     # Görevler: yapay zekâ ile dağıt
     page.click(".tbar-w [data-dt='g']"); wait(page, 1500)
     rd = page.inner_text(".rd-ai") if page.query_selector(".rd-ai") else ""
-    check("Türev 40 soru" in rd and "Paragraf 30 soru" in rd and "Kalan günlere dağıt" in rd, "Geciken görevler için yapay zekâ önerisi otomatik geldi")
+    check("Türev 40 soru" in rd and "Paragraf 30 soru" in rd and "Yeni haftaya ekle" in rd, "Geciken görevler için yapay zekâ önerisi otomatik geldi")
     page.screenshot(path=f"{SHOTS}/v34-dagit.png", full_page=True)
     days = E("RD['s1'].days")
     page.click("[data-rdgo='s1']"); wait(page, 800)
     t1 = E("__FX.weekly_tasks.find(t=>t.id===1).task_date"); t2 = E("__FX.weekly_tasks.find(t=>t.id===2).task_date")
     check(t1 == days[0] and t2 == days[-1], f"Görevler kalan günlere taşındı ({t1}, {t2})")
-    check("dağıtıldı" in page.inner_text(".dashboard-main") and page.query_selector("[data-rdundo='s1']") is not None, "Sonuç kartı ve Geri al düğmesi göründü")
+    check(E("__FX.weekly_tasks.find(t=>t.id===1).carry_state")=="carried" and E("__FX.weekly_tasks.find(t=>t.id===1).carried_from")<E("day()"), "Taşınan görev 'geçen haftadan' (carried) olarak işaretlendi")
+    check("yeni haftaya eklendi" in page.inner_text(".dashboard-main") and page.query_selector("[data-rdundo='s1']") is not None, "Sonuç kartı ve Geri al düğmesi göründü")
     page.click("[data-rdundo='s1']"); wait(page, 800)
     t1b = E("__FX.weekly_tasks.find(t=>t.id===1).task_date")
     check(t1b < E("day()"), "Geri al: görevler eski tarihlerine döndü")
+    check(E("__FX.weekly_tasks.find(t=>t.id===1).carry_state")is None, "Geri al: carry işareti de temizlendi")
     # Ayarlar
     page.click("#sbtog"); wait(page); page.click(".side-nav [data-navback]"); wait(page, 400)
     E("sel=null;MV=false;MSEL=null;CPG='y';render()"); wait(page, 500)

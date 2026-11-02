@@ -51,6 +51,7 @@ Hasan Karakış'ın (Karakış Eğitim & Danışmanlık, Diyarbakır) ~18 YKS/LG
 - Mesaj türü `kind`: 'chat' / 'auto' (sunucunun yapay zekâ mesajı). İstemci yalnız 'chat' ekleyebilir.
 - Sarmalayıcı düzeni: profile.js / dayflow.js / coach-center.js, `ui`, `act`, `studentView`, `coachView` fonksiyonlarını sarar (önce kendi düğmesine bakar, sonra öncekini çağırır). Bu dosyalar coach.js'ten sonra, boot.js'ten önce yüklenir.
 - `overdue(id)`: öğrencinin görevleri açılmadıysa koç için `ODL` (loadOD) kullanılır.
+- Kalan görev kararı (v4.2): `overdue()` penceresi 28 gün (`OD_DAYS`). `weekly_tasks` okuyan her yeni sorguya `.or(OPEN_TK)` ekle (kapatılanlar `carry_state='closed'` listelerden, veli raporundan ve `task-plan` dağıtımından kalkar; satır silinmez, `clUndo` geri alır). Koç arayüzü: `overdueCard` (Ekleme / Yeni haftaya ekle), `clClose`/`clUndo` automation.js'te; Program ver sayfasında kart PDF yüklemeden önce gelir.
 - `scripts/bump.sh` index.html ve veli.html içindeki js/*.js (vendor hariç) ve kökteki .css sürümlerini yeniler.
 - Gizli not: `notes.private`; öğrenci RLS ile göremez; veli özeti, PDF rapor ve yapay zekâ raporu `!n.p` ile filtreler.
 - MCP `apply_migration` drop/revoke içeren SQL'de onay ister ve bu istemcide onay ekranı kendiliğinden iptal olabiliyor: mümkünse yalnızca ekleme yapan SQL yaz (alter policy, create policy); drop/revoke gerekiyorsa SQL'i Hasan'a ver.
@@ -63,12 +64,12 @@ Gemini modeli: fonksiyonlar çalışan en yeni "flash-lite/flash" modeli kendisi
 Cron ve tetikleyiciler `x-cron-secret` (public.app_secrets) kullanır. Dağıtım: Supabase MCP `deploy_edge_function` (verify_jwt=false; fonksiyon kendi doğrular).
 
 ## Şema dosyaları (sırayla uygulanmış)
-schema.sql, schema-ai.sql, schema-msg.sql, schema-resched.sql, schema-challenge.sql, schema-topics.sql, schema-nudge-wa.sql (v3.4), schema-hardening.sql (v3.5), schema-profile.sql (v3.7: student_profile, push_coverage, ders adı düzeltmesi), schema-v38.sql (v3.8: meetings, plan_templates, wrong_book, challenge_prefs, consents, parent_links, leads, packages, notes.private, student_profile.tags, MEBİ deneme haftaları, challenge_board gizlilik, parent_view), schema-v39.sql (v3.9: pin_attempts, pin_check — yalnızca service_role çalıştırabilir, ayrıca gövdede rol kontrolü), schema-v40.sql (v4.0: parent_view v2 — detay 42 gün ders bazında, gorevler 21 gün, hedef; eski alanlar korundu).
+schema.sql, schema-ai.sql, schema-msg.sql, schema-resched.sql, schema-challenge.sql, schema-topics.sql, schema-nudge-wa.sql (v3.4), schema-hardening.sql (v3.5), schema-profile.sql (v3.7: student_profile, push_coverage, ders adı düzeltmesi), schema-v38.sql (v3.8: meetings, plan_templates, wrong_book, challenge_prefs, consents, parent_links, leads, packages, notes.private, student_profile.tags, MEBİ deneme haftaları, challenge_board gizlilik, parent_view), schema-v39.sql (v3.9: pin_attempts, pin_check — yalnızca service_role çalıştırabilir, ayrıca gövdede rol kontrolü), schema-v40.sql (v4.0: parent_view v2 — detay 42 gün ders bazında, gorevler 21 gün, hedef; eski alanlar korundu), schema-v42.sql (v4.2: weekly_tasks.carry_state/carried_from — geçen haftadan kalan görevleri KOÇ yeni haftaya taşır ('carried') ya da 'Ekleme' ile kapatır ('closed'); öğrenci kaydıramaz: task_reschedule yalnız koç, tasks_guard carry alanlarını korur; parent_view kapatılanları saymaz).
 Canlı şema repodan ileride olabilir (bkz. Drive raporu); emin değilsen canlıdan oku.
 
 ## Test
 `tests/` klasöründe sahte Supabase (`mock-supabase.js`) ve Playwright betikleri var. Çalıştırma:
-`cd tests && PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers python3 test_nav.py` (ayrıca test_v34.py, test_fix.py, test_undo.py, test_ch.py, test_p1.py: profil/gün sonu/sihirbaz/uzun sayaç, test_p2.py: koç araçları/yanlış defteri/grafikli veli sayfası, test_p3.py: şifre değiştirme + haftalık veli PDF).
+`cd tests && PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers python3 test_nav.py` (ayrıca test_v34.py, test_fix.py, test_undo.py, test_ch.py, test_p1.py: profil/gün sonu/sihirbaz/uzun sayaç, test_p2.py: koç araçları/yanlış defteri/grafikli veli sayfası, test_p3.py: şifre değiştirme + haftalık veli PDF, test_carry.py: kalan görevlerde koç kararı / öğrenci bekleme). Not: test_p2.py'nin 'geçen haftayı kopyala' denetimi haftanın gününe bağlı (Pazartesi/Salı çalıştırınca sahte dünkü görevleri de sayar), kod hatası değil.
 Yalnızca değiştirdiğin alanın testini çalıştır.
 
 ## Açık işler

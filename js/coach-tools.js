@@ -14,7 +14,7 @@ async function csvExport(kind){
       csvDl("gunluk-calisma",[["Öğrenci","Gün","Net dk","Soru","Doğru","Boş","Program","Ruh hali","Uyku","Dikkat dağınıklığı","Enerji","Stres","Aktif yöntem %"],...r.map(x=>{const s=x.snap||{};return[nm(x.student_id),x.day,s.m,s.q,s.c,s.b,s.prog,s.mood,s.sleep,s.dist,s.en,s.str,s.act]})]);msg(r.length+" satır indirildi.")}
     if(kind==="exam"){const r=await pageAll(()=>sb.from("exam_results").select("student_id,exam_name,exam_date,exam_type,total_net,score,rank").order("exam_date").order("student_id"));
       csvDl("denemeler",[["Öğrenci","Deneme","Tarih","Tür","Toplam net","Puan","Sıralama"],...r.map(x=>[nm(x.student_id),x.exam_name,x.exam_date,x.exam_type,x.total_net,x.score,x.rank])]);msg(r.length+" satır indirildi.")}
-    if(kind==="task"){const r=await pageAll(()=>sb.from("weekly_tasks").select("student_id,task_date,subject,title,amount,done,source").order("task_date").order("student_id"));
+    if(kind==="task"){const r=await pageAll(()=>sb.from("weekly_tasks").select("student_id,task_date,subject,title,amount,done,source").or("carry_state.is.null,carry_state.eq.carried").order("task_date").order("student_id"));
       csvDl("gorevler",[["Öğrenci","Tarih","Ders","Görev","Miktar","Yapıldı","Kaynak"],...r.map(x=>[nm(x.student_id),x.task_date,x.subject,x.title,x.amount,x.done?"evet":"hayır",x.source])]);msg(r.length+" satır indirildi.")}
   }catch(e){msg("İndirilemedi: "+(e&&e.message||"bağlantı hatası"))}
 }

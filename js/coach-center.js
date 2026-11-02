@@ -15,7 +15,7 @@
       const noTask=Array.isArray(TKALL)&&!TKALL.some(t=>t.student_id===x.id);
       const score=(late?late*4:0)+(fl?fl*2:0)+(noTask?2:0)+(noWork?1:0);
       const reasons=[];
-      if(late) reasons.push(late+" geciken görev");
+      if(late) reasons.push(late+" kalan görev · karar bekliyor");
       if(fl) reasons.push(fl+" takip uyarısı");
       if(noTask) reasons.push("son 7 günde görev atanmadı");
       if(noWork) reasons.push("bugün henüz çalışma kaydı yok");

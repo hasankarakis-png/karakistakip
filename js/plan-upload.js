@@ -77,7 +77,9 @@ async function puAssign(id){
   if(err){P.msg="Atanamadı: "+err;P.err=true;render();return}
   try{await dbw(sb.from("weekly_tasks").update({week_title:wt}).eq("student_id",id).gte("task_date",dr.week).lte("task_date",shift(dr.week,6)))}catch(e){}
   WSEL[id]=dr.week;P.draft=null;P.err=false;P.msg=rows.length+" görev atandı ✓"+(skippedPast?` · ${skippedPast} geçmiş gün atlandı`:"")+(dup?` · ${dup} zaten vardı`:"");
-  WK[id]=0;await loadTasks(id);render();
+  WK[id]=0;await loadTasks(id);
+  const od=overdue(id).length;if(od)P.msg+=" · ⏰ "+od+" kalan görev karar bekliyor (sayfanın üstünde)";
+  render();if(od)window.scrollTo(0,0);
 }
 function puAct(D,id){
   if(D.plpick){const id=(document.getElementById("plsel")||{}).value;if(!id)return true;sel=id;selDay=null;DTAB="g";PLV=id;render();window.scrollTo(0,0);Promise.all([loadHist(id),loadExams(id),loadTasks(id),loadTarget(id)]).then(()=>{if(sel===id)render()});return true}
@@ -112,7 +114,8 @@ function weekGrid(x){
 
 let PLV=null;
 function planPage(x){
-  return `${topBar("<b>📄 Program ver</b>",x.n,refreshBtn())}${planUploadCard(x)}${weekGrid(x)}`;
+  // Geçen haftadan kalanlar yeni programdan önce görünür: koç sarkıp sarkmayacağına buradan karar verir.
+  return `${topBar("<b>📄 Program ver</b>",x.n,refreshBtn())}${rdDoneCard(x.id)}${clDoneCard(x.id)}${overdueCard(x.id,true)}${planUploadCard(x)}${weekGrid(x)}`;
 }
 
 function planPickCard(all){

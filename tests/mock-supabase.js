@@ -38,6 +38,8 @@
   P.gt=function(k,v){this.f.push(r=>r[k]>v);return this};
   P.is=function(k,v){this.f.push(r=>(r[k]??null)===v);return this};
   P.in=function(k,v){this.f.push(r=>v.includes(r[k]));return this};
+  // .or("kolon.is.null,kolon.eq.değer") biçimi (PostgREST): koşullardan biri sağlanırsa satır geçer
+  P.or=function(s){const cs=String(s).split(",").map(x=>{const [k,o,...v]=x.split("."),val=v.join(".");return r=>o==="is"&&val==="null"?(r[k]??null)===null:o==="eq"?String(r[k])===val:true});this.f.push(r=>cs.some(c=>c(r)));return this};
   P.order=function(k,o){if(!this.ord)this.ord=[k,!!(o&&o.ascending===false)];return this};P.limit=function(){return this};P.range=function(){return this};
   P.maybeSingle=function(){this.one=true;return this};P.single=function(){this.one=true;return this};
   P.insert=function(p){this.op="insert";this.payload=p;return this};
@@ -60,7 +62,7 @@
     auth:{getSession:async()=>(window.__NOSESS?{data:{session:null}}:{data:{session:{user:{id:ME,email:(ROLE==="coach"?"hasan":"alic")+"@takip.karakis.app"},access_token:"x"}}}),signOut:async(o)=>{window.__CALLS&&window.__CALLS.push("signOut:"+JSON.stringify(o||{}));return {}},signInWithPassword:async()=>({error:null})},
     from:t=>new Q(t),
     rpc:async(n,a)=>{window.__CALLS.push("rpc:"+n+":"+JSON.stringify(a));
-      if(n==="task_reschedule"){let c=0;FX.weekly_tasks.forEach(t=>{if(a.p_ids.includes(t.id)){t.task_date=a.p_date;c++}});return {data:c,error:null}}
+      if(n==="task_reschedule"){if(ROLE!=="coach")return {data:null,error:{message:"Kalan görevleri yalnızca koç taşıyabilir"}};let c=0;FX.weekly_tasks.forEach(t=>{if(a.p_ids.includes(t.id)&&!t.done&&t.carry_state!=="closed"){t.carried_from=t.carried_from||t.task_date;t.carry_state="carried";t.task_date=a.p_date;c++}});return {data:c,error:null}}
       if(n==="msg_read"){FX.messages.forEach(m=>{if(m.student_id===a.p_student&&!m.from_coach)m.read_at=new Date().toISOString()});return {data:null,error:null}}
       if(n==="parent_view")return {data:(window.__PV||{v:2,ad:"Ayşe",bugun:dn(0),bitis:new Date(now+20*864e5).toISOString(),gunler:[{gun:dn(-1),dk:120,soru:80},{gun:dn(-3),dk:200,soru:150}],gorev:{toplam:10,tamam:7},
         detay:[{gun:dn(-1),dk:120,soru:80,dogru:60,ders:{"Matematik":70,"Türkçe":50},qs:[{s:"Matematik",n:50,c:40},{s:"Türkçe",n:30,c:20}]},{gun:dn(-3),dk:200,soru:150,dogru:120,ders:{"Fizik":200},qs:[{s:"Fizik",n:150,c:120}]},{gun:dn(-9),dk:90,soru:40,dogru:30,ders:{},qs:[]}],

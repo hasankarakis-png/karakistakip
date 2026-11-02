@@ -63,7 +63,7 @@ function rdDays(){
   return out;
 }
 const rdSig=(L,days)=>L.map(t=>t.id).sort((a,b)=>a-b).join(",")+"|"+days.join(",");
-const rdBox=(inner,days)=>`<div class="rd-ai"><div class="rd-h"><b>🤖 Yapay zekâ ile kalan günlere dağıt</b><small>${days&&days.length?fd(days[0])+(days.length>1?" – "+fd(days[days.length-1]):""):""}</small></div>${inner}</div>`;
+const rdBox=(inner,days)=>`<div class="rd-ai"><div class="rd-h"><b>🤖 Yeni haftaya ekle · yapay zekâ günlere dağıtsın</b><small>${days&&days.length?fd(days[0])+(days.length>1?" – "+fd(days[days.length-1]):""):""}</small></div>${inner}</div>`;
 function rdCard(id,L){
   const days=rdDays(),sig=rdSig(L,days),R=RD[id];
   const wait=`<p class="empty rd-ld"><span class="spin" aria-hidden="true"></span> Yapay zekâ geciken konuları tarıyor, kalan günlere dağıtım hazırlıyor…</p>`;
@@ -75,7 +75,7 @@ function rdCard(id,L){
   const had=d=>(TK[id]||[]).filter(t=>t.task_date===d).length;
   return rdBox(`${R.plan.ozet?`<p class="rd-oz">${esc(R.plan.ozet)}</p>`:""}<div class="rd-days">${R.days.map(d=>{const A=by[d]||[];return `<div class="rd-day${A.length?"":" empty"}"><div class="rd-dh"><b>${fd(d)}</b><small>${had(d)} görev var${A.length?` · <em>+${A.length}</em>`:""}</small></div>${A.map(a=>{const t=T[a.id]||{};return `<div class="rd-it"><span>${esc(t.title||"Görev")}${t.subject?` <em>${esc(t.subject)}</em>`:""}</span>${a.neden?`<small>${esc(a.neden)}</small>`:""}</div>`}).join("")}</div>`}).join("")}</div>
   ${R.kaynak==="yedek"?`<p class="empty" style="font-size:12px;margin:6px 0 0">Yapay zekâ şu an yanıt vermedi; günlerin yüküne göre dengeli dağıtım önerildi.</p>`:""}
-  <div class="row"><button class="btn" style="padding:11px 16px" data-rdgo="${id}">✓ Kalan günlere dağıt (${R.plan.atamalar.length} görev)</button><button class="chip" data-rdre="${id}">↻ Yeniden öner</button></div>`,R.days);
+  <div class="row"><button class="btn" style="padding:11px 16px" data-rdgo="${id}">✓ Yeni haftaya ekle (${R.plan.atamalar.length} görev)</button><button class="chip" data-rdre="${id}">↻ Yeniden öner</button></div>`,R.days);
 }
 async function rdPlan(id){
   const L=overdue(id),days=rdDays(),sig=rdSig(L,days);if(!L.length||(RD[id]&&RD[id].st==="load"))return;
@@ -89,9 +89,11 @@ async function rdPlan(id){
 }
 async function rdGo(id){
   const R=RD[id];if(!R||R.st!=="ok")return;
-  const A=R.plan.atamalar,prev=A.map(a=>({id:a.id,date:((TK[id]||[]).find(t=>t.id===a.id)||{}).task_date})).filter(p=>p.date);
+  const A=R.plan.atamalar,tk=a=>(TK[id]||[]).find(t=>t.id===a.id)||{};
+  // prev: geri alma için eski tarih + eski carry alanları; taşınan görev "geçen haftadan" (carried) olarak işaretlenir
+  const prev=A.map(a=>({id:a.id,date:tk(a).task_date,cs:tk(a).carry_state||null,cf:tk(a).carried_from||null})).filter(p=>p.date);
   RD[id]=Object.assign({},R,{st:"apply"});render();
-  const res=await Promise.all(A.map(a=>Promise.resolve(sb.from("weekly_tasks").update({task_date:a.tarih}).eq("id",a.id).eq("student_id",id).eq("done",false)).catch(e=>({error:e}))));
+  const res=await Promise.all(A.map(a=>Promise.resolve(sb.from("weekly_tasks").update({task_date:a.tarih,carry_state:"carried",carried_from:tk(a).carried_from||tk(a).task_date}).eq("id",a.id).eq("student_id",id).eq("done",false)).catch(e=>({error:e}))));
   const bad=res.filter(r=>r&&r.error).length;
   await loadTasks(id);try{await loadOD()}catch(e){}
   RD[id]={st:"done",sig:"",days:R.days,A,prev,bad,ozet:R.plan.ozet};
@@ -99,19 +101,48 @@ async function rdGo(id){
 }
 async function rdUndo(id){
   const R=RD[id];if(!R||R.st!=="done")return;
-  await Promise.all(R.prev.map(p=>Promise.resolve(sb.from("weekly_tasks").update({task_date:p.date}).eq("id",p.id).eq("student_id",id)).catch(()=>null)));
+  await Promise.all(R.prev.map(p=>Promise.resolve(sb.from("weekly_tasks").update({task_date:p.date,carry_state:p.cs,carried_from:p.cf}).eq("id",p.id).eq("student_id",id)).catch(()=>null)));
   RD[id]=null;await loadTasks(id);try{await loadOD()}catch(e){}
   setSync("↩ Dağıtım geri alındı");render();
 }
 function rdDoneCard(id){
   const R=RD[id];if(!R||R.st!=="done")return "";
   const by={};R.A.forEach(a=>(by[a.tarih]=by[a.tarih]||0,by[a.tarih]++));
-  return `<div class="card undo"><div><b>✓ ${R.A.length-R.bad} geciken görev kalan günlere dağıtıldı</b><small>${Object.keys(by).sort().map(d=>fd(d)+": "+by[d]).join(" · ")}${R.bad?` · ${R.bad} görev taşınamadı`:""}${R.ozet?"<br>"+esc(R.ozet):""}</small></div><div class="undo-acts"><button class="btn" data-rdundo="${id}">↩ Geri al</button><button class="chip" data-rdok="${id}">Tamam</button></div></div>`;
+  return `<div class="card undo"><div><b>✓ ${R.A.length-R.bad} geciken görev yeni haftaya eklendi</b><small>${Object.keys(by).sort().map(d=>fd(d)+": "+by[d]).join(" · ")}${R.bad?` · ${R.bad} görev taşınamadı`:""}${R.ozet?"<br>"+esc(R.ozet):""}</small></div><div class="undo-acts"><button class="btn" data-rdundo="${id}">↩ Geri al</button><button class="chip" data-rdok="${id}">Tamam</button></div></div>`;
+}
+
+/* ---- "Ekleme": kalan görevler yeni haftaya sarkmasın, hepsi kalksın (koç kararı) ----
+   Satır silinmez; carry_state='closed' olur ve listelerden, veli raporundan, yapay zekâ dağıtımından kalkar. Geri alınabilir. */
+const CLD={};
+async function clClose(id){
+  const L=overdue(id);if(!L.length)return;
+  const nm=(STU.find(p=>p.id===id)||{}).name||"öğrenci";
+  if(!confirm(nm+" için "+L.length+" görev yeni haftaya EKLENMEYECEK ve listelerden kalkacak. Devam edilsin mi?"))return;
+  const ids=L.map(t=>t.id);
+  const r=await dbw(sb.from("weekly_tasks").update({carry_state:"closed"}).in("id",ids).eq("student_id",id).eq("done",false));
+  if(r&&r.error){alert("Kaldırılamadı: "+r.error.message);return}
+  CLD[id]={ids,n:ids.length};RD[id]=null;
+  await loadTasks(id);try{await loadOD()}catch(e){}
+  setSync("✓ "+ids.length+" görev kaldırıldı");render();
+}
+async function clUndo(id){
+  const C=CLD[id];if(!C)return;
+  const r=await dbw(sb.from("weekly_tasks").update({carry_state:null}).in("id",C.ids).eq("student_id",id));
+  if(r&&r.error){alert("Geri alınamadı: "+r.error.message);return}
+  delete CLD[id];await loadTasks(id);try{await loadOD()}catch(e){}
+  setSync("↩ Kaldırma geri alındı");render();
+}
+function clDoneCard(id){
+  const C=CLD[id];if(!C)return "";
+  return `<div class="card undo"><div><b>✓ ${C.n} görev yeni haftaya eklenmedi, kaldırıldı</b><small>Öğrencinin ve veli raporunun listelerinden kalktı.</small></div><div class="undo-acts"><button class="btn" data-clundo="${id}">↩ Geri al</button><button class="chip" data-clok="${id}">Tamam</button></div></div>`;
 }
 
 /* tıklamalar (coach.js ui() içinden) */
 function autoUi(t){
   const D=t.dataset;
+  if(D.clx){clClose(D.clx);return true}
+  if(D.clundo){clUndo(D.clundo);return true}
+  if(D.clok){delete CLD[D.clok];render();return true}
   if(D.rdgo){rdGo(D.rdgo);return true}
   if(D.rdre){RD[D.rdre]=null;render();return true}
   if(D.rdundo){rdUndo(D.rdundo);return true}

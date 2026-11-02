@@ -68,7 +68,7 @@ async function pullStudent(){
   C.notes[ME]=(n.data||[]).map(r=>({t:Date.parse(r.created_at),x:r.body}));
 }
 async function pullCoach(){
-  const [p,d,g,n,e,w]=await Promise.all([sb.from("profiles").select("id,name").eq("role","student").order("name"),sb.from("daily").select("student_id,day,state,snap").gte("day",dayN(-6)),sb.from("goals").select("*").eq("day",day()),sb.from("notes").select("student_id,body,created_at,private").order("created_at"),sb.from("exam_results").select("student_id,topics,exam_date").order("exam_date").order("created_at"),sb.from("weekly_tasks").select("student_id,done,task_date").gte("task_date",dayN(-6)).lte("task_date",day())]);
+  const [p,d,g,n,e,w]=await Promise.all([sb.from("profiles").select("id,name").eq("role","student").order("name"),sb.from("daily").select("student_id,day,state,snap").gte("day",dayN(-6)),sb.from("goals").select("*").eq("day",day()),sb.from("notes").select("student_id,body,created_at,private").order("created_at"),sb.from("exam_results").select("student_id,topics,exam_date").order("exam_date").order("created_at"),sb.from("weekly_tasks").select("student_id,done,task_date").or("carry_state.is.null,carry_state.eq.carried").gte("task_date",dayN(-6)).lte("task_date",day())]);
   // Ağ veya yetki hatasında mevcut koç verilerini boş dizilerle silme.
   const failed=[p,d,g,n,e,w].find(result=>result.error);
   if(failed)throw new Error("Koç verileri güncellenemedi: "+(failed.error.message||"bağlantı hatası"));

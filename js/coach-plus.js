@@ -76,7 +76,7 @@ async function bcastSend(){
 }
 
 /* ---- plan araçları ---- */
-async function plWeek(id,ws){const r=await sb.from("weekly_tasks").select("task_date,title,subject,amount").eq("student_id",id).gte("task_date",ws).lte("task_date",addD(ws,6));return (r&&r.data)||[]}
+async function plWeek(id,ws){const r=await sb.from("weekly_tasks").select("task_date,title,subject,amount").eq("student_id",id).or("carry_state.is.null,carry_state.eq.carried").gte("task_date",ws).lte("task_date",addD(ws,6));return (r&&r.data)||[]}
 async function plInsert(id,rows,msg){
   if(!rows.length){TPLMSG="Eklenecek görev bulunamadı.";render();return}
   const ds=rows.map(r=>r.task_date).sort(),ex=await sb.from("weekly_tasks").select("task_date,title,subject").eq("student_id",id).gte("task_date",ds[0]).lte("task_date",ds[ds.length-1]);

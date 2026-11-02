@@ -14,7 +14,7 @@ async function vpData(sid,end){
   const s28=vpAdd(end,-27),s7=vpAdd(end,-6);
   const [d,t]=await Promise.all([
     sb.from("daily").select("day,state,snap").eq("student_id",sid).gte("day",s28).lte("day",end),
-    sb.from("weekly_tasks").select("title,subject,task_date,done").eq("student_id",sid).gte("task_date",s7).lte("task_date",end).order("task_date")
+    sb.from("weekly_tasks").select("title,subject,task_date,done").eq("student_id",sid).or("carry_state.is.null,carry_state.eq.carried").gte("task_date",s7).lte("task_date",end).order("task_date")
   ]);
   if(d&&d.error)throw new Error("Günlük kayıtlar okunamadı");
   if(!(sid in EX)||!EX[sid])await loadExams(sid);

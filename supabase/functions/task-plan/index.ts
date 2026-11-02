@@ -1,5 +1,5 @@
 // Edge Function: task-plan (yalnız koç)
-// action "redistribute": öğrencinin son 7 gündeki tamamlanmamış (geciken) görevlerini, koçun ekranında seçilen
+// action "redistribute": öğrencinin son 4 haftadaki tamamlanmamış (geciken) görevlerini, koçun ekranında seçilen
 // kalan günlere dağıtmak için öneri üretir. Yapay zekâ günlerin mevcut yükünü, ders çeşitliliğini ve öğrencinin
 // denemelerde tekrar eden yanlış konularını dikkate alır. Yapay zekâ yanıt vermezse yük dengesine göre kodla dağıtılır.
 // Görevleri bu fonksiyon değiştirmez: koç öneriyi onaylayınca uygulama kendi oturumuyla (RLS altında) günceller.
@@ -128,8 +128,10 @@ export async function handler(req: Request): Promise<Response> {
   const { data: okq } = await adm.rpc("bump_usage", { p_student: user.id, p_kind: "task_plan", p_limit: 80 });
   if (okq !== true) return J({ error: "Bugünkü yapay zekâ dağıtım sınırına ulaşıldı." }, 429);
 
+  // Son 4 hafta; koçun "Ekleme" dediği (carry_state='closed') görevler dağıtıma girmez.
   const { data: od } = await adm.from("weekly_tasks").select("id,title,subject,amount,task_date").eq("student_id", sid).eq("done", false)
-    .gte("task_date", istDay(-7)).lt("task_date", today).order("task_date").order("id").limit(60);
+    .or("carry_state.is.null,carry_state.eq.carried")
+    .gte("task_date", istDay(-28)).lt("task_date", today).order("task_date").order("id").limit(60);
   const tasks = od ?? [];
   if (!tasks.length) return J({ plan: { ozet: "Geciken görev yok.", atamalar: [] }, kaynak: "yok" });
 
