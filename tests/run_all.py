@@ -10,9 +10,11 @@ TIMEOUT = 420
 
 # Bilinen, kod hatası olmayan dalgalanmalar (CLAUDE.md'de açıklanan). Yalnızca uyarı olarak raporlanır.
 def known_flaky(test, line):
+    ist = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=3)
     if test == "test_p2.py" and "Geçen hafta bu haftaya kopyalandı" in line:
-        wd = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=3)).weekday()
-        return wd in (0, 1)  # Pazartesi/Salı: sahte dünkü görevler de sayılır
+        return ist.weekday() in (0, 1)  # Pazartesi/Salı: sahte dünkü görevler de sayılır
+    if test == "test_v34.py" and "Gün ayraçları" in line:
+        return ist.hour == 0  # sahte "bugünkü" mesaj 50 dk önce: 00:00-00:59 arası düne düşer
     return False
 
 def judge(test, out, code):
@@ -55,7 +57,7 @@ details = [(t, f, fl) for t, f, fl, _, _ in rows if f or fl]
 if details:
     lines += ["", "### Ayrıntı"]
     for t, f, fl in details:
-        lines += [f"**{t}**"] + [f"- ❌ `{x}`" for x in f] + [f"- ⚠️ `{x}` (bilinen, Pazartesi/Salı)" for x in fl]
+        lines += [f"**{t}**"] + [f"- ❌ `{x}`" for x in f] + [f"- ⚠️ `{x}` (bilinen, tarihe bağlı test verisi)" for x in fl]
 summary = "\n".join(lines)
 print("\n" + summary)
 if os.environ.get("GITHUB_STEP_SUMMARY"):
