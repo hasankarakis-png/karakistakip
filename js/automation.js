@@ -56,59 +56,70 @@ async function contactSave(id){
 /* ---- geciken görevleri yapay zekâyla kalan günlere dağıtma ---- */
 const RD={};
 // Kalan günler: saat 15:00'ten önce bugünden, sonra yarından başlar; pazar gününe kadar. 2 günden azsa önümüzdeki günlerle 4'e tamamlanır.
-function rdDays(){
+// self (öğrenci, v4.7): yalnızca bu haftanın kalan günleri; hafta dışına taşmaz, gün kalmadıysa bugün.
+function rdDays(self){
   const s=new Date().getHours()<15?0:1,out=[];
-  for(let i=s;i<s+7;i++){const d=dayN(i);out.push(d);if(new Date(d+"T12:00:00").getDay()===0)break}
+  for(let i=s;i<s+7;i++){const d=dayN(i);if(self&&d>addD(wkMon(0),6))break;out.push(d);if(new Date(d+"T12:00:00").getDay()===0)break}
+  if(self)return out.length?out:[day()];
   if(out.length<2)for(let i=s+out.length;out.length<4;i++)out.push(dayN(i));
   return out;
 }
+// Öğrencinin kendi dağıtabileceği görevler: bu haftanın geçen günlerinden kalanlar (öncekiler koç kararını bekler).
+const odWeek=id=>overdue(id).filter(t=>t.task_date>=wkMon(0));
 const rdSig=(L,days)=>L.map(t=>t.id).sort((a,b)=>a-b).join(",")+"|"+days.join(",");
-const rdBox=(inner,days)=>`<div class="rd-ai"><div class="rd-h"><b>🤖 Yeni haftaya ekle · yapay zekâ günlere dağıtsın</b><small>${days&&days.length?fd(days[0])+(days.length>1?" – "+fd(days[days.length-1]):""):""}</small></div>${inner}</div>`;
-function rdCard(id,L){
-  const days=rdDays(),sig=rdSig(L,days),R=RD[id];
+const rdBox=(inner,days,self)=>`<div class="rd-ai"><div class="rd-h"><b>${self?"🤖 Haftanın kalan günlerine dağıt":"🤖 Yeni haftaya ekle · yapay zekâ günlere dağıtsın"}</b><small>${days&&days.length?fd(days[0])+(days.length>1?" – "+fd(days[days.length-1]):""):""}</small></div>${inner}</div>`;
+function rdCard(id,L,self){
+  const days=rdDays(self),sig=rdSig(L,days),R=RD[id],box=(h,d)=>rdBox(h,d,self);
   const wait=`<p class="empty rd-ld"><span class="spin" aria-hidden="true"></span> Yapay zekâ geciken konuları tarıyor, kalan günlere dağıtım hazırlıyor…</p>`;
+  // Öğrenci tarafında öneri kendiliğinden istenmez (yapay zekâ kotası): öğrenci düğmeye basınca hazırlanır.
+  if(self&&(!R||(R.sig!==sig&&R.st!=="load"&&R.st!=="apply")))return box(`<p class="empty" style="margin:6px 0">Bu görevleri yapay zekâ haftanın kalan günlerine, günlerin yüküne ve zayıf konularına göre dağıtsın; önce öneriyi görürsün.</p><div class="row"><button class="btn" style="padding:11px 16px" data-rdask="${id}">🤖 Dağıtım öner</button></div>`,days);
   if(!R||(R.sig!==sig&&R.st!=="load"&&R.st!=="apply")){setTimeout(()=>rdPlan(id),0);return rdBox(wait,days)}
-  if(R.st==="load")return rdBox(wait,R.days);
-  if(R.st==="apply")return rdBox(`<p class="empty rd-ld"><span class="spin" aria-hidden="true"></span> Görevler dağıtılıyor…</p>`,R.days);
-  if(R.st==="err")return rdBox(`<p class="empty" style="color:var(--warn);margin:6px 0">${esc(R.msg)}</p><div class="row"><button class="chip" data-rdre="${id}">↻ Tekrar dene</button></div>`,R.days);
+  if(R.st==="load")return box(wait,R.days);
+  if(R.st==="apply")return box(`<p class="empty rd-ld"><span class="spin" aria-hidden="true"></span> Görevler dağıtılıyor…</p>`,R.days);
+  if(R.st==="err")return box(`<p class="empty" style="color:var(--warn);margin:6px 0">${esc(R.msg)}</p><div class="row"><button class="chip" data-rdre="${id}">↻ Tekrar dene</button></div>`,R.days);
   const T=Object.fromEntries((TK[id]||[]).map(t=>[t.id,t])),by={};R.plan.atamalar.forEach(a=>(by[a.tarih]=by[a.tarih]||[]).push(a));
   const had=d=>(TK[id]||[]).filter(t=>t.task_date===d).length;
-  return rdBox(`${R.plan.ozet?`<p class="rd-oz">${esc(R.plan.ozet)}</p>`:""}<div class="rd-days">${R.days.map(d=>{const A=by[d]||[];return `<div class="rd-day${A.length?"":" empty"}"><div class="rd-dh"><b>${fd(d)}</b><small>${had(d)} görev var${A.length?` · <em>+${A.length}</em>`:""}</small></div>${A.map(a=>{const t=T[a.id]||{};return `<div class="rd-it"><span>${esc(t.title||"Görev")}${t.subject?` <em>${esc(t.subject)}</em>`:""}</span>${a.neden?`<small>${esc(a.neden)}</small>`:""}</div>`}).join("")}</div>`}).join("")}</div>
+  return box(`${R.plan.ozet?`<p class="rd-oz">${esc(R.plan.ozet)}</p>`:""}<div class="rd-days">${R.days.map(d=>{const A=by[d]||[];return `<div class="rd-day${A.length?"":" empty"}"><div class="rd-dh"><b>${fd(d)}</b><small>${had(d)} görev var${A.length?` · <em>+${A.length}</em>`:""}</small></div>${A.map(a=>{const t=T[a.id]||{};return `<div class="rd-it"><span>${esc(t.title||"Görev")}${t.subject?` <em>${esc(t.subject)}</em>`:""}</span>${a.neden?`<small>${esc(a.neden)}</small>`:""}</div>`}).join("")}</div>`}).join("")}</div>
   ${R.kaynak==="yedek"?`<p class="empty" style="font-size:12px;margin:6px 0 0">Yapay zekâ şu an yanıt vermedi; günlerin yüküne göre dengeli dağıtım önerildi.</p>`:""}
-  <div class="row"><button class="btn" style="padding:11px 16px" data-rdgo="${id}">✓ Yeni haftaya ekle (${R.plan.atamalar.length} görev)</button><button class="chip" data-rdre="${id}">↻ Yeniden öner</button></div>`,R.days);
+  <div class="row"><button class="btn" style="padding:11px 16px" data-rdgo="${id}">✓ ${self?"Bu dağıtımı uygula":"Yeni haftaya ekle"} (${R.plan.atamalar.length} görev)</button><button class="chip" data-rdre="${id}">↻ Yeniden öner</button></div>`,R.days);
 }
+const rdSelf=id=>ROLE!=="coach"&&id===ME;
 async function rdPlan(id){
-  const L=overdue(id),days=rdDays(),sig=rdSig(L,days);if(!L.length||(RD[id]&&RD[id].st==="load"))return;
+  const self=rdSelf(id),L=self?odWeek(id):overdue(id),days=rdDays(self),sig=rdSig(L,days);if(!L.length||(RD[id]&&RD[id].st==="load"))return;
   RD[id]={st:"load",sig,days};
-  const r=await callFn("task-plan",{action:"redistribute",student_id:id,days});
+  const r=await callFn("task-plan",self?{action:"redistribute_self",days}:{action:"redistribute",student_id:id,days});
   if(!RD[id]||RD[id].sig!==sig)return;
   if(r.error)RD[id]={st:"err",sig,days,msg:r.error};
   else{const ids=new Set(L.map(t=>t.id)),A=((r.plan||{}).atamalar||[]).filter(a=>ids.has(a.id)&&days.includes(a.tarih));
     RD[id]=A.length?{st:"ok",sig,days,plan:{ozet:(r.plan||{}).ozet||"",atamalar:A},kaynak:r.kaynak}:{st:"err",sig,days,msg:"Dağıtılacak geciken görev bulunamadı."}}
-  if(sel===id&&!busy())render();
+  if((sel===id||self)&&!busy())render();
 }
 async function rdGo(id){
   const R=RD[id];if(!R||R.st!=="ok")return;
-  const A=R.plan.atamalar,tk=a=>(TK[id]||[]).find(t=>t.id===a.id)||{};
+  const A=R.plan.atamalar,tk=a=>(TK[id]||[]).find(t=>t.id===a.id)||{},self=rdSelf(id);
   // prev: geri alma için eski tarih + eski carry alanları; taşınan görev "geçen haftadan" (carried) olarak işaretlenir
   const prev=A.map(a=>({id:a.id,date:tk(a).task_date,cs:tk(a).carry_state||null,cf:tk(a).carried_from||null})).filter(p=>p.date);
   RD[id]=Object.assign({},R,{st:"apply"});render();
-  const res=await Promise.all(A.map(a=>Promise.resolve(sb.from("weekly_tasks").update({task_date:a.tarih,carry_state:"carried",carried_from:tk(a).carried_from||tk(a).task_date}).eq("id",a.id).eq("student_id",id).eq("done",false)).catch(e=>({error:e}))));
-  const bad=res.filter(r=>r&&r.error).length;
-  await loadTasks(id);try{await loadOD()}catch(e){}
-  RD[id]={st:"done",sig:"",days:R.days,A,prev,bad,ozet:R.plan.ozet};
+  let bad=0;
+  // Öğrenci tabloya doğrudan yazamaz: sunucu fonksiyonu tarih kurallarını yeniden denetler ve görevi "öğrenci kaydırdı" (self_from) işaretler.
+  if(self){const r=await Promise.resolve(sb.rpc("task_self_reschedule",{p_moves:A.map(a=>({id:a.id,d:a.tarih}))})).catch(e=>({error:e}));bad=r&&r.error?A.length:Math.max(0,A.length-(+r.data||0))}
+  else{const res=await Promise.all(A.map(a=>Promise.resolve(sb.from("weekly_tasks").update({task_date:a.tarih,carry_state:"carried",carried_from:tk(a).carried_from||tk(a).task_date}).eq("id",a.id).eq("student_id",id).eq("done",false)).catch(e=>({error:e}))));
+    bad=res.filter(r=>r&&r.error).length}
+  await loadTasks(id);if(!self)try{await loadOD()}catch(e){}
+  RD[id]={st:"done",sig:"",days:R.days,A,prev,bad,ozet:R.plan.ozet,self};
   setSync(bad?"⚠️ "+bad+" görev taşınamadı":"✓ "+(A.length-bad)+" görev dağıtıldı");render();
 }
 async function rdUndo(id){
   const R=RD[id];if(!R||R.st!=="done")return;
-  await Promise.all(R.prev.map(p=>Promise.resolve(sb.from("weekly_tasks").update({task_date:p.date,carry_state:p.cs,carried_from:p.cf}).eq("id",p.id).eq("student_id",id)).catch(()=>null)));
-  RD[id]=null;await loadTasks(id);try{await loadOD()}catch(e){}
+  if(R.self)await Promise.resolve(sb.rpc("task_self_undo",{p_ids:R.prev.map(p=>p.id)})).catch(()=>null);
+  else await Promise.all(R.prev.map(p=>Promise.resolve(sb.from("weekly_tasks").update({task_date:p.date,carry_state:p.cs,carried_from:p.cf}).eq("id",p.id).eq("student_id",id)).catch(()=>null)));
+  RD[id]=null;await loadTasks(id);if(!R.self)try{await loadOD()}catch(e){}
   setSync("↩ Dağıtım geri alındı");render();
 }
 function rdDoneCard(id){
   const R=RD[id];if(!R||R.st!=="done")return "";
   const by={};R.A.forEach(a=>(by[a.tarih]=by[a.tarih]||0,by[a.tarih]++));
-  return `<div class="card undo"><div><b>✓ ${R.A.length-R.bad} geciken görev yeni haftaya eklendi</b><small>${Object.keys(by).sort().map(d=>fd(d)+": "+by[d]).join(" · ")}${R.bad?` · ${R.bad} görev taşınamadı`:""}${R.ozet?"<br>"+esc(R.ozet):""}</small></div><div class="undo-acts"><button class="btn" data-rdundo="${id}">↩ Geri al</button><button class="chip" data-rdok="${id}">Tamam</button></div></div>`;
+  return `<div class="card undo"><div><b>✓ ${R.A.length-R.bad} geciken görev ${R.self?"haftanın kalan günlerine dağıtıldı":"yeni haftaya eklendi"}</b><small>${Object.keys(by).sort().map(d=>fd(d)+": "+by[d]).join(" · ")}${R.bad?` · ${R.bad} görev taşınamadı`:""}${R.ozet?"<br>"+esc(R.ozet):""}</small></div><div class="undo-acts"><button class="btn" data-rdundo="${id}">↩ Geri al</button><button class="chip" data-rdok="${id}">Tamam</button></div></div>`;
 }
 
 /* ---- "Ekleme": kalan görevler yeni haftaya sarkmasın, hepsi kalksın (koç kararı) ----
@@ -144,7 +155,8 @@ function autoUi(t){
   if(D.clundo){clUndo(D.clundo);return true}
   if(D.clok){delete CLD[D.clok];render();return true}
   if(D.rdgo){rdGo(D.rdgo);return true}
-  if(D.rdre){RD[D.rdre]=null;render();return true}
+  if(D.rdre){RD[D.rdre]=null;if(rdSelf(D.rdre))rdPlan(D.rdre);render();return true}
+  if(D.rdask){rdPlan(D.rdask);render();return true}
   if(D.rdundo){rdUndo(D.rdundo);return true}
   if(D.rdok){delete RD[D.rdok];render();return true}
   if(D.csave){contactSave(D.csave);return true}

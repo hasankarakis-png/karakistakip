@@ -51,19 +51,56 @@ with sync_playwright() as p:
     check("Kalan deneme sorusu" in pp and pp.index("Kalan deneme sorusu") < pp.index("puf"), "Program ver sayfasında kalan görev kartı PDF yüklemeden önce geliyor")
     ctx.close()
 
-    # ---------- ÖĞRENCİ: kendi kaydıramaz, koç kararını bekler ----------
+    # ---------- ÖĞRENCİ: geçen haftalardan kalanlar koç kararını bekler; bu haftanınkileri kendisi dağıtır (v4.7) ----------
     ctx = b.new_context(viewport={"width": 390, "height": 844}, service_workers="block"); setup(ctx, "student")
+    TP = []
+    def tplan(r):
+        import json as _j
+        body = _j.loads(r.request.post_data or "{}"); TP.append(body); d = body.get("days", [])
+        # 1 numaralı (geçen haftanın) görevi de araya sıkıştırır: istemci bunu süzmeli
+        r.fulfill(status=200, content_type="application/json", body=_j.dumps({"plan": {"ozet": "Limit ve paragrafı farklı günlere yaydım.", "atamalar": [{"id": 9201, "tarih": d[0], "neden": "en eski"}, {"id": 9202, "tarih": d[-1]}, {"id": 1, "tarih": d[0]}]}, "kaynak": "ai"}))
+    ctx.route("**/functions/v1/task-plan", tplan)
     page = ctx.new_page(); page.on("pageerror", lambda e: errs.append(str(e))); page.on("dialog", lambda d: d.accept())
     page.goto(URL); page.wait_for_selector(".pill"); page.wait_for_timeout(1500)
     E = page.evaluate
     E("__FX.weekly_tasks.find(t=>t.id===2).carry_state='closed'")  # koç bunu 'Ekleme' ile kapattı
+    E("__FX.weekly_tasks.find(t=>t.id===1).task_date=addD(wkMon(0),-3)")  # geçen haftanın Cuma'sı (testin günü fark etmesin)
+    can = E("wkMon(0)<day()")  # Pazartesi günü bu haftanın geçmiş günü yoktur
+    if can:
+        E("__FX.weekly_tasks.push({id:9201,student_id:'s1',task_date:wkMon(0),title:'Limit 25 soru',subject:'Matematik',amount:null,done:false,source:'coach'},{id:9202,student_id:'s1',task_date:wkMon(0),title:'Paragraf tekrar',subject:'Türkçe',amount:null,done:false,source:'coach'})")
     E("loadTasks(ME).then(()=>render())"); wait(page, 800)
     txt = page.inner_text("body")
-    check("Koçun bu görevlerin yeni haftaya eklenip eklenmeyeceğine karar verecek" in txt, "Öğrenci: 'Koç kararı bekleniyor' notunu görüyor")
+    check("Koçun bu görevlerin yeni haftaya eklenip eklenmeyeceğine karar verecek" in txt, "Öğrenci: geçen haftadan kalan için 'Koç kararı bekleniyor' notunu görüyor")
     check(page.query_selector("[data-rs]") is None, "Öğrenci: 'Yarına kaydır / Bugüne al' düğmeleri yok")
     check("Türev 40 soru" in txt and "Paragraf 30 soru" not in txt, "Öğrenci: koçun kapattığı görev listeden kalktı, diğeri bekliyor")
     err = E("sb.rpc('task_reschedule',{p_ids:[1],p_date:day()}).then(r=>r.error&&r.error.message)")
     check(err and "yalnızca koç" in err, f"Sunucu da öğrencinin kaydırmasını reddediyor ({err})")
+    if not can:
+        print("ATLANDI  öğrencinin bu haftayı dağıtması (bugün Pazartesi, bu haftanın geçmiş günü yok)")
+    else:
+        check("Bu hafta kalan görevler (2)" in txt and page.query_selector("[data-rdask='s1']") is not None, "Öğrenci: bu haftanın kalanları ayrı kartta, 'Dağıtım öner' düğmesiyle")
+        check(len(TP) == 0, "Öneri kendiliğinden istenmiyor (yapay zekâ kotası)")
+        page.click("[data-rdask='s1']"); wait(page, 1000)
+        check(len(TP) == 1 and TP[0].get("action") == "redistribute_self" and "student_id" not in TP[0], f"İstek öğrenci kipinde, öğrenci kimliği gönderilmiyor ({TP[:1]})")
+        days = E("RD['s1'].days")
+        check(all(E(f"'{d}'>=day()&&'{d}'<=addD(wkMon(0),6)") for d in days), f"Önerilen günler bugün ile bu Pazar arasında ({days})")
+        rd = page.inner_text(".rd-ai")
+        check("Limit 25 soru" in rd and "Paragraf tekrar" in rd and "Türev 40 soru" not in rd and "Bu dağıtımı uygula (2 görev)" in rd, "Öneri yalnızca bu haftanın 2 görevini içeriyor")
+        page.screenshot(path=f"{SHOTS}/ogrenci-dagit.png", full_page=True)
+        page.click("[data-rdgo='s1']"); wait(page, 900)
+        a = E("__FX.weekly_tasks.find(t=>t.id===9201)"); b2 = E("__FX.weekly_tasks.find(t=>t.id===9202)"); t1 = E("__FX.weekly_tasks.find(t=>t.id===1)")
+        check(a["task_date"] == days[0] and b2["task_date"] == days[-1] and a["self_from"] == E("wkMon(0)"), f"Görevler taşındı ve 'öğrenci kaydırdı' işaretlendi ({a['task_date']}, {b2['task_date']}, {a.get('self_from')})")
+        check(t1["task_date"] == E("addD(wkMon(0),-3)") and not t1.get("self_from"), "Geçen haftanın görevine dokunulmadı")
+        txt = page.inner_text("body")
+        check("haftanın kalan günlerine dağıtıldı" in txt and page.query_selector("[data-rdundo='s1']") is not None, "Sonuç kartı ve Geri al düğmesi göründü")
+        check("Bu hafta kalan görevler" not in txt, "Dağıtılan görevler geciken listesinden çıktı")
+        check("kaydırdın" in E("taskRow(TK.s1.find(t=>t.id===9201),false)") and "öğrenci" in E("taskRow(TK.s1.find(t=>t.id===9201),true)"), "Görev satırında 'kaydırdın' (öğrenci) / 'öğrenci … kaydırdı' (koç) işareti")
+        n0 = E("sb.rpc('task_self_reschedule',{p_moves:[{id:1,d:day()}]}).then(r=>r.data)")
+        e2 = E("sb.rpc('task_self_reschedule',{p_moves:[{id:9201,d:addD(wkMon(0),9)}]}).then(r=>r.error&&r.error.message)")
+        check(n0 == 0 and e2 and "bu haftanın" in e2, f"Sunucu: geçen haftanın görevi ve hafta dışı tarih reddediliyor ({n0}, {e2})")
+        page.click("[data-rdundo='s1']"); wait(page, 900)
+        a = E("__FX.weekly_tasks.find(t=>t.id===9201)")
+        check(a["task_date"] == E("wkMon(0)") and not a.get("self_from") and "Bu hafta kalan görevler (2)" in page.inner_text("body"), "Geri al: görevler eski günlerine döndü, işaret kalktı")
     ctx.close(); b.close()
 srv.terminate()
 print("JS hataları:", errs or "yok")

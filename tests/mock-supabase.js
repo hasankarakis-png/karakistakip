@@ -63,6 +63,11 @@
     from:t=>new Q(t),
     rpc:async(n,a)=>{window.__CALLS.push("rpc:"+n+":"+JSON.stringify(a));
       if(n==="task_reschedule"){if(ROLE!=="coach")return {data:null,error:{message:"Kalan görevleri yalnızca koç taşıyabilir"}};let c=0;FX.weekly_tasks.forEach(t=>{if(a.p_ids.includes(t.id)&&!t.done&&t.carry_state!=="closed"){t.carried_from=t.carried_from||t.task_date;t.carry_state="carried";t.task_date=a.p_date;c++}});return {data:c,error:null}}
+      // v4.7: öğrenci yalnız bu haftanın geçen günlerindeki kendi görevini, bugün…bu Pazar arasına kaydırabilir (schema-v47.sql ile aynı kural)
+      if(n==="task_self_reschedule"||n==="task_self_undo"){const td=dn(0),d0=new Date();d0.setDate(d0.getDate()-(d0.getDay()+6)%7);const mon=ymd(d0),sun=ymd(new Date(d0.getFullYear(),d0.getMonth(),d0.getDate()+6));let c=0;
+        if(n==="task_self_undo"){FX.weekly_tasks.forEach(t=>{if(a.p_ids.includes(t.id)&&t.student_id===ME&&!t.done&&t.self_from&&t.self_from>=mon){t.task_date=t.self_from;t.self_from=null;c++}});return {data:c,error:null}}
+        for(const m of a.p_moves){if(m.d<td||m.d>sun)return {data:null,error:{message:"Tarih bu haftanın kalan günlerinden olmalı"}};const t=FX.weekly_tasks.find(x=>x.id===m.id&&x.student_id===ME&&!x.done&&x.carry_state!=="closed"&&x.task_date>=mon&&x.task_date<td);if(t){t.self_from=t.self_from||t.task_date;t.task_date=m.d;c++}}
+        return {data:c,error:null}}
       if(n==="msg_read"){FX.messages.forEach(m=>{if(m.student_id===a.p_student&&!m.from_coach)m.read_at=new Date().toISOString()});return {data:null,error:null}}
       if(n==="parent_view")return {data:(window.__PV||{v:2,ad:"Ayşe",bugun:dn(0),bitis:new Date(now+20*864e5).toISOString(),gunler:[{gun:dn(-1),dk:120,soru:80},{gun:dn(-3),dk:200,soru:150}],gorev:{toplam:10,tamam:7},
         detay:[{gun:dn(-1),dk:120,soru:80,dogru:60,ders:{"Matematik":70,"Türkçe":50},qs:[{s:"Matematik",n:50,c:40},{s:"Türkçe",n:30,c:20}]},{gun:dn(-3),dk:200,soru:150,dogru:120,ders:{"Fizik":200},qs:[{s:"Fizik",n:150,c:120}]},{gun:dn(-9),dk:90,soru:40,dogru:30,ders:{},qs:[]}],

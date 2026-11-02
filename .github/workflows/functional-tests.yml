@@ -3,7 +3,7 @@ name: İşlev testleri (sahte Supabase)
 # veli raporu, şifre değiştirme, PDF okuyucu. Gerçek veritabanına dokunmaz (tests/mock-supabase.js).
 on:
   push:
-    branches: [main, "audit/**", "ci/**", "claude/**"]
+    branches: ["**"]
   pull_request:
     branches: [main]
   workflow_dispatch:

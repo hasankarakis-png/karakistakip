@@ -50,7 +50,8 @@
     if(!hero)return html;
     const picker=take(e=>e.matches(".card")&&!!e.querySelector("[data-me]"));
     const todays=take(e=>/^Bugünün görevleri/.test(head(e)));
-    const overdue=take(e=>/Geçen günlerden kalan/.test(txt(e))&&e.matches(".card"));
+    // Kalan görev kartları (v4.7): dağıtım sonucu, bu hafta kalanlar (yapay zekâyla dağıtılabilir), geçen haftalardan kalanlar
+    const overdue=[];for(let e;(e=take(x=>x.matches(".card")&&/Geçen günlerden kalan|Bu hafta kalan görevler|Geçen haftalardan kalan|kalan günlerine dağıtıldı/.test(txt(x))));)overdue.push(e);
     const ring=tabBtn("g");                    // "Bugünkü görevler 0/1": liste varsa tekrar eder; yoksa boş durum mesajı olarak kalır
     const nets=take(e=>e.classList.contains("nets"));
     const count=take(e=>!!e.querySelector(".cdh"));
@@ -82,7 +83,7 @@
     const dayF=day?fold("day","Günlük durum",dn?`${dn}/5 dolu · düzenlemek için dokun`:"İsteğe bağlı · 30 saniye sürer",day.outerHTML,!dn):null;
 
     // Geri sayım ve "son net" görünür kalır (sınava kalan süre öğrenci için temel bilgi), gün sonundan sonra gelir
-    const primary=[hero,picker,todays||ring,overdue,due,exam,unread?msg:null,qcard,qs,dayF,endd,count,nets]
+    const primary=[hero,picker,todays||ring,...overdue,due,exam,unread?msg:null,qcard,qs,dayF,endd,count,nets]
       .concat(rest);                                     // tanınmayan kartlar kaybolmasın
     return top.concat(primary).filter(Boolean).map(asHTML).join("")+tileHTML+moreHTML;
   }

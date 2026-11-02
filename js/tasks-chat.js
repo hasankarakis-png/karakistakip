@@ -27,7 +27,7 @@ const shift=(s,k)=>{const[y,m,d]=s.split("-").map(Number);return ymd(new Date(y,
 async function loadTasks(id){try{const {data,error}=await sb.from("weekly_tasks").select("*").eq("student_id",id).or(OPEN_TK).gte("task_date",dayN(-98)).lte("task_date",dayN(28)).order("task_date").order("id");if(error)throw error;TK[id]=data||[]}catch(e){TK[id]=TK[id]||[]}}
 async function loadPlan(id){try{const {data}=await sb.from("plan_drafts").select("*").eq("student_id",id).maybeSingle();PD[id]=data||null}catch(e){PD[id]=null}}
 function taskRow(t,coach){
-  const sub=[t.subject,t.amount].filter(Boolean).map(esc).join(" · ")+(t.source==="ai"?" · 🤖 plan":t.source==="student"?" · ✍️ ben ekledim":"")+(t.carry_state==="carried"&&t.carried_from?" · ↪ "+esc(fd(t.carried_from))+" tarihinden":"");
+  const sub=[t.subject,t.amount].filter(Boolean).map(esc).join(" · ")+(t.source==="ai"?" · 🤖 plan":t.source==="student"?" · ✍️ ben ekledim":"")+(t.carry_state==="carried"&&t.carried_from?" · ↪ "+esc(fd(t.carried_from))+" tarihinden":"")+(t.self_from?" · 🔀 "+(coach?"öğrenci ":"")+esc(fd(t.self_from))+(coach?" gününden kaydırdı":" gününden kaydırdın"):"");
   return `<div class="tk${t.done?" done":""}">${coach?`<span aria-hidden="true">${t.done?"✅":"⬜"}</span>`:`<button class="tkb" data-tk="${t.id}" aria-pressed="${!!t.done}" aria-label="Görevi tamamlandı olarak işaretle">${t.done?"✓":""}</button>`}<span class="tkt"><b>${esc(t.title)}</b>${sub?`<small>${sub}</small>`:""}</span>${coach?`<button class="chip" data-tkdel="${t.id}" aria-label="Görevi sil">Sil</button>`:(t.source==="student"&&!t.done?`<button class="chip" data-selfdel="${t.id}" aria-label="Görevi sil">Sil</button>`:"")}</div>`;
 }
 function taskList(L,coach){
@@ -43,11 +43,17 @@ const OPEN_TK="carry_state.is.null,carry_state.eq.carried",OD_DAYS=28;
 async function loadOD(){try{const r=await sb.from("weekly_tasks").select("id,student_id,title,subject,task_date").or(OPEN_TK).lt("task_date",day()).gte("task_date",dayN(-OD_DAYS)).eq("done",false).order("task_date").order("id").limit(1000);if(r.error){ODN=null;ODS=0;ODL=[]}else{const L=(r.data||[]).filter(x=>STU.some(p=>p.id===x.student_id));ODL=L;ODN=L.length;ODS=new Set(L.map(x=>x.student_id)).size}}catch(e){ODN=null;ODS=0;ODL=[]}}
 // Öğrencinin görevleri henüz açılmadıysa (TK boş) koç için loadOD listesi kullanılır; yoksa genel bakışta gecikmeler 0 görünüyordu.
 const overdue=id=>TK[id]?TK[id].filter(t=>t.task_date<day()&&t.task_date>=dayN(-OD_DAYS)&&!t.done&&t.carry_state!=="closed"):ROLE==="coach"?ODL.filter(t=>t.student_id===id):[];
-// Kalan görevlerin sarkıp sarkmayacağına KOÇ karar verir: "Yeni haftaya ekle" (yapay zekâ günlere dağıtır) ya da "Ekleme" (hepsi kalkar).
-// Öğrenci yalnızca listeyi ve "koç kararı bekleniyor" notunu görür; kendi başına kaydıramaz (sunucu da engeller).
+// Önceki haftalardan kalan görevlerin sarkıp sarkmayacağına KOÇ karar verir: "Yeni haftaya ekle" (yapay zekâ günlere dağıtır) ya da "Ekleme" (hepsi kalkar).
+// Öğrenci (v4.7) yalnızca BU HAFTANIN geçen günlerinden kalanları yapay zekâyla haftanın kalan günlerine dağıtabilir
+// (task_self_reschedule, sunucu da denetler); önceki haftalardan kalanlar için "koç kararı bekleniyor" notunu görür.
 function overdueCard(id,coach){
-  const L=overdue(id);if(!L.length)return"";
-  if(!coach||ROLE!=="coach")return `<div class="card" style="border-color:var(--warn)"><h2>⏰ Geçen günlerden kalan görevler (${L.length})</h2>${taskList(L,false)}<p class="empty" style="margin:8px 0 0;font-size:14px">⏳ Koçun bu görevlerin yeni haftaya eklenip eklenmeyeceğine karar verecek. Karar verilene kadar burada bekliyorlar.</p></div>`;
+  const L=overdue(id);
+  if(!coach||ROLE!=="coach"){
+    const W=wkMon(0),wk=L.filter(t=>t.task_date>=W),old=L.filter(t=>t.task_date<W);
+    return rdDoneCard(id)+(wk.length?`<div class="card" style="border-color:var(--warn)"><h2>⏰ Bu hafta kalan görevler (${wk.length})</h2>${taskList(wk,false)}${ROLE==="coach"?"":rdCard(id,wk,true)}</div>`:"")
+      +(old.length?`<div class="card" style="border-color:var(--warn)"><h2>⏰ Geçen haftalardan kalan görevler (${old.length})</h2>${taskList(old,false)}<p class="empty" style="margin:8px 0 0;font-size:14px">⏳ Koçun bu görevlerin yeni haftaya eklenip eklenmeyeceğine karar verecek. Karar verilene kadar burada bekliyorlar.</p></div>`:"");
+  }
+  if(!L.length)return"";
   return `<div class="card" style="border-color:var(--warn)"><h2>⏰ Geçen günlerden kalan görevler (${L.length})</h2><p class="empty" style="margin:0 0 8px;font-size:14px">Karar ver: bu görevler yeni haftaya sarksın mı?</p>${taskList(L,coach)}<div class="row"><button class="btn" style="padding:11px 16px;background:var(--warn);color:#fff" data-clx="${id}">✕ Ekleme (hepsi kalksın)</button><button class="chip" data-rs="${dayN(1)}" data-rsid="${id}">Yarına kaydır</button><button class="chip" data-rs="${day()}" data-rsid="${id}">Bugüne al</button></div>${rdCard(id,L)}</div>`;
 }
 async function reschedule(id,date){
