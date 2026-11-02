@@ -18,6 +18,13 @@ with sync_playwright() as p:
         check(page.query_selector("#coach-challenges") is not None,f"[{nm}] Yarışmalar sayfası açıldı")
         t=page.inner_text("#coach-challenges")
         check("Yeni yarışma" in t and "Süre şampiyonluğu" in t and "Ayşe Y." in t,f"[{nm}] Sayfada oluşturma formu, liste ve sıralama var")
+        import re
+        sel="#coach-challenges [data-chbd]"
+        if page.query_selector(sel):
+            b1=page.inner_text(sel);page.wait_for_timeout(2300);b2=page.inner_text(sel)
+            check(bool(re.search(r"\d+:\d\d:\d\d",b1)) and b1!=b2,f"[{nm}] Sıralamada saniye sayacı ilerliyor (çalışan öğrenci): {b1[:40]!r} -> {b2[:40]!r}")
+            check(b2.find("Ayşe")<b2.find("Zeynep") and b2.find("Zeynep")<b2.find("Ali"),f"[{nm}] Sıra doğru")
+        else: check(False,f"[{nm}] Sıralama kutusu (data-chbd) yok")
         page.screenshot(path=f"{SHOTS}/ch-sayfa-{nm}.png",full_page=True)
         page.go_back();page.wait_for_timeout(400)
         check(page.query_selector("#coach-overview") is not None,f"[{nm}] Geri: Genel bakışa döndü")

@@ -7,9 +7,25 @@ const chActive=c=>c&&c.start_day<=day()&&c.end_day>=day();
 const chVal=(c,v)=>c.metric==="minutes"?hmin(Math.round(v)):Math.round(v)+" soru";
 async function chBoardLoad(){
   const c=CH.list.find(x=>x.id===CH.sel);if(!c){CH.board=null;return}
-  try{const r=await sb.rpc("challenge_board",{p_id:c.id});CH.board=r&&!r.error&&Array.isArray(r.data)?{id:c.id,rows:r.data}:{id:c.id,rows:[]}}catch(e){CH.board={id:c.id,rows:[]}}
+  try{CH.board=(await chFetch(c))||{id:c.id,rows:[],at:Date.now()}}catch(e){CH.board={id:c.id,rows:[],at:Date.now()}}
   if(ROLE==="coach")await chManLoad(c);
 }
+/* Sıralama verisi: challenge_board2 süreyi SANİYE cinsinden verir (ts/td) ve çalışanları işaretler (run). total/today dakika olarak da tutulur
+   (genel bakış ve ana sayfa kartları dakikayla çalışır). Sunucuda yeni fonksiyon yoksa eski dakikalık fonksiyona döner. */
+async function chFetch(c){
+  let r=await sb.rpc("challenge_board2",{p_id:c.id}),old=false;
+  if(!r||r.error||!Array.isArray(r.data)){r=await sb.rpc("challenge_board",{p_id:c.id});old=true}
+  if(!r||r.error||!Array.isArray(r.data))return null;
+  const mi=c.metric==="minutes";
+  const rows=r.data.map(x=>{
+    const t=+x.total||0,d=+x.today||0;
+    if(!mi)return {label:x.label,me:x.me,run:false,total:t,today:d};
+    const ts=old?t*60:t,td=old?d*60:d;
+    return {label:x.label,me:x.me,run:!!(old?x.live:x.running),ts,td,total:ts/60,today:td/60};
+  });
+  return {id:c.id,rows,at:Date.now()};
+}
+const chSec=s=>{s=Math.max(0,Math.floor(s));return Math.floor(s/3600)+":"+String(Math.floor(s%3600/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")};
 async function chManLoad(c){
   try{const m=await sb.from("challenge_manual").select("student_id,day,minutes,questions,note").gte("day",c.start_day).lte("day",c.end_day).order("day",{ascending:false});CM.rows=m&&Array.isArray(m.data)?m.data:[]}catch(e){CM.rows=[]}
 }
@@ -96,24 +112,33 @@ async function chatSend(){
 setInterval(()=>{if(document.hidden)return;const el=document.getElementById("chm");if(el&&CHT.id)chatLoad(CHT.id)},7000);
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target&&e.target.id==="chin"){e.preventDefault();chatSend()}});
 document.addEventListener("change",e=>{const t=e.target;if(!t)return;if(t.id==="cmst")CM.sid=t.value;else if(t.id==="cmd")CM.d=t.value});
-/* Sıralama kutusu: data-chbd ile işaretlenir; 15 sn'de bir yalnızca bu kutunun içi yenilenir (yazı alanları bozulmaz). */
+/* Sıralama kutusu: data-chbd ile işaretlenir. Süre ölçütünde çalışan öğrencilerin süresi her saniye ilerler (sıra canlı değişir),
+   sunucudan 6 sn'de bir düzeltilir. Yalnızca bu kutunun içi yenilenir (yazı alanları bozulmaz). */
 function chBoardHTML(c){return `<div data-chbd="${c.id}">${chBoardRows(c)}</div>`}
 async function chBoardRefresh(){
   if(document.hidden)return;const el=document.querySelector("[data-chbd]");if(!el)return;
   const c=CH.list.find(x=>x.id===+el.dataset.chbd);if(!c)return;
-  try{const r=await sb.rpc("challenge_board",{p_id:c.id});
-    if(r&&!r.error&&Array.isArray(r.data)){CH.board={id:c.id,rows:r.data};const e2=document.querySelector("[data-chbd]");if(e2&&+e2.dataset.chbd===c.id)e2.innerHTML=chBoardRows(c)}
+  try{const b=await chFetch(c);
+    if(b){CH.board=b;const e2=document.querySelector("[data-chbd]");if(e2&&+e2.dataset.chbd===c.id)e2.innerHTML=chBoardRows(c)}
   }catch(e){}
 }
-setInterval(chBoardRefresh,15000);
+setInterval(chBoardRefresh,6000);
+setInterval(()=>{
+  if(document.hidden)return;const el=document.querySelector("[data-chbd]");if(!el)return;
+  const c=CH.list.find(x=>x.id===+el.dataset.chbd);
+  if(!c||c.metric!=="minutes"||!CH.board||CH.board.id!==c.id||!CH.board.rows.some(r=>r.run))return;
+  el.innerHTML=chBoardRows(c);
+},1000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)chBoardRefresh()});
 function chBoardRows(c){
-  const B=CH.board&&CH.board.id===c.id?CH.board.rows:null;
-  if(!B)return `<p class="empty">Yükleniyor…</p>`;
-  if(!B.length)return `<p class="empty">Henüz sıralama yok.</p>`;
-  const tot=+B[0].total||0;
-  return B.map((r,i)=>{const t=+r.total||0,w=tot?Math.max(3,Math.round(t*100/tot)):0,md=["🥇","🥈","🥉"][i]||`<b>${i+1}</b>`;
-    return `<div class="chr${r.me?" me":""}"><span class="chk">${md}</span><span class="chn">${esc(r.label)}${r.live?` <i class="chl" title="Şu an çalışıyor"></i>`:""}${r.me?" · sen":""}<span class="ktpr"><i style="width:${w}%"></i></span></span><span class="chv">${chVal(c,t)}${+r.today>0?`<small>bugün +${chVal(c,+r.today)}</small>`:""}</span></div>`}).join("");
+  const B0=CH.board&&CH.board.id===c.id?CH.board.rows:null;
+  if(!B0)return `<p class="empty">Yükleniyor…</p>`;
+  if(!B0.length)return `<p class="empty">Henüz sıralama yok.</p>`;
+  const mi=c.metric==="minutes",el=Math.max(0,(Date.now()-(CH.board.at||Date.now()))/1000);
+  const B=B0.map((r,i)=>({r,i,t:mi?r.ts+(r.run?el:0):(+r.total||0),d:mi?r.td+(r.run?el:0):(+r.today||0)})).sort((a,b)=>b.t-a.t||a.i-b.i);
+  const tot=B[0].t||0,fmt=v=>mi?chSec(v):chVal(c,v);
+  return B.map((x,i)=>{const r=x.r,w=tot?Math.max(3,Math.round(x.t*100/tot)):0,md=["🥇","🥈","🥉"][i]||`<b>${i+1}</b>`;
+    return `<div class="chr${r.me?" me":""}"><span class="chk">${md}</span><span class="chn">${esc(r.label)}${r.run?` <i class="chl" title="Şu an çalışıyor"></i>`:""}${r.me?" · sen":""}<span class="ktpr"><i style="width:${w}%"></i></span></span><span class="chv">${fmt(x.t)}${x.d>=1?`<small>bugün +${fmt(x.d)}</small>`:""}</span></div>`}).join("");
 }
 function chInfo(c){
   const left=chDays(day(),c.end_day),st=day()<c.start_day?`${chDays(day(),c.start_day)} gün sonra başlıyor`:left>=0?(left===0?"son gün":left+" gün kaldı"):"bitti";
