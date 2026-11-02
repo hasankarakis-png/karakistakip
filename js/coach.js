@@ -285,33 +285,15 @@ let EXBUSY=false;
 async function examExtract(){if(EXBUSY)return;EXBUSY=true;const b=document.getElementById("exgo");if(b)b.disabled=true;try{await examExtract0()}finally{EXBUSY=false;const b2=document.getElementById("exgo");if(b2)b2.disabled=false}}
 async function examExtract0(){
   const f=document.getElementById("exf").files[0];
-  if(!f){setEx("Önce bir görsel veya PDF seç.");return}
-  const pdf=f.type==="application/pdf"||/\.pdf$/i.test(f.name||"");
-  if(pdf){
-    // Önce yapay zekâsız yerel okuyucu (pdf-exam.js): saniyeler sürer, kota yemez, belge cihazdan çıkmaz.
-    setEx("PDF okunuyor…");
-    let L=null;try{L=await pdfExamLocal(f)}catch(e){L=null}
-    if(L&&L.exam){PX={exam:L.exam,uyarilar:L.uyarilar||[],src:"pdf_metin"};setEx("");render();return}
-    if(L&&L.hasText){setEx("PDF'teki sonuç tablosu tanınamadı. Netleri elle ekleyebilir ya da sonuç ekranının fotoğrafını yükleyebilirsin.");return}
-    // Metin katmanı yok (taranmış PDF): eski görsel okumaya düşer.
-    if(f.size>6.5e6){setEx("Bu PDF taranmış görünüyor ve çok büyük (en fazla yaklaşık 6 MB). Sayfa sayısını azaltıp tekrar dene.");return}
-    setEx("Taranmış PDF görsel olarak okunuyor, 15-30 saniye sürebilir…");
-    let pages;try{pages=await pdfPages(f)}catch(e){pages=null}
-    let r;
-    if(pages&&pages.length){r=await callFn("exam-extract",{images:pages,mime:"image/jpeg"})}
-    else{
-      let b64;try{b64=await readB64(f)}catch(e){setEx("PDF açılamadı.");return}
-      r=await callFn("exam-extract",{image:b64,mime:"application/pdf"});
-    }
-    if(r.error){setEx(r.error);return}
-    PX={exam:r.exam,uyarilar:r.uyarilar||[]};setEx("");render();return;
-  }
-  if(f.size>15e6){setEx("Görsel çok büyük (en fazla 15 MB).");return}
-  setEx("Görsel okunuyor, 10-20 saniye sürebilir…");
-  let im;try{im=await prepImage(f)}catch(e){setEx("Görsel açılamadı.");return}
-  const r=await callFn("exam-extract",{image:im.b64,mime:im.mime});
-  if(r.error){setEx(r.error);return}
-  PX={exam:r.exam,uyarilar:r.uyarilar||[]};setEx("");render();
+  if(!f){setEx("Önce deneme sonuç PDF'ini seç.");return}
+  if(!(f.type==="application/pdf"||/\.pdf$/i.test(f.name||""))){setEx("Yalnızca PDF okunur. Deneme sonuç belgesini PDF olarak yükle.");return}
+  if(f.size>25e6){setEx("PDF çok büyük (en fazla 25 MB).");return}
+  // Yalnızca yerel PDF okuyucu (pdf-exam.js): yapay zekâ yok, belge cihazdan çıkmaz. Okunamazsa nedeni yazılır.
+  setEx("PDF okunuyor…");
+  let L=null;try{L=await pdfExamLocal(f)}catch(e){L={exam:null,uyarilar:[],hasText:true,why:"dosya açılamadı"}}
+  if(L&&L.exam){PX={exam:L.exam,uyarilar:L.uyarilar||[],src:"pdf_metin"};setEx("");render();return}
+  if(L&&!L.hasText){setEx("Bu PDF'te okunabilir metin yok (taranmış veya fotoğraf). Sonuç belgesini uygulamadan/siteden PDF olarak indirip yükle ya da netleri elle ekle.");return}
+  setEx("PDF okunamadı: "+((L&&L.why)||"ders tablosu bulunamadı")+". Netleri elle ekleyebilirsin.");
 }
 const netOf=(d,y,k)=>Math.round((d-y/k)*100)/100;
 function recalcExam(){
@@ -402,8 +384,8 @@ function examCard(){
   if(PX)return examForm();
   const L=EX[ME]||[];
   return `<div class="card"><h2>Deneme sonuçlarım</h2>
-  <p class="empty" style="margin:0 0 10px">Deneme sonuç PDF'ini yükle: uygulama doğrudan okur, saniyeler sürer. Fotoğraf ve ekran görüntüsü yapay zekâyla okunur. Her durumda sen kontrol edip onaylarsın.</p>
-  <div class="row" style="margin-top:0"><input id="exf" type="file" accept="image/*,application/pdf,.pdf" style="width:100%"><button class="btn" style="padding:11px 16px" id="exgo">Dosyayı oku</button></div>
+  <p class="empty" style="margin:0 0 10px">Deneme sonuç PDF'ini yükle: uygulama PDF'i doğrudan okur (yapay zekâ yok), saniyeler sürer. Okunanı sen kontrol edip onaylarsan kaydedilir.</p>
+  <div class="row" style="margin-top:0"><input id="exf" type="file" accept="application/pdf,.pdf" style="width:100%"><button class="btn" style="padding:11px 16px" id="exgo">Dosyayı oku</button></div>
   <p class="empty" id="exmsg" style="margin:8px 0 0;font-size:14px">${esc(EXMSG)}</p>
   ${L.length?`<div style="margin-top:10px">${examRows(L,"own")}</div><div class="row"><button class="chip" id="airun" data-sid="${ME}">📈 Gelişim analizimi yenile</button></div>`:""}</div>${aiReportCard(ME)}`;
 }

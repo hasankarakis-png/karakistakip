@@ -4,7 +4,7 @@
    altta ders başına soru bazlı kazanım tabloları (Sr, Ö, A, kazanım). Soru bazlı konu verisi yalnızca ders tablosuyla BİREBİR tutuyorsa kaydedilir.
    Metin katmanı olmayan (taranmış/fotoğraf) PDF'te null döner ve hasText=false olur; çağıran eski görsel okumaya geçer.
    Kişisel bilgi (ad, T.C., okul, sınıf) hiç çıkarılmaz. */
-let PEJS=null;
+let PEJS=null,PEWHY="";
 const peR2=x=>Math.round(x*100)/100;
 const peNorm=s=>String(s).toLocaleLowerCase("tr").replace(/\s+/g," ").replace(/[.…]+$/,"").trim();
 const peKey=s=>peNorm(s).replace(/ dersi$/,"");
@@ -66,7 +66,7 @@ function pdfExamParse(lines){
     dersler.push({ders:peClean(name,60),soru_sayisi:soru,dogru:d,yanlis:y,bos:b,net_gorsel:isFinite(net)?peR2(net):null,
       ogrenci_yuzde:nums.length>5?pct(nums[5]):null,kurum_yuzde:nums.length>=7?pct(nums[nums.length-1]):null});
   }
-  if(!dersler.length)return null;
+  if(!dersler.length){PEWHY=lines.length<5?"çok az satır okundu":"DERSLER tablosu (ders, soru, D, Y, B, net) bulunamadı";return null}
   if(tur==="BILINMIYOR")warn.push("Sınav türü anlaşılamadı, lütfen sen seç.");
   for(const d of dersler){
     d.net=peR2(d.dogru-d.yanlis/k0);
@@ -132,6 +132,6 @@ const tk0Numeric=ln=>{const t=ln.split(" ");return t.length>=6&&t.slice(1).filte
 async function pdfExamLocal(file){
   const {lines,chars}=await pdfExamLines(file);
   if(chars<80)return {exam:null,uyarilar:[],hasText:false};
-  const r=pdfExamParse(lines);
-  return r?{exam:r.exam,uyarilar:r.uyarilar,hasText:true}:{exam:null,uyarilar:[],hasText:true,lines:lines.length};
+  PEWHY="";const r=pdfExamParse(lines);
+  return r?{exam:r.exam,uyarilar:r.uyarilar,hasText:true}:{exam:null,uyarilar:[],hasText:true,why:PEWHY,lines:lines.length};
 }
