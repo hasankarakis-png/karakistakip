@@ -39,6 +39,7 @@ Hasan Karakış'ın (Karakış Eğitim & Danışmanlık, Diyarbakır) ~18 YKS/LG
 | js/nav.js | geri tuşu (History API, `navSync`), üst çubuk, bildirim merkezi `notifCard`, `openStu`, `openMsg` |
 | js/coach.js | tıklama yönlendirme `ui()`, denemeler/yapay zekâ raporu, `busy()`/`DRAFTS` |
 | js/boot.js | giriş (Turnstile), `start()`, `loadStudent()`/`pushPast()`, `refreshRun()`, realtime kanalları |
+| js/pdf-exam.js | deneme sonuç PDF'ini yapay zekâsız, tarayıcıda okur (`pdfExamLocal(file)` → `{exam,uyarilar,hasText}`): pdf.js metin katmanı → satırlar (`pdfExamLines`) → ders tablosu + başlık + soru bazlı kazanımlar (`pdfExamParse`); çıktı biçimi exam-extract ile aynı, konu verisi yalnızca ders tablosuyla birebir tutarsa. `examExtract0` (coach.js) önce bunu dener; metin katmanı yoksa (taranmış) eski görsel okumaya düşer; fotoğraflar hâlâ yapay zekâyla. Kayıtta `extraction_meta.kaynak='pdf_metin'`. |
 | diğer js | konu.js (konu takibi), tercih.js (tercih robotu, tercih.json), plan-upload.js / plan-pdf.js (program PDF), exams.js, profile-photo.js, report-pdf.js |
 | styles.css | tek stil dosyası; yeni kurallar sona eklenir |
 | sw.js | servis çalışanı, push bildirimi (`url` ile derin bağlantı, ör. `./#mesaj`) |
@@ -69,7 +70,7 @@ Canlı şema repodan ileride olabilir (bkz. Drive raporu); emin değilsen canlı
 
 ## Test
 `tests/` klasöründe sahte Supabase (`mock-supabase.js`) ve Playwright betikleri var. Çalıştırma:
-`cd tests && PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers python3 test_nav.py` (ayrıca test_v34.py, test_fix.py, test_undo.py, test_ch.py, test_p1.py: profil/gün sonu/sihirbaz/uzun sayaç, test_p2.py: koç araçları/yanlış defteri/grafikli veli sayfası, test_p3.py: şifre değiştirme + haftalık veli PDF, test_carry.py: kalan görevlerde koç kararı / öğrenci bekleme). Not: test_p2.py'nin 'geçen haftayı kopyala' denetimi haftanın gününe bağlı (Pazartesi/Salı çalıştırınca sahte dünkü görevleri de sayar), kod hatası değil.
+`cd tests && PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers python3 test_nav.py` (ayrıca test_v34.py, test_fix.py, test_undo.py, test_ch.py, test_p1.py: profil/gün sonu/sihirbaz/uzun sayaç, test_p2.py: koç araçları/yanlış defteri/grafikli veli sayfası, test_p3.py: şifre değiştirme + haftalık veli PDF, test_carry.py: kalan görevlerde koç kararı / öğrenci bekleme, test_pdfexam.py + test_pdfexam_app.py: yapay zekâsız PDF okuyucu; örnek PDF'ler tests/fixtures'ta, make_sample_pdf.py üretir). Not: test_p2.py'nin 'geçen haftayı kopyala' denetimi haftanın gününe bağlı (Pazartesi/Salı çalıştırınca sahte dünkü görevleri de sayar), kod hatası değil.
 Yalnızca değiştirdiğin alanın testini çalıştır.
 
 ## Açık işler

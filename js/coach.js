@@ -288,8 +288,14 @@ async function examExtract0(){
   if(!f){setEx("Önce bir görsel veya PDF seç.");return}
   const pdf=f.type==="application/pdf"||/\.pdf$/i.test(f.name||"");
   if(pdf){
-    if(f.size>6.5e6){setEx("PDF çok büyük (en fazla yaklaşık 6 MB). Sayfa sayısını azaltıp tekrar dene.");return}
-    setEx("PDF okunuyor, 15-30 saniye sürebilir…");
+    // Önce yapay zekâsız yerel okuyucu (pdf-exam.js): saniyeler sürer, kota yemez, belge cihazdan çıkmaz.
+    setEx("PDF okunuyor…");
+    let L=null;try{L=await pdfExamLocal(f)}catch(e){L=null}
+    if(L&&L.exam){PX={exam:L.exam,uyarilar:L.uyarilar||[],src:"pdf_metin"};setEx("");render();return}
+    if(L&&L.hasText){setEx("PDF'teki sonuç tablosu tanınamadı. Netleri elle ekleyebilir ya da sonuç ekranının fotoğrafını yükleyebilirsin.");return}
+    // Metin katmanı yok (taranmış PDF): eski görsel okumaya düşer.
+    if(f.size>6.5e6){setEx("Bu PDF taranmış görünüyor ve çok büyük (en fazla yaklaşık 6 MB). Sayfa sayısını azaltıp tekrar dene.");return}
+    setEx("Taranmış PDF görsel olarak okunuyor, 15-30 saniye sürebilir…");
     let pages;try{pages=await pdfPages(f)}catch(e){pages=null}
     let r;
     if(pages&&pages.length){r=await callFn("exam-extract",{images:pages,mime:"image/jpeg"})}
@@ -347,7 +353,7 @@ async function examSave(){
   if(!PX.editId&&(EX[ME]||[]).some(x=>x.exam_name===name&&(x.exam_date||"")===date)&&!confirm("Aynı adla bir deneme zaten kayıtlı. Yine de kaydedilsin mi?"))return;
   const total=Math.round(subs.reduce((a,s)=>a+s.net,0)*100)/100;
   const rec={exam_name:name,exam_date:date||null,exam_type:tur,total_net:total,score:e.puan,rank:e.siralama,subjects:subs,topics:e.konular||[]};
-  const {error}=PX.editId?await sb.from("exam_results").update(rec).eq("id",PX.editId).eq("student_id",ME):await sb.from("exam_results").insert({student_id:ME,...rec,source:"ai_image",verified:true,extraction_meta:{okunan:okc+fixc,dogru_okunan:okc,duzeltilen:fixc,okunamayan:missc,uyari:PX.uyarilar.length,soru_satiri:e.soru_satiri||0}});
+  const {error}=PX.editId?await sb.from("exam_results").update(rec).eq("id",PX.editId).eq("student_id",ME):await sb.from("exam_results").insert({student_id:ME,...rec,source:"ai_image",verified:true,extraction_meta:{kaynak:PX.src||"yapay_zeka",okunan:okc+fixc,dogru_okunan:okc,duzeltilen:fixc,okunamayan:missc,uyari:PX.uyarilar.length,soru_satiri:e.soru_satiri||0}});
   if(error){err("Kaydedilemedi: "+error.message);return}
   PX=null;await loadExams(ME);setEx("Kaydedildi ✓ Analiz hazırlanıyor…");render();runInsights(ME,true);
 }
@@ -396,7 +402,7 @@ function examCard(){
   if(PX)return examForm();
   const L=EX[ME]||[];
   return `<div class="card"><h2>Deneme sonuçlarım</h2>
-  <p class="empty" style="margin:0 0 10px">Deneme sonuç görselini ya da PDF'ini yükle, yapay zekâ okusun. Sen kontrol edip onaylarsın. PDF genelde daha hızlı ve net okunur.</p>
+  <p class="empty" style="margin:0 0 10px">Deneme sonuç PDF'ini yükle: uygulama doğrudan okur, saniyeler sürer. Fotoğraf ve ekran görüntüsü yapay zekâyla okunur. Her durumda sen kontrol edip onaylarsın.</p>
   <div class="row" style="margin-top:0"><input id="exf" type="file" accept="image/*,application/pdf,.pdf" style="width:100%"><button class="btn" style="padding:11px 16px" id="exgo">Dosyayı oku</button></div>
   <p class="empty" id="exmsg" style="margin:8px 0 0;font-size:14px">${esc(EXMSG)}</p>
   ${L.length?`<div style="margin-top:10px">${examRows(L,"own")}</div><div class="row"><button class="chip" id="airun" data-sid="${ME}">📈 Gelişim analizimi yenile</button></div>`:""}</div>${aiReportCard(ME)}`;
