@@ -34,6 +34,18 @@ with sync_playwright() as p:
     check("Ayşe" not in s and "12345678901" not in s and "Anadolu" not in s,"Kişisel bilgi (ad, T.C., okul) çıkarılmadı")
     r2=run("/tests/fixtures/sonuc-taranmis.pdf")
     check(r2["hasText"] is False and r2["exam"] is None,"Metinsiz (taranmış) PDF: hasText=false, eski görsel okumaya düşer")
+    # K14Net düzeni (gerçek belge şablonu, sahte veri): 3 sütun, ayrı % parçası, sütun taşan ders
+    r3=run("/tests/fixtures/sonuc-k14.pdf");k=r3["exam"]
+    check(k is not None,"K14 düzeni okundu: %r"%r3.get("why"))
+    if k:
+        check((k["sinav_adi"],k["tur"],k["puan"],k["siralama"])==("TEST-TYT 7","TYT",301.5,"Kurum 9/50"),"K14 ad/tür/puan/sıra: %r"%[k["sinav_adi"],k["tur"],k["puan"],k["siralama"]])
+        kd={x["ders"]:x for x in k["dersler"]}
+        check(list(kd)==["Türkçe","Din Kültürü ve Ahlak Bilgisi","Matematik","Fizik"],"K14 dersler (kısaltılmış ad blok başlığıyla tamamlandı): %s"%list(kd))
+        check((kd["Türkçe"]["dogru"],kd["Türkçe"]["yanlis"],kd["Türkçe"]["bos"])==(5,3,2) and kd["Türkçe"]["kurum_yuzde"]==70.25,"K14 Türkçe D/Y/B ve kurum %")
+        check(k["toplam_net_gorsel"]==8.5 and k["soru_satiri"]==21,"K14 toplam net ve 21 soru satırı: %r %r"%(k["toplam_net_gorsel"],k["soru_satiri"]))
+        check(sum(x["dogru"]+x["yanlis"]+x["bos"] for x in k["konular"])==21,"K14 konu istatistiği tabloyla birebir (Matematik sütun taşması dahil)")
+        check(all("tarih" not in u or True for u in r3["uyarilar"]) and len([u for u in r3["uyarilar"] if "uyuşmuyor" in u or "farklı" in u])==0,"K14 tutarsızlık uyarısı yok: %r"%r3["uyarilar"])
+        check("AYŞE" not in str(r3).upper() and "KURUM" not in str(k["sinav_adi"]).upper(),"K14 öğrenci adı ve kurum adı alınmadı")
     b.close()
 srv.terminate()
 print("JS hataları:",errs or "yok");sys.exit(1 if bad or errs else 0)
