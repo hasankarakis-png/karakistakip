@@ -36,7 +36,7 @@ function heatCard(){
     if(r===0&&d.getMonth()!==lastM){lastM=d.getMonth();months.push([w,d.toLocaleDateString("tr-TR",{month:"short"})])}
     if(fut){cells.push(`<span></span>`);continue}
     const z=H[k]||{},m=num(z.m);
-    cells.push(`<button class="l${lvl(m)}${k===day()?" td":""}${HMSEL===k?" sel":""}" data-hm="${k}" aria-label="${k}: ${m} dakika"></button>`);
+    cells.push(`<button class="l${lvl(m)}${k===day()?" td":""}${HMSEL===k?" sel":""}" data-hm="${k}" aria-label="${fd(k)}: ${m} dakika"></button>`);
   }
   const sel=HMSEL&&H[HMSEL]?`<b>${fd(HMSEL)}</b>: ${hm2(num(H[HMSEL].m))} · ${num(H[HMSEL].q)} soru`:"Dokun: o günün çalışmasını gör";
   const cw=`calc((100% - 30px - ${(WK-1)*4}px)/${WK})`;
@@ -61,7 +61,7 @@ function qaSheet(){
 
 let ANT="o";
 function analizTab(){
-  const seg=`<div class="ktseg" role="tablist" style="margin:0 0 12px">${[["o","Özet"],["n","Denemeler"],["t","Hedef ve tekrar"]].map(([k,n])=>`<button data-ant="${k}" aria-pressed="${ANT===k}">${n}</button>`).join("")}</div>`;
+  const seg=`<div class="ktseg" role="tablist" style="margin:0 0 12px">${[["o","Özet"],["n","Denemeler"],["t","Hedefler"]].map(([k,n])=>`<button data-ant="${k}" aria-pressed="${ANT===k}">${n}</button>`).join("")}</div>`;
   const b=ANT==="n"?examCard()+netChartsCard(ME):ANT==="t"?goalRoad(ME)+(ktLoad(),tekrarCard(ME,KTS.done,6))+`<button class="card tr" data-tab="c" aria-label="Konu takibini aç"><span class="rg" style="--p:0"><span style="font-size:30px">📚</span></span><span><h2>Konu Takibi</h2><p style="font-size:15px">Bitirdiğin konuları işaretle</p></span></button>`:karneCard()+dailyActivityCard()+heatCard();
   return `<h1 class="pg">Analiz</h1>${seg}${b}`;
 }

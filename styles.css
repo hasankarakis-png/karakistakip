@@ -819,3 +819,11 @@ body.coach,body.stu{--mbme:#2b3a10;--mbme-ink:#f3f3ee;--mbot:#1f1f1f;--mbot-ink:
 .sx-slim .rg:before{inset:5px!important}
 .sx-slim .rg span{font-size:20px!important}
 .sx-slim h2{font-size:17px!important}.sx-slim p{font-size:15px!important;margin-top:1px!important}
+.sx-fold{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;margin:0 0 14px;padding:14px 16px;min-height:60px;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:18px;color:var(--ink);font:inherit;cursor:pointer}
+.sx-fold .tx{min-width:0}.sx-fold b{display:block;font:700 17px var(--fd)}
+.sx-fold small{display:block;margin-top:2px;font-size:14px;color:var(--mute)}
+.sx-fold i{font-style:normal;color:var(--mute);font-size:16px;flex:none}
+.sx-fold.todo{border-color:var(--acc)}
+.sx-fold[aria-expanded=true]{margin-bottom:8px}
+.sx-foldb[hidden]{display:none}
+.sx-foldb>.card>h2:first-child{display:none}

@@ -208,7 +208,7 @@ function weekEff(sid){
 const hm2=m=>m>=60?Math.floor(m/60)+" sa "+(m%60)+" dk":m+" dk";
 function goalRoad(sid){
   const gl=TG[sid]||[],mine=sid===ME;
-  if(!gl.length)return mine?`<div class="card"><h2>🎯 Hedef yolculuğum</h2><p class="empty" style="margin:0">Henüz hedefin yok. <b>Hedefim</b> sekmesinden TYT, AYT veya LGS için net, üniversite ve bölüm ekle; her çalıştığında hedefe nasıl yaklaştığını burada göreceksin.</p></div>`:"";
+  if(!gl.length)return mine?`<div class="card"><h2>🎯 Hedef yolculuğum</h2><p class="empty" style="margin:0">Henüz hedefin yok. <b>Profil</b> sekmesindeki <b>Hedeflerini şekillendir</b> bölümünden TYT, AYT veya LGS için net, üniversite ve bölüm ekle; her çalıştığında hedefe nasıl yaklaştığını burada göreceksin.</p></div>`:"";
   const sel=ROADSEL[sid],g=(sel&&tgOf(sid,sel))||tgPick(sid)||gl[0],tur=g.exam_type,hn=num(g.target_net);
   const nets=(EX[sid]||[]).filter(e=>e.exam_type===tur&&e.total_net!=null).map(e=>num(e.total_net)),son=nets.length?nets[nets.length-1]:null;
   const p=son==null||hn<=0?0:Math.max(0,Math.min(1,son/hn)),pc=Math.round(p*100),kalan=son==null?null:Math.max(0,Math.round((hn-son)*100)/100);
