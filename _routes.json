@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "include": ["/supabase/*", "/tests/*", "/scripts/*", "/functions/*", "/CLAUDE.md", "/README.md", "/README-AI.md", "/README-CLOUDFLARE.md"],
+  "exclude": []
+}

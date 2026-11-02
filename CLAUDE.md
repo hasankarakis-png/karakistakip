@@ -4,7 +4,7 @@ Amaç: yeni bir oturum tüm dosyaları okumadan işe başlayabilsin. Yalnızca i
 
 ## Ne bu?
 Hasan Karakış'ın (Karakış Eğitim & Danışmanlık, Diyarbakır) ~18 YKS/LGS öğrencisi için günlük çalışma takip uygulaması.
-- Canlı: https://takip.hasankarakis.com (Cloudflare Pages, depo kökü yayınlanır, build yok)
+- Canlı: https://takip.hasankarakis.com (Cloudflare Pages, depo kökü yayınlanır, build yok). İç klasörler (supabase/, tests/, scripts/, functions/) ve CLAUDE.md/README*.md sitede 404 döner: `functions/_middleware.js` + `_routes.json` + `site/_routes.json` (tanıtım sitesi de aynı depo kökünü kullanır). Yeni iç klasör eklersen üçüne de yaz.
 - Veritabanı/sunucu: Supabase projesi `ramcghaefbbwgwtgtdtt` (Frankfurt). Supabase MCP araçlarıyla yönetilir.
 - Arayüz dili Türkçe; kullanıcıya her şey Türkçe yazılır.
 
