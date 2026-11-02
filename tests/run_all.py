@@ -11,7 +11,7 @@ TIMEOUT = 420
 # Bilinen, kod hatası olmayan dalgalanmalar (CLAUDE.md'de açıklanan). Yalnızca uyarı olarak raporlanır.
 def known_flaky(test, line):
     if test == "test_p2.py" and "Geçen hafta bu haftaya kopyalandı" in line:
-        wd = (datetime.datetime.utcnow() + datetime.timedelta(hours=3)).weekday()
+        wd = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=3)).weekday()
         return wd in (0, 1)  # Pazartesi/Salı: sahte dünkü görevler de sayılır
     return False
 
@@ -19,7 +19,7 @@ def judge(test, out, code):
     fails, flaky = [], []
     for line in out.splitlines():
         s = line.strip()
-        if s.startswith("FAIL"):
+        if re.match(r"^FAIL\s", s) and not s.startswith("FAIL sayısı"):
             (flaky if known_flaky(test, s) else fails).append(s)
         m = re.match(r"^(JS|Sayfa) hataları:\s*(.*)$", s)
         if m and m.group(2) not in ("yok", "[]"):
