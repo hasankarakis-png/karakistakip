@@ -13,7 +13,7 @@ function mockQuery(error = null) {
   const result = { data: null, error };
   const q = {
     select: () => q, eq: () => q, gte: () => q,
-    lte: () => q, order: () => q,
+    lte: () => q, order: () => q, or: () => q,
     then: (resolve, reject) => Promise.resolve(result).then(resolve, reject)
   };
   return q;

@@ -84,7 +84,7 @@
   new MutationObserver(()=>{
     const ws=document.querySelectorAll("[data-dial][data-to]");
     if(ws.length)requestAnimationFrame(()=>requestAnimationFrame(()=>ws.forEach(w=>{
-      const m=M.find(x=>x.f===w.dataset.dial);if(m){const to=+w.dataset.to;w.removeAttribute("data-to");paint(w,m,to)}
+      const m=M.find(x=>x.f===w.dataset.dial);if(m){if(!w.isConnected||!w.hasAttribute("data-to"))return;const to=Number(w.dataset.to);w.removeAttribute("data-to");if(!Number.isInteger(to)||to < -1||to > 4)return;paint(w,m,to)}
     })));
     if(FOCUSF){const g=document.querySelector('[data-dial="'+FOCUSF+'"] .dl-g');if(g){FOCUSF=null;g.focus({preventScroll:true})}}
   }).observe(document.body,{childList:true,subtree:true});
