@@ -56,6 +56,13 @@ with sync_playwright() as p:
     tok = E("__FX.parent_links.slice(-1)[0].token")
     check(len(tok) == 32 and E("__FX.parent_links.slice(-1)[0].student_id") == "s1", f"Veli bağlantısı oluşturuldu (belirteç {len(tok)} karakter)")
     check(f"veli.html#t={tok}" in E("document.querySelector('.pl input').value"), "Bağlantı adresi gösteriliyor")
+    days = lambda: E(f"Math.round((Date.parse(__FX.parent_links.find(l=>l.token==='{tok}').expires_at)-Date.now())/864e5)")
+    check(days() == 365, f"Varsayılan geçerlilik 1 yıl ({days()} gün)")
+    # süresi dolmuş bağlantı aynı adresle yeniden açılır
+    E(f"__FX.parent_links.find(l=>l.token==='{tok}').expires_at=new Date(Date.now()-864e5).toISOString();PLINK.s1.find(l=>l.token==='{tok}').expires_at=new Date(Date.now()-864e5).toISOString();render()"); wait(page, 400)
+    check("Aynı bağlantıyı yeniden aç" in txt(page, "#detail-kvkk"), "Süresi dolan bağlantı listede yeniden açılabilir görünüyor")
+    page.select_option("#pld", "182"); page.click(f"[data-plext='{tok}']"); wait(page, 500)
+    check(days() == 182 and E("__FX.parent_links.length") == 1, f"Aynı bağlantı 6 ay uzatıldı ({days()} gün), yeni bağlantı açılmadı")
     page.click(f"[data-plrv='{tok}']"); wait(page, 500)
     check(E("__FX.parent_links.slice(-1)[0].revoked") is True, "Bağlantı iptal edildi")
     # paket

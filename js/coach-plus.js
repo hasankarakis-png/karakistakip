@@ -157,13 +157,16 @@ const consLast=(id,k)=>(CONS[id]||[]).find(c=>c.kind===k)||null;
 const plUrl=t=>location.origin+"/veli.html#t="+t;
 function kvkkCard(x){
   const id=x.id;consLoad(id);const L=CONS[id];if(L===null)return `<div class="card"><h2>🛡 KVKK ve veli bağlantısı</h2><p class="empty">Yükleniyor…</p></div>`;
-  const ok=k=>{const c=consLast(id,k);return c&&c.granted?c:null},act=(PLINK[id]||[]).filter(l=>!l.revoked&&Date.parse(l.expires_at)>Date.now()),pp=(CONTACT[id]||{}).parent_phone;
+  const ok=k=>{const c=consLast(id,k);return c&&c.granted?c:null},now=Date.now(),act=(PLINK[id]||[]).filter(l=>!l.revoked&&Date.parse(l.expires_at)>now),pp=(CONTACT[id]||{}).parent_phone;
+  // Süresi son 90 günde dolmuş bağlantılar: aynı adresle yeniden açılabilir (veli eski bağlantısını kullanmaya devam eder).
+  const old=(PLINK[id]||[]).filter(l=>!l.revoked&&Date.parse(l.expires_at)<=now&&Date.parse(l.expires_at)>now-90*864e5);
   return `<div class="card" id="detail-kvkk"><h2>🛡 KVKK ve veli bağlantısı</h2><p class="empty" style="margin:0 0 8px;font-size:13px">İzinleri aldığında kaydet; tarih ve yöntem saklanır. <a href="kvkk.html" target="_blank" rel="noopener">Aydınlatma metni taslağı</a> (avukat onayı bekliyor).</p>
   ${Object.entries(CK).map(([k,n])=>{const c=consLast(id,k);return `<div class="cs"><span><b>${n}</b><small>${c?(c.granted?"✓ ":"✗ geri alındı · ")+ntime(Date.parse(c.created_at))+(c.by_name?" · "+esc(c.by_name):"")+(c.method?" · "+esc(c.method):""):"Kayıt yok"}</small></span><span class="cs-b"><button class="chip" data-csok="${k}">Verildi</button>${c&&c.granted?`<button class="chip" data-csno="${k}">Geri alındı</button>`:""}</span></div>`}).join("")}
   <div class="row"><label>Kim verdi<input id="csn" maxlength="80" autocomplete="off" placeholder="ör. Annesi Ayşe Hanım" style="width:180px"></label><label>Yöntem<select id="csm"><option>yazılı</option><option>sözlü</option><option>elektronik</option></select></label></div>
-  <h3 class="h3s">Veli bağlantısı</h3>${ok("veli_riza")?`<p class="empty" style="margin:0 0 6px;font-size:13px">Veli, hesap açmadan son 30 günün çalışma, görev ve deneme özetini görür; uyku ve ruh hali gösterilmez. Bağlantı 30 gün geçerlidir, istediğin an iptal edebilirsin.</p>
-  ${act.map(l=>`<div class="pl"><input readonly value="${esc(plUrl(l.token))}" aria-label="Veli bağlantısı"><div class="row" style="margin-top:6px"><button class="chip" data-plcp="${esc(l.token)}">Kopyala</button>${pp?`<a class="chip" href="https://wa.me/${pp}?text=${encodeURIComponent("Merhaba, öğrencimizin çalışma özetini bu bağlantıdan görebilirsiniz: "+plUrl(l.token))}" target="_blank" rel="noopener">📲 Veliye gönder</a>`:""}<button class="chip" data-plrv="${esc(l.token)}">İptal et</button></div><small>${fd(l.expires_at.slice(0,10))} tarihine kadar${l.last_seen?" · son açılış "+ntime(Date.parse(l.last_seen)):" · henüz açılmadı"}</small></div>`).join("")}
-  <div class="row"><button class="btn" style="padding:11px 16px" data-plnew="${id}">${act.length?"Yeni bağlantı oluştur":"Veli bağlantısı oluştur"}</button></div>`:`<p class="empty" style="margin:0;font-size:14px">Önce “Veli açık rızası”nı kaydet; bağlantı ondan sonra açılır.</p>`}${cpMsg("cs"+id)}</div>`;
+  <h3 class="h3s">Veli bağlantısı</h3>${ok("veli_riza")?`<p class="empty" style="margin:0 0 6px;font-size:13px">Veli, hesap açmadan son 30 günün çalışma, görev ve deneme özetini görür; uyku ve ruh hali gösterilmez. Bağlantı seçtiğin süre boyunca geçerlidir; süreyi aynı bağlantıyla uzatabilir, istediğin an iptal edebilirsin. Veli rızası geri alınırsa bağlantılar kendiliğinden kapanır.</p>
+  ${act.map(l=>`<div class="pl"><input readonly value="${esc(plUrl(l.token))}" aria-label="Veli bağlantısı"><div class="row" style="margin-top:6px"><button class="chip" data-plcp="${esc(l.token)}">Kopyala</button>${pp?`<a class="chip" href="https://wa.me/${pp}?text=${encodeURIComponent("Merhaba, öğrencimizin çalışma özetini bu bağlantıdan görebilirsiniz: "+plUrl(l.token))}" target="_blank" rel="noopener">📲 Veliye gönder</a>`:""}<button class="chip" data-plext="${esc(l.token)}">Süreyi uzat</button><button class="chip" data-plrv="${esc(l.token)}">İptal et</button></div><small>${fd(l.expires_at.slice(0,10))} tarihine kadar${l.last_seen?" · son açılış "+ntime(Date.parse(l.last_seen)):" · henüz açılmadı"}</small></div>`).join("")}
+  ${old.map(l=>`<div class="pl"><small>Süresi ${fd(l.expires_at.slice(0,10))} tarihinde doldu${l.last_seen?" · son açılış "+ntime(Date.parse(l.last_seen)):""}</small><div class="row" style="margin-top:6px"><button class="chip" data-plext="${esc(l.token)}">Aynı bağlantıyı yeniden aç</button></div></div>`).join("")}
+  <div class="row"><label>Geçerlilik<select id="pld">${PLD.map(([d,n])=>`<option value="${d}"${d===PLDV?" selected":""}>${n}</option>`).join("")}</select></label><button class="btn" style="padding:11px 16px" data-plnew="${id}">${act.length?"Yeni bağlantı oluştur":"Veli bağlantısı oluştur"}</button></div>`:`<p class="empty" style="margin:0;font-size:14px">Önce “Veli açık rızası”nı kaydet; bağlantı ondan sonra açılır.</p>`}${cpMsg("cs"+id)}</div>`;
 }
 async function consSet(id,k,g){
   const row={student_id:id,kind:k,granted:g,by_name:gv("csn").slice(0,80)||null,method:gv("csm")||null};
@@ -172,11 +175,21 @@ async function consSet(id,k,g){
   if(k==="veli_riza"&&!g){const L=(PLINK[id]||[]).filter(l=>!l.revoked);if(L.length){await dbw(sb.from("parent_links").update({revoked:true}).eq("student_id",id));L.forEach(l=>l.revoked=true)}}
   cpm("cs"+id,(g?"Kaydedildi ✓":"Geri alındı olarak kaydedildi")+(k==="veli_riza"&&!g?"; veli bağlantıları kapatıldı.":""));
 }
+// Veli bağlantısı süresi (gün). Seçim "Geçerlilik" kutusundan okunur, yeniden çizimde korunur.
+const PLD=[[30,"30 gün"],[182,"6 ay"],[365,"1 yıl"]];
+let PLDV=365;
+const plDays=()=>{const v=+gv("pld");return PLD.some(([d])=>d===v)?v:PLDV};
 async function plNew(id){
   const a=new Uint8Array(24);crypto.getRandomValues(a);const tok=btoa(String.fromCharCode(...a)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
-  const row={token:tok,student_id:id,expires_at:new Date(Date.now()+30*864e5).toISOString()};
+  const row={token:tok,student_id:id,expires_at:new Date(Date.now()+plDays()*864e5).toISOString()};
   const r=await dbw(sb.from("parent_links").insert(row));if(r&&r.error)return cpm("cs"+id,"Bağlantı oluşturulamadı: "+r.error.message,1);
   (PLINK[id]=PLINK[id]||[]).unshift(Object.assign({revoked:false,last_seen:null,created_at:new Date().toISOString()},row));cpm("cs"+id,"Bağlantı hazır ✓ Kopyalayıp veliye gönderebilirsin.");
+}
+// Süreyi bugünden itibaren seçilen süre kadar uzatır; adres değişmez, veli aynı bağlantıyı kullanır.
+async function plExtend(id,tok){
+  const exp=new Date(Date.now()+plDays()*864e5).toISOString();
+  const r=await dbw(sb.from("parent_links").update({expires_at:exp}).eq("token",tok));if(r&&r.error)return cpm("cs"+id,"Uzatılamadı: "+r.error.message,1);
+  (PLINK[id]||[]).forEach(l=>{if(l.token===tok)l.expires_at=exp});cpm("cs"+id,"Bağlantı "+fd(exp.slice(0,10))+" tarihine kadar geçerli ✓ Veli aynı bağlantıyı kullanmaya devam eder.");
 }
 async function plRevoke(id,tok){
   if(!confirm("Bu veli bağlantısı iptal edilsin mi? Veli artık özeti açamaz."))return;
@@ -191,6 +204,7 @@ function leadsCard(){
   return `<details class="card" id="coach-leads"${nn?" open":""}><summary style="cursor:pointer;font-weight:700">📥 Ön görüşme başvuruları · ${nn} yeni</summary>${LEADS.slice(0,30).map(l=>`<div class="ld"><div><b>${esc(l.name)}</b><small>${ntime(Date.parse(l.created_at))}${l.exam?" · "+esc(l.exam):""}${l.grade?" · "+esc(l.grade):""}</small>${l.note?`<p>${esc(l.note)}</p>`:""}</div><div class="ld-a"><a class="chip" href="tel:+${esc(l.phone)}">📞 ${esc(fmtPhone(l.phone))}</a><a class="chip" href="https://wa.me/${esc(l.phone)}" target="_blank" rel="noopener">📲 WhatsApp</a><select data-ldst="${l.id}" aria-label="Durum">${LST.map(s=>`<option${s===l.status?" selected":""}>${s}</option>`).join("")}</select></div></div>`).join("")}<p class="empty" style="font-size:12px;margin:6px 0 0">hasankarakis.com iletişim formundan gelir. Başvuru sahibi iletişim için onay verdi.</p></details>`;
 }
 document.addEventListener("change",async e=>{
+  if(e.target.id==="pld"){PLDV=plDays();return}
   const id=e.target.dataset&&e.target.dataset.ldst;if(!id)return;const v=e.target.value,l=(LEADS||[]).find(z=>String(z.id)===id);
   const r=await dbw(sb.from("leads").update({status:v}).eq("id",+id));if(!(r&&r.error)&&l)l.status=v;if(!busy())render();
 });
@@ -211,6 +225,7 @@ document.addEventListener("change",async e=>{
     if(D.pksave){once("pk",()=>pkgSave(D.pksave));return true}
     if(D.csok||D.csno){once("cs",()=>consSet(sel,D.csok||D.csno,!!D.csok));return true}
     if(D.plnew){once("pln",()=>plNew(D.plnew));return true}
+    if(D.plext){once("pln",()=>plExtend(sel,D.plext));return true}
     if(D.plrv){plRevoke(sel,D.plrv);return true}
     if(D.plcp){const u=plUrl(D.plcp);try{navigator.clipboard.writeText(u).then(()=>{t.textContent="Kopyalandı ✓"},()=>{t.textContent="Bağlantıyı seçip kopyala"})}catch(x){t.textContent="Bağlantıyı seçip kopyala"}return true}
     return prev.apply(this,arguments);
