@@ -69,7 +69,9 @@ async function togTask(id){
 async function delTask(id){if(!confirm("Görev silinsin mi?"))return;await dbw(sb.from("weekly_tasks").delete().eq("id",id).eq("student_id",sel));await loadTasks(sel);render()}
 // İşlem sürerken ikinci dokunuş aynı kaydı ikinci kez eklemesin; öğrenci değişse bile doğru öğrenciye yazılsın.
 const INFL={};
-async function once(k,fn){if(INFL[k])return;INFL[k]=1;try{await fn()}finally{delete INFL[k]}}
+// Çift tıklama koruması; tıklanan düğmeye kayıt sürerken "yükleniyor" görünümü verir (ekran yeniden çizilince kendiliğinden kalkar).
+async function once(k,fn){if(INFL[k])return;INFL[k]=1;let b=null;try{const t=window.event&&window.event.target;b=t&&t.closest?t.closest("button.btn,button.chip"):null;if(b){b.classList.add("is-loading");b.setAttribute("aria-busy","true")}}catch(e){b=null}
+  try{await fn()}finally{delete INFL[k];if(b){b.classList.remove("is-loading");b.removeAttribute("aria-busy")}}}
 // Görev formunun tarih/ders seçimi ekleme sonrası korunur (art arda görev eklemek kolaylaşır).
 let TKF={d:null,s:""};
 function addTask(){const id=sel;return once("tk"+id,async()=>{

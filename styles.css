@@ -827,3 +827,17 @@ body.coach,body.stu{--mbme:#2b3a10;--mbme-ink:#f3f3ee;--mbot:#1f1f1f;--mbot-ink:
 .sx-fold[aria-expanded=true]{margin-bottom:8px}
 .sx-foldb[hidden]{display:none}
 .sx-foldb>.card>h2:first-child{display:none}
+
+/* ===== Düğme cilası =====
+   21st.dev "Native Button" (MIT, Moumen Soliman) fikrinden, framer-motion/React olmadan yalnız CSS:
+   cam parlaması, yaylı basma hissi ve kayıt sırasında dönen yükleniyor durumu (.is-loading). */
+.btn{position:relative;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(0,0,0,.12);transition:transform .35s cubic-bezier(.34,1.56,.64,1),box-shadow .25s ease,filter .2s ease}
+.btn::after{content:"";position:absolute;inset:0;background:radial-gradient(120% 140% at 50% 0%,rgba(255,255,255,.22),transparent 60%);opacity:0;transition:opacity .25s ease;pointer-events:none}
+.btn:hover::after{opacity:1}
+.btn:active{transform:scale(.96);transition-duration:.12s}
+.hero .btn{box-shadow:var(--glow),inset 0 1px 0 rgba(255,255,255,.35)}
+.hero .btn.alt{box-shadow:none}
+.btn.is-loading,.hero .btn.full.is-loading{pointer-events:none;animation:btnpulse 1.1s ease-in-out infinite}
+.btn.is-loading::before,.chip.is-loading::before{content:"";display:inline-block;width:.9em;height:.9em;margin-right:.5em;vertical-align:-.1em;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:spin .7s linear infinite}
+.chip.is-loading{pointer-events:none;opacity:.8}
+@keyframes btnpulse{50%{opacity:.6}}
