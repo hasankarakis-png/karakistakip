@@ -407,7 +407,7 @@ const dbw=p=>Promise.resolve(p).then(r=>{if(r&&r.error)setSync("⚠️ "+r.error
 const DRAFTS=["note","gq","gm","tkt","tka","bkt","bka","cht","sname","dad","dnet","qn","qc","qb","qk","exn","cph","cpp","tgn","tgp","tgu","tgb","tgs","bmt","bma","rpt","puwn","exf","puf","chin","cin","mts","mtk","dyt","pltn","rgt","rga","evt","pkn","pkt","csn","wbk","wbn","cmh","cmm","cmq","cmn"];
 const dirty=()=>DRAFTS.some(id=>{const e=document.getElementById(id);if(!e)return false;if(e.type==="file")return !!(e.files&&e.files.length);return e.value!==e.defaultValue});
 // Gün sonu ekranı ya da kurulum sihirbazı açıkken de yenileme bekler (yazılanlar DC.v içinde, ama ekran zıplamasın).
-const busy=()=>/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||"")||dirty()||!!DC||ONB.open;
+const busy=()=>!!window.DIAL_DRAG||/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||"")||dirty()||!!DC||ONB.open;
 const loginView=msg=>`<div class="lgx"><div class="lgx-bg"><i class="o1"></i><i class="o2"></i><i class="o3"></i><i class="gr"></i></div>
 <section class="lgx-in"><div class="lgx-left"><div class="lgx-brand lg-u1"><span class="lgx-k">K</span><div><b>KARAKIŞ <em>TAKİP</em></b><small>Eğitim &amp; Danışmanlık</small></div></div>
 <h1 class="lg-u2">Çalışmanın her gününü <em>görünür</em> kıl.</h1>
