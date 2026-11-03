@@ -31,7 +31,7 @@ jobs:
         run: python tests/run_all.py
       - name: Ekran görüntüleri
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-ekranlari
           path: tests/shots/
