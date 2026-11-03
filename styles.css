@@ -863,3 +863,40 @@ body.coach,body.stu{--mbme:#2b3a10;--mbme-ink:#f3f3ee;--mbot:#1f1f1f;--mbot-ink:
 .dl-t[aria-pressed=true]{color:var(--c);background:color-mix(in srgb,var(--c) 16%,transparent)}
 .dl-sub{margin-top:2px;text-align:center;font-size:11px;color:var(--mute)}
 @media (prefers-reduced-motion:reduce){.dl{animation:none}.dl-fi,.dl-nd{transition:none}}
+
+/* ===== Açılış duyuru paneli (js/announce.js) ===== */
+.an .an-top{display:flex;justify-content:space-between;align-items:center;margin:0 2px 12px}
+.an-eyebrow{font:800 12px var(--fb);letter-spacing:.12em;text-transform:uppercase;color:var(--acc)}
+.an-count{font:700 13px var(--fb);color:var(--mute);background:var(--cream);border-radius:999px;padding:3px 11px}
+.an-card{display:flex;gap:14px;align-items:center;padding:14px;margin-bottom:12px;border-radius:20px;border:1px solid var(--line);background:linear-gradient(135deg,var(--goldsoft),transparent 72%)}
+.an-card h2{margin:0;font-size:22px;line-height:1.2;overflow-wrap:anywhere}
+.an-card small{display:block;color:var(--mute);margin-top:2px}
+.an-ic{flex:none;width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font-size:26px;background:var(--acc);color:var(--acc-ink);box-shadow:0 8px 22px color-mix(in srgb,var(--acc) 35%,transparent);animation:anPop .5s cubic-bezier(.2,1.4,.4,1)}
+.an-ic.sm{width:40px;height:40px;border-radius:13px;font-size:20px;box-shadow:none;animation:none}
+.an-body{white-space:pre-wrap;overflow-wrap:anywhere;font-size:17px;line-height:1.55;margin:0 0 14px;max-height:34vh;overflow:auto;padding:2px}
+.an-dots{display:flex;gap:6px;justify-content:center;margin:0 0 12px}
+.an-dots i{width:7px;height:7px;border-radius:9px;background:var(--line);transition:width .2s ease,background .2s ease}
+.an-dots i.ok{background:var(--acc);opacity:.45}.an-dots i.on{background:var(--acc);opacity:1;width:20px}
+.an-act .btn{width:100%}
+.an-hint{text-align:center;font-size:13px;margin:8px 0 0}
+.an-w .an-sun{font-size:60px;line-height:1;text-align:center;margin:4px 0 8px;animation:anFloat 3s ease-in-out infinite}
+@keyframes anPop{from{transform:scale(.6) rotate(-8deg);opacity:0}to{transform:none;opacity:1}}
+@keyframes anFloat{50%{transform:translateY(-6px)}}
+/* Bugün sayfasının üstündeki duyuru kartı */
+.an-home{border-color:var(--acc);background:linear-gradient(135deg,var(--goldsoft),var(--card) 70%);padding:12px 12px 6px}
+.an-hh{font-size:16px;margin:0 0 6px 4px}
+.an-it{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 12px;margin:0 0 8px;color:var(--ink);font:inherit;cursor:pointer;min-height:56px}
+.an-it:hover{border-color:var(--acc)}.an-it:active{transform:scale(.99)}
+.an-tx{min-width:0;flex:1}.an-tx b{display:block;font:700 16px var(--fb);overflow-wrap:anywhere}.an-tx small{display:block;color:var(--mute);font-size:13px;overflow-wrap:anywhere}
+.an-st{flex:none;font-style:normal;font:700 12px var(--fb);border-radius:999px;padding:4px 10px}
+.an-st.new{background:var(--acc);color:var(--acc-ink)}.an-st.ok{background:var(--cream);color:var(--acc)}
+/* Koç formu ve liste */
+.an-co .an-f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--mute);margin-top:8px}
+.an-co .an-f input[type=text],.an-co .an-f textarea{width:100%;box-sizing:border-box}
+.an-sh{font-size:14px;margin:16px 0 6px;color:var(--mute)}
+.an-row{border-top:1px dashed var(--line);padding:10px 0}
+.an-rh{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.an-pill{font:700 12px var(--fb);border-radius:999px;padding:3px 10px;background:var(--cream);color:var(--mute)}.an-pill.on{background:var(--acc);color:var(--acc-ink)}
+.an-rm{display:block;color:var(--mute);margin:2px 0 4px}
+.an-rb{margin:0 0 8px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}
+@media (prefers-reduced-motion:reduce){.an-ic,.an-w .an-sun{animation:none}.an-dots i{transition:none}}

@@ -60,7 +60,7 @@ async function loadStudent(){
     if(S===loc&&loc.log.length&&(!srv||loc.log.length>srv.log.length))DIRTY=true;
   }
   S.day=day();if(DIRTY)save();
-  await pullStudent();await Promise.all([loadExams(ME),loadReport(ME),loadTarget(ME),loadTasks(ME),loadHist(ME),profLoad(ME),calLoad()]);
+  await pullStudent();await Promise.all([loadExams(ME),loadReport(ME),loadTarget(ME),loadTasks(ME),loadHist(ME),profLoad(ME),calLoad(),typeof anLoad==="function"?anLoad():0]);
 }
 async function pullStudent(){
   const [g,n]=await Promise.all([sb.from("goals").select("*").eq("student_id",ME).eq("day",day()).maybeSingle(),sb.from("notes").select("body,created_at").eq("student_id",ME).order("created_at")]);
