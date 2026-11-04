@@ -3,13 +3,23 @@
 // Hiçbir şey kaydetmez ve görseli saklamaz; kayıt, öğrenci onayından sonra istemciden yapılır.
 import { createClient } from "npm:@supabase/supabase-js@2.117.1";
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+const ALLOWED_ORIGINS = new Set([
+  "https://takip.hasankarakis.com",
+  "https://hasankarakis.com",
+  "https://www.hasankarakis.com",
+  ...(Deno.env.get("APP_ALLOWED_ORIGINS") ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+]);
+const corsFor = (req: Request) => {
+  const origin = req.headers.get("Origin");
+  return {
+    "Access-Control-Allow-Origin": origin && ALLOWED_ORIGINS.has(origin) ? origin : "https://takip.hasankarakis.com",
+    "Vary": "Origin",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+  };
 };
-const J = (b: unknown, s = 200) =>
-  new Response(JSON.stringify(b), { status: s, headers: { ...CORS, "Content-Type": "application/json" } });
+const J = (b: unknown, s = 200, req?: Request) =>
+  new Response(JSON.stringify(b), { status: s, headers: { ...corsFor(req ?? new Request("https://takip.hasankarakis.com")), "Content-Type": "application/json", "Cache-Control": "no-store" } });
 
 const MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
 const CMODEL = (Deno.env.get("ANTHROPIC_MODEL") ?? "claude-sonnet-5-5").trim();
@@ -302,7 +312,8 @@ async function freeai(key: string, fs: F[], mime: string, schema: unknown, promp
 }
 
 export async function handler(req: Request): Promise<Response> {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsFor(req) });
+  if (req.headers.get("Origin") && !ALLOWED_ORIGINS.has(req.headers.get("Origin")!)) return J({ error: "Origin not allowed." }, 403, req);
   if (req.method !== "POST") return J({ error: "Yalnızca POST kabul edilir." }, 405);
   const url = Deno.env.get("SUPABASE_URL"), pk = Deno.env.get("APP_PUBLISHABLE_KEY"), sk = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"), gk = (Deno.env.get("GEMINI_API_KEY") ?? "").replace(/[\s"']/g, ""), ak = (Deno.env.get("ANTHROPIC_API_KEY") ?? "").replace(/[\s"']/g, ""), fk = (Deno.env.get("FREE_AI_KEY") ?? "").replace(/[\s"']/g, "");
   if (!url || !pk || !sk || (!gk && !ak && !fk)) return J({ error: "Sunucu yapılandırması eksik." }, 500);
