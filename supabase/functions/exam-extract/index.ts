@@ -18,7 +18,7 @@ const corsFor = (req: Request) => {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
   };
 };
-const J = (b: unknown, s = 200, req?: Request) =>
+const respond = (b: unknown, s = 200, req?: Request) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...corsFor(req ?? new Request("https://takip.hasankarakis.com")), "Content-Type": "application/json", "Cache-Control": "no-store" } });
 
 const MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
@@ -312,6 +312,7 @@ async function freeai(key: string, fs: F[], mime: string, schema: unknown, promp
 }
 
 export async function handler(req: Request): Promise<Response> {
+  const J = (body: unknown, status = 200) => respond(body, status, req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsFor(req) });
   if (req.headers.get("Origin") && !ALLOWED_ORIGINS.has(req.headers.get("Origin")!)) return J({ error: "Origin not allowed." }, 403, req);
   if (req.method !== "POST") return J({ error: "Yalnızca POST kabul edilir." }, 405);
