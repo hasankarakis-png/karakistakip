@@ -1,0 +1,14 @@
+name: Security regression checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  security-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Static security invariants
+        run: python3 -m unittest discover -s tests -p 'test_security_regression.py' -v
