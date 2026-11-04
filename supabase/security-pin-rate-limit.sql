@@ -6,7 +6,7 @@ RETURNS bigint LANGUAGE plpgsql SECURITY DEFINER SET search_path = ''
 AS $$
 DECLARE v_id bigint; v_count bigint;
 BEGIN
-  IF auth.role() IS DISTINCT FROM 'service_role' THEN
+  IF coalesce(auth.jwt()->>'role', '') <> 'service_role' THEN
     RAISE EXCEPTION 'Service role only' USING ERRCODE = '42501';
   END IF;
   IF p_uid IS NULL OR p_max < 1 OR p_max > 20 OR p_window_minutes < 1 OR p_window_minutes > 60 THEN
