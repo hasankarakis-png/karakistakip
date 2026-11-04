@@ -4,12 +4,22 @@
 // Yeni şifre Auth yönetici API'siyle yazılır; Auth diğer oturumları kapatır, istemci yeniden giriş ister.
 import { createClient } from "npm:@supabase/supabase-js@2.117.1";
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+const ALLOWED_ORIGINS = new Set([
+  "https://takip.hasankarakis.com",
+  "https://hasankarakis.com",
+  "https://www.hasankarakis.com",
+  ...(Deno.env.get("APP_ALLOWED_ORIGINS") ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+]);
+const corsFor = (req: Request) => {
+  const origin = req.headers.get("Origin");
+  return {
+    "Access-Control-Allow-Origin": origin && ALLOWED_ORIGINS.has(origin) ? origin : "https://takip.hasankarakis.com",
+    "Vary": "Origin",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+  };
 };
-const J = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...CORS, "Content-Type": "application/json" } });
+const respond = (b: unknown, s = 200, req?: Request) => new Response(JSON.stringify(b), { status: s, headers: { ...corsFor(req ?? new Request("https://takip.hasankarakis.com")), "Content-Type": "application/json", "Cache-Control": "no-store" } });
 const DOMAIN = "@takip.karakis.app";
 const MAX_FAIL = 5, WINDOW_MIN = 15;
 
@@ -33,7 +43,9 @@ export function pinRule(p: unknown, user = ""): string {
 }
 
 export async function handler(req: Request): Promise<Response> {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+  const J = (body: unknown, status = 200) => respond(body, status, req);
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsFor(req) });
+  if (req.headers.get("Origin") && !ALLOWED_ORIGINS.has(req.headers.get("Origin")!)) return J({ error: "Origin not allowed." }, 403, req);
   if (req.method !== "POST") return J({ error: "Yalnızca POST kabul edilir." }, 405);
   const url = Deno.env.get("SUPABASE_URL"), pk = Deno.env.get("APP_PUBLISHABLE_KEY"), sk = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !pk || !sk) return J({ error: "Sunucu yapılandırması eksik." }, 500);
@@ -54,17 +66,21 @@ export async function handler(req: Request): Promise<Response> {
 
   const admin = createClient(url, sk, { auth: { autoRefreshToken: false, persistSession: false } });
 
-  // Hız sınırı: son 15 dakikadaki hatalı denemeler
-  const since = new Date(Date.now() - WINDOW_MIN * 60000).toISOString();
-  const { count, error: ce } = await admin.from("pin_attempts").select("id", { count: "exact", head: true }).eq("user_id", uid).eq("ok", false).gte("at", since);
-  if (ce) return J({ error: "Şu an işlem yapılamıyor, biraz sonra tekrar dene." }, 500);
-  if ((count ?? 0) >= MAX_FAIL) return J({ error: `Çok fazla hatalı deneme yapıldı. ${WINDOW_MIN} dakika sonra tekrar dene ya da koçundan şifre sıfırlamasını iste.` }, 429);
-
+  // Every attempt reserves a slot transactionally in Postgres, preventing concurrent bypass.
+  const { data: attemptId, error: reserveError } = await admin.rpc("pin_reserve_attempt", {
+    p_uid: uid, p_max: MAX_FAIL, p_window_minutes: WINDOW_MIN,
+  });
+  if (reserveError) return J({ error: "Şifre doğrulaması şu anda kullanılamıyor." }, 503);
+  if (attemptId == null) return J({ error: `Çok fazla hatalı deneme yapıldı. ${WINDOW_MIN} dakika sonra tekrar dene.` }, 429);
   const { data: ok, error: pe } = await admin.rpc("pin_check", { p_uid: uid, p_pin: oldPin });
   if (pe || ok === null) return J({ error: "Şifre doğrulanamadı, biraz sonra tekrar dene." }, 500);
-  await admin.from("pin_attempts").insert({ user_id: uid, ok: ok === true });
+  if (ok === true) {
+    // Only a verified successful check clears its own reserved failed-attempt slot.
+    await admin.from("pin_attempts").update({ ok: true }).eq("id", attemptId).eq("user_id", uid);
+  }
   if (ok !== true) {
-    const left = Math.max(0, MAX_FAIL - (count ?? 0) - 1);
+    const { count: failedCount } = await admin.from("pin_attempts").select("id", { count: "exact", head: true }).eq("user_id", uid).eq("ok", false).gte("at", new Date(Date.now() - WINDOW_MIN * 60000).toISOString());
+    const left = Math.max(0, MAX_FAIL - (failedCount ?? MAX_FAIL));
     return J({ error: left ? `Mevcut şifren hatalı. ${left} deneme hakkın kaldı.` : `Mevcut şifren hatalı. ${WINDOW_MIN} dakika sonra tekrar deneyebilirsin.`, field: "old" }, 400);
   }
 
