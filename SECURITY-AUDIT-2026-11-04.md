@@ -24,3 +24,22 @@ Static inspection of `index.html`, `_headers`, `js/core.js`, `js/boot.js`, `js/a
 
 ## Rollback
 If staging reveals incompatibility, revert migration by dropping trigger `announcements_author_guard_trigger`, dropping function `announcements_author_guard`, and restoring the previous `ack_student_insert` policy from `schema-v48.sql`. Do not roll back by dropping announcement tables.
+
+
+## Additional hardening prepared in the same branch
+- `supabase/security-pin-rate-limit.sql`: atomic password-attempt reservation using transaction advisory locks; role restricted to `service_role`.
+- `supabase/functions/pin-change/index.ts`: reserve a failed-attempt slot **before** validating a password, and mark only successfully verified attempts as successful. The SQL migration MUST precede Edge Function deployment; otherwise password changes fail closed.
+- `supabase/functions/exam-extract/index.ts` and `pin-change`: explicit browser Origin allowlist, `Vary: Origin` and no-store response headers. Any additional trusted preview URLs must be set in server-only `APP_ALLOWED_ORIGINS` (comma-separated exact origins) before deploying. Requests without an Origin header still require authentication. **CORS is not an authorization boundary.**
+- Initial source-level assertions: 11/11 checks passed for expected changes. SQL execution, deployed Edge Function integration, role-isolation tests, and GitHub CI have **not** been verified.
+
+## Ordered deployment checklist (not executed)
+1. Validate the current production `pin_attempts` table against `schema-v39.sql`, the currently deployed `pin-change` function, and `auth.role()` behavior in the target Supabase project.
+2. In staging, apply `supabase/security-hardening-2026-11-04.sql` then `supabase/security-pin-rate-limit.sql`.
+3. Exercise a student and coach account with positive and negative RLS cases, including concurrent password change attempts and all protected announcement operations.
+4. Set `APP_ALLOWED_ORIGINS` in the Supabase function environment for needed preview origins; confirm both production origins work and an untrusted Origin is rejected.
+5. Deploy the two updated Edge Functions only *after* the SQL migration succeeds. Verify real requests and rollback behavior.
+6. Merge approved PR after CI and smoke tests pass, then monitor Supabase errors and user login success. Database SQL files in git are not automatically applied.
+7. Validate and remediate localStorage privacy, additional Edge Functions, all deployed RPC/grants, Supabase Storage policies and external integrations. These are **open checks**, not claimed fixed.
+
+## Scope boundaries
+A static source review cannot certify production security. CORS restrictions cannot replace JWT/RLS policies; anti-brute-force protection on `pin-change` does not replace Supabase Auth's login rate limiting and Turnstile configuration. Stored student data is sensitive; do not clear unsynchronized offline state without a safe migration/flush strategy.
