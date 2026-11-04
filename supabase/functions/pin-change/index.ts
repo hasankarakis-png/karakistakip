@@ -19,7 +19,7 @@ const corsFor = (req: Request) => {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
   };
 };
-const J = (b: unknown, s = 200, req?: Request) => new Response(JSON.stringify(b), { status: s, headers: { ...corsFor(req ?? new Request("https://takip.hasankarakis.com")), "Content-Type": "application/json", "Cache-Control": "no-store" } });
+const respond = (b: unknown, s = 200, req?: Request) => new Response(JSON.stringify(b), { status: s, headers: { ...corsFor(req ?? new Request("https://takip.hasankarakis.com")), "Content-Type": "application/json", "Cache-Control": "no-store" } });
 const DOMAIN = "@takip.karakis.app";
 const MAX_FAIL = 5, WINDOW_MIN = 15;
 
@@ -43,6 +43,7 @@ export function pinRule(p: unknown, user = ""): string {
 }
 
 export async function handler(req: Request): Promise<Response> {
+  const J = (body: unknown, status = 200) => respond(body, status, req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsFor(req) });
   if (req.headers.get("Origin") && !ALLOWED_ORIGINS.has(req.headers.get("Origin")!)) return J({ error: "Origin not allowed." }, 403, req);
   if (req.method !== "POST") return J({ error: "Yalnızca POST kabul edilir." }, 405);
