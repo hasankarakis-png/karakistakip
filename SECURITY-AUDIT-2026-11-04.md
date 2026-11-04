@@ -43,3 +43,17 @@ If staging reveals incompatibility, revert migration by dropping trigger `announ
 
 ## Scope boundaries
 A static source review cannot certify production security. CORS restrictions cannot replace JWT/RLS policies; anti-brute-force protection on `pin-change` does not replace Supabase Auth's login rate limiting and Turnstile configuration. Stored student data is sensitive; do not clear unsynchronized offline state without a safe migration/flush strategy.
+
+
+## Read-only production Supabase inspection — 2026-11-04
+Project `ramcghaefbbwgwtgtdtt` (matched the frontend's Supabase URL) is active. No user rows were read.
+
+- All **36 public tables have RLS enabled**. Three tables (`app_secrets`, `challenge_messages`, `pin_attempts`) have no policies; this is appropriate for server-only tables, but revoke unnecessary table GRANTs as defense-in-depth. The existing `pin_attempts` table unexpectedly grants DML to `authenticated`, though RLS currently prevents direct client access. Addressed in `security-rpc-grants-2026-11-04.sql`.
+- There are **no public views** and **no storage buckets** at the time of inspection. This does not certify external object stores.
+- Supabase security advisors detected 3 anonymously callable SECURITY DEFINER RPCs. `task_self_reschedule(jsonb)` and `task_self_undo(bigint[])` unnecessarily grant `anon` EXECUTE; revoke that while keeping authenticated usage. `parent_view(text)` deliberately returns consented parent data to a 32–64-character bearer token, and is needed for parent sharing; do **not** indiscriminately revoke it. Recheck token expiration/revocation and rate limits separately.
+- Security advisors flag several authenticated-callable SECURITY DEFINER functions. This alone is not an exploit; each function's internal ownership checks still need review. `msg_read` and task-self RPC implementations contain explicit identity checks; challenge RPCs require further coverage.
+- Supabase Auth security advisor reports **leaked-password protection disabled**. Enable in Auth settings if available on the project's plan; this cannot be corrected by checking in a GitHub file.
+- `challenges` and `exam_calendar` have authenticated broad-read policies (`USING true`). Confirm those records are intentionally shared with all enrolled students.
+- Production migration and browser-role regression tests have **not** been applied. Do not equate code prepared in a PR with deployed protection.
+
+References: https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable ; https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
