@@ -102,7 +102,7 @@ function puAct(D,id){
 function weekGrid(x){
   const W0=selWeek(x.id),mon=W0.mon,days=Array.from({length:7},(_,i)=>shift(mon,i));
   const L=(TK[x.id]||[]).filter(t=>t.task_date>=days[0]&&t.task_date<=days[6]);
-  const isC=ROLE==="coach",nav=(x.notabs?"":weekTabs(x.id,isC))+`<div class="row" style="margin:0 0 8px;justify-content:space-between;align-items:center"><b>${esc(weekName(W0))} ${weekName(W0)!==wkRange(mon)?`<small style="color:var(--mute);font-weight:500">${wkRange(mon)}</small>`:""}</b>${isC?`<button class="chip" data-wren="1">✎ Adı değiştir</button>`:""}</div>`;
+  const isC=ROLE==="coach",openN=L.filter(t=>!t.done).length,nav=(x.notabs?"":weekTabs(x.id,isC))+`<div class="row" style="margin:0 0 8px;justify-content:space-between;align-items:center"><b>${esc(weekName(W0))} ${weekName(W0)!==wkRange(mon)?`<small style="color:var(--mute);font-weight:500">${wkRange(mon)}</small>`:""}</b>${isC?`<span style="display:flex;gap:6px;flex-wrap:wrap">${openN?`<button class="chip" data-clwk="${x.id}" style="color:var(--warn)">🧹 Kalan ${openN} görevi iptal et</button>`:""}<button class="chip" data-wren="1">✎ Adı değiştir</button></span>`:""}</div>`;
   if(!L.length)return `<div class="card"><h2>📊 Haftalık plan takibi</h2>${nav}<p class="empty">Bu hafta için atanmış görev yok.</p></div>`;
   const subs=[...new Set(L.map(t=>subjNorm(t.subject)))],today=day();
   const cell=(s,d)=>{const c=L.filter(t=>subjNorm(t.subject)===s&&t.task_date===d);if(!c.length)return `<td class="wg0">·</td>`;const dn=c.filter(t=>t.done).length,tip=esc(c.map(t=>t.title+(t.amount?" ("+t.amount+")":"")).join(", "));

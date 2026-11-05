@@ -49,6 +49,20 @@ with sync_playwright() as p:
     E("loadTasks('s1')"); wait(page, 500)
     pp = E("planPage(roster().find(x=>x.id==='s1'))")
     check("Kalan deneme sorusu" in pp and pp.index("Kalan deneme sorusu") < pp.index("puf"), "Program ver sayfasında kalan görev kartı PDF yüklemeden önce geliyor")
+
+    # Haftanın kalanını tek tıkla iptal et: yapılmamışlar kapanır, yapılan kalır, geri almada 'carried' durumu korunur
+    E("__FX.weekly_tasks.push({id:9110,student_id:'s1',task_date:wkMon(0),title:'Hafta görevi A',subject:'Fizik',amount:null,done:false,source:'coach'},{id:9111,student_id:'s1',task_date:addD(wkMon(0),6),title:'Hafta görevi B',subject:'Fizik',amount:null,done:true,source:'coach'},{id:9112,student_id:'s1',task_date:addD(wkMon(0),5),title:'Hafta görevi C',subject:'Fizik',amount:null,done:false,source:'coach',carry_state:'carried',carried_from:addD(wkMon(0),-3)},{id:9113,student_id:'s2',task_date:wkMon(0),title:'Başkasının görevi',subject:'Fizik',amount:null,done:false,source:'coach'})")
+    E("openStu('s1','g')"); wait(page, 1500)
+    check(page.query_selector("[data-clwk='s1']") is not None, "Haftalık takipte 'Kalan görevi iptal et' düğmesi var (koç)")
+    page.click("[data-clwk='s1']"); wait(page, 1000)
+    wk = E("__FX.weekly_tasks.filter(t=>t.carry_state==='closed'&&[9110,9111,9112,9113].includes(t.id)).map(t=>t.id).sort()")
+    check(wk == [9110, 9112], f"Haftalık iptal: yalnızca yapılmamış görevler kapandı, yapılan (9111) ve başka öğrenci (9113) kaldı ({wk})")
+    txt = page.inner_text(".dashboard-main")
+    check("görev iptal edildi" in txt and page.query_selector("[data-clundo='s1']") is not None, "Haftalık iptal: sonuç kartı ve Geri al düğmesi göründü")
+    check("Hafta görevi A" not in txt and "Hafta görevi C" not in txt, "İptal edilen görevler listeden kalktı")
+    page.click("[data-clundo='s1']"); wait(page, 1000)
+    a9 = E("__FX.weekly_tasks.find(t=>t.id===9110)"); c9 = E("__FX.weekly_tasks.find(t=>t.id===9112)")
+    check(not a9.get("carry_state") and c9.get("carry_state") == "carried", f"Geri al: görevler eski durumuna döndü ({a9.get('carry_state')}, {c9.get('carry_state')})")
     ctx.close()
 
     # ---------- ÖĞRENCİ: geçen haftalardan kalanlar koç kararını bekler; bu haftanınkileri kendisi dağıtır (v4.7) ----------
