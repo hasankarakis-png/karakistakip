@@ -1,6 +1,6 @@
 /* Profil fotoğrafı: 256px JPEG olarak profile_photos tablosunda tutulur */
 const PH={};const okImg=v=>typeof v==="string"&&/^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(v)?v:"";
-let PHST="idle",PHMSG="";
+let PHST="idle",PHMSG="",photoSaving=false;
 const avIn=(id,name)=>PH[id]?`<img src="${PH[id]}" alt="">`:esc(((name||"Ö").trim().slice(0,1)||"Ö").toLocaleUpperCase("tr-TR"));
 const mav=id=>PH[id]?`<img class="mav" src="${PH[id]}" alt="">`:"";
 function phEnsure(){
@@ -18,28 +18,33 @@ function phShrink(file){
   });
 }
 async function phSet(file){
+  if(photoSaving)return;
   PHMSG="";
   if(!file||!/^image\//.test(file.type)){PHMSG="Lütfen bir resim dosyası seç.";render();return}
+  photoSaving=true;
   try{
     const d=await phShrink(file);
-    const r=await dbw(sb.from("profile_photos").upsert({student_id:ME,img:d,updated_at:new Date().toISOString()},{onConflict:"student_id"}));
+    const r=await sb.from("profile_photos").upsert({student_id:ME,img:d,updated_at:new Date().toISOString()},{onConflict:"student_id"});
     if(r&&r.error){PHMSG="Kaydedilemedi, tekrar dene.";}else{PH[ME]=d;PHMSG="Fotoğrafın kaydedildi ✓"}
   }catch(e){PHMSG="Bu resim işlenemedi. Başka bir fotoğraf dene."}
+  photoSaving=false;
   render();
 }
 async function phDel(){
-  if(!confirm("Profil fotoğrafın kaldırılsın mı?"))return;
-  const r=await dbw(sb.from("profile_photos").delete().eq("student_id",ME));
+  if(photoSaving||!confirm("Profil fotoğrafın kaldırılsın mı?"))return;
+  photoSaving=true;
+  const r=await Promise.resolve(sb.from("profile_photos").delete().eq("student_id",ME)).catch(()=>({error:true}));
+  photoSaving=false;
   if(r&&r.error)PHMSG="Kaldırılamadı, tekrar dene.";else{delete PH[ME];PHMSG="Fotoğraf kaldırıldı."}
   render();
 }
 function profileCard(){
   const f=(NAME||"Ö").trim();
-  return `<div class="card pf"><div class="av2">${avIn(ME,f)}</div><h2>${esc(f)}</h2><p class="empty" style="margin:4px 0 0">Öğrenci hesabı</p>
+  return `<div class="card pf"><div class="av2">${avIn(ME,f)}</div><h2>${esc(f)}</h2><p class="empty" style="margin:4px 0 0">${ROLE==="coach"?"Koç hesabı":"Öğrenci hesabı"}</p>
   <div class="row" style="justify-content:center;margin-top:12px"><label class="chip" style="cursor:pointer">📷 ${PH[ME]?"Fotoğrafı değiştir":"Fotoğraf ekle"}<input type="file" id="phfile" accept="image/*" hidden></label>${PH[ME]?`<button class="chip" id="phdel">Kaldır</button>`:""}</div>${PHMSG?`<p class="empty" style="margin:8px 0 0;font-size:13px">${esc(PHMSG)}</p>`:""}</div>`;
 }
 function accountCard(){
   const dark=document.documentElement.getAttribute("data-theme")!=="light";
-  return `<div class="card"><h2>Hesap</h2><div class="row" style="margin-top:6px"><button class="chip" id="theme2">${dark?"☀ Açık tema":"☾ Koyu tema"}</button><button class="chip" id="out2">Çıkış yap</button></div>${resetCard()}</div>`;
+  return `<div class="card"><h2>Hesap</h2><div class="row" style="margin-top:6px"><button class="chip" id="theme2">${dark?"☀ Açık tema":"☾ Koyu tema"}</button><button class="chip" id="out2">Çıkış yap</button></div>${ROLE==="student"?resetCard():""}</div>`;
 }
 

@@ -26,7 +26,7 @@ function pwScore(p){
   return s>=3?3:s===2?2:1;
 }
 const PWL=["","Zayıf","Orta","Güçlü"];
-function pwUser(){if(PWU||ROLE!=="student")return;Promise.resolve(sb.auth.getSession()).then(r=>{const e=r&&r.data&&r.data.session&&r.data.session.user&&r.data.session.user.email;if(e){PWU=String(e).split("@")[0];if(tab==="h"&&!PWS)render()}},()=>{})}
+function pwUser(){if(PWU)return;Promise.resolve(sb.auth.getSession()).then(r=>{const e=r&&r.data&&r.data.session&&r.data.session.user&&r.data.session.user.email;if(e){PWU=String(e).split("@")[0];if(tab==="h"&&!PWS)render()}},()=>{})}
 function pwOpen(){PWS={busy:false,done:false};render();navOv();setTimeout(()=>{const e=document.getElementById("pwo");if(e)e.focus()},60)}
 function pwClose(){if(!PWS||PWS.busy)return;if(PWS.done){pwRelog();return}PWS=null;render()}
 
@@ -46,7 +46,7 @@ function pwSheet(){
   <div class="pwf"><label for="pwc">Yeni şifre (tekrar)</label><div class="pwi"><input id="pwc" type="password" autocomplete="new-password" maxlength="64" spellcheck="false" autocapitalize="none" aria-describedby="pwcm"${b?" disabled":""}>${pwEye("pwc")}</div><small id="pwcm" class="pwms" aria-live="polite"></small></div>
   <p class="pwerr" id="pwerr" role="alert"></p>
   <div class="row" style="justify-content:flex-end;margin-top:4px"><button class="chip" id="pwno"${b?" disabled":""}>Vazgeç</button><button class="btn" id="pwok" style="padding:12px 20px"${b?" disabled":""}>${b?"Değiştiriliyor…":"Şifreyi değiştir"}</button></div>
-  <p class="empty" style="font-size:13px;margin:10px 0 0">Şifreni unutursan koçun sana yeni bir şifre verebilir. Şifreni kimseyle paylaşma.</p></div>`;
+  <p class="empty" style="font-size:13px;margin:10px 0 0">${ROLE==="student"?"Şifreni unutursan koçun sana yeni bir şifre verebilir. ":""}Şifreni kimseyle paylaşma.</p></div>`;
 }
 /* Yazarken ekranı yeniden çizmeden göstergeleri günceller (alanlar silinmesin diye). */
 function pwLive(keepErr){
@@ -132,6 +132,7 @@ function pwAfterMsg(){
   const pu=ui;
   ui=function(t){
     const id=t.id,D=t.dataset||{};
+    if(id==="coach-details-save"){saveCoachDetails();return true}
     if(id==="pwopen"){pwOpen();return true}
     if(id==="pwx"||id==="pwno"){pwClose();return true}
     if(id==="pwok"){once("pw",pwSubmit);return true}
@@ -147,3 +148,51 @@ function pwAfterMsg(){
     if(e.key==="Enter"&&/^pw[onc]$/.test(e.target.id)){e.preventDefault();const em=["pwo","pwn","pwc"].find(id=>{const x=document.getElementById(id);return x&&!x.value});if(em)document.getElementById(em).focus();else once("pw",pwSubmit)}
   });
 })();
+
+// Koçun mesleki bilgileri yalnızca kendi hesap ekranında kullanılır.
+let coachDetails = {title:"", specialty:""};
+let coachDraft = {};
+let coachSaving = false;
+let coachFeedback = "";
+
+function initCoachDetails(user){
+  const meta = user.user_metadata || {};
+  coachDetails = {
+    title: typeof meta.coach_title === "string" ? meta.coach_title.slice(0,80) : "",
+    specialty: typeof meta.coach_specialty === "string" ? meta.coach_specialty.slice(0,120) : ""
+  };
+  coachDraft = {...coachDetails};
+}
+
+function coachDetailsCard(){
+  const disabled = coachSaving ? " disabled" : "";
+  return `<div class="card"><h2>Mesleki bilgiler</h2>
+    <div class="pwf"><label for="coach-title">Mesleki unvan</label><input id="coach-title" maxlength="80" placeholder="Örn. Psikolojik danışman" value="${esc(coachDraft.title)}"${disabled}></div>
+    <div class="pwf"><label for="coach-specialty">Uzmanlık alanı</label><input id="coach-specialty" maxlength="120" placeholder="Örn. YKS hazırlığı, sınav kaygısı" value="${esc(coachDraft.specialty)}"${disabled}></div>
+    <div class="row"><button class="chip" id="coach-details-save"${disabled}>${coachSaving?"Kaydediliyor…":"Kaydet"}</button><span role="status">${esc(coachFeedback)}</span></div></div>`;
+}
+
+document.addEventListener("input", event => {
+  if(event.target.id==="coach-title")coachDraft.title=event.target.value;
+  if(event.target.id==="coach-specialty")coachDraft.specialty=event.target.value;
+});
+
+async function saveCoachDetails(){
+  if(ROLE!=="coach" || coachSaving)return;
+  coachSaving=true;
+  coachFeedback="";
+  const next={title:coachDraft.title.trim(),specialty:coachDraft.specialty.trim()};
+  render();
+  try{
+    const result=await sb.auth.updateUser({data:{coach_title:next.title,coach_specialty:next.specialty}});
+    if(result.error)throw result.error;
+    coachDetails=next;
+    coachDraft={...next};
+    coachFeedback="Mesleki bilgilerin kaydedildi.";
+  }catch{
+    coachFeedback="Kaydedilemedi. Tekrar dene.";
+  }finally{
+    coachSaving=false;
+    render();
+  }
+}

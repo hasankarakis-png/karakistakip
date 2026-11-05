@@ -111,7 +111,7 @@ async function start(){
   if(!p){await sb.auth.signOut();ME=null;showLogin("Profil bulunamadı, koçuna haber ver.");return}
   NAME=p.name;ROLE=p.role;view=ROLE==="coach"?"c":"s";
   document.getElementById("who").textContent=NAME+" · ";document.getElementById("out").hidden=false;document.body.classList.toggle("stu",ROLE==="student");document.body.classList.toggle("coach",ROLE==="coach");
-  if(ROLE==="coach"){await pullCoach();await loadOD();await Promise.all([loadUnr(),loadSettings(),loadWaStatus()]);["daily","goals","notes","exam_results","weekly_tasks"].reduce((ch,t)=>ch.on("postgres_changes",{event:"*",schema:"public",table:t},refresh),sb.channel("koc")).subscribe();
+  if(ROLE==="coach"){initCoachDetails(session.user);await pullCoach();await loadOD();await Promise.all([loadUnr(),loadSettings(),loadWaStatus()]);["daily","goals","notes","exam_results","weekly_tasks"].reduce((ch,t)=>ch.on("postgres_changes",{event:"*",schema:"public",table:t},refresh),sb.channel("koc")).subscribe();
     // Mesajlar anında işlenir (yazılan taslak silinmeden); sayaçlar ayrıca periyodik yenilemede güncellenir.
     try{sb.channel("kocmsg").on("postgres_changes",{event:"*",schema:"public",table:"messages"},msgLive).subscribe()}catch(e){}
     setInterval(refresh,60000)}
