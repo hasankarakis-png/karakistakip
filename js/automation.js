@@ -136,22 +136,42 @@ async function clClose(id){
   await loadTasks(id);try{await loadOD()}catch(e){}
   setSync("✓ "+ids.length+" görev kaldırıldı");render();
 }
+/* Haftanın kalan görevlerini tek tıkla iptal et (koç): seçili haftada yapılmamış TÜM görevler (geçmiş + gelecek günler) kapanır.
+   Yapılmış görevler kalır. Aynı 'closed' mekanizması: satır silinmez, geri alınabilir. */
+async function clWeek(id){
+  const W=selWeek(id),mon=W.mon,end=shift(mon,6);
+  const L=(TK[id]||[]).filter(t=>t.task_date>=mon&&t.task_date<=end&&!t.done);if(!L.length)return;
+  const nm=(STU.find(p=>p.id===id)||{}).name||"öğrenci";
+  if(!confirm(nm+" için "+weekName(W)+" haftasının yapılmamış "+L.length+" görevi iptal edilecek (yapılanlar kalır). Geri alabilirsin. Devam edilsin mi?"))return;
+  const ids=L.map(t=>t.id),prev={};L.forEach(t=>prev[t.id]=t.carry_state||null);
+  const r=await dbw(sb.from("weekly_tasks").update({carry_state:"closed"}).in("id",ids).eq("student_id",id).eq("done",false));
+  if(r&&r.error){alert("İptal edilemedi: "+r.error.message);return}
+  CLD[id]={ids,n:ids.length,wk:weekName(W),prev};RD[id]=null;
+  await loadTasks(id);try{await loadOD()}catch(e){}
+  setSync("✓ "+ids.length+" görev iptal edildi");render();
+}
 async function clUndo(id){
   const C=CLD[id];if(!C)return;
-  const r=await dbw(sb.from("weekly_tasks").update({carry_state:null}).in("id",C.ids).eq("student_id",id));
-  if(r&&r.error){alert("Geri alınamadı: "+r.error.message);return}
+  // Haftalık iptalde her görevin eski durumu (null / carried) korunur
+  const grp={};C.ids.forEach(i=>{const k=C.prev?(C.prev[i]||"null"):"null";(grp[k]=grp[k]||[]).push(i)});
+  for(const k of Object.keys(grp)){
+    const r=await dbw(sb.from("weekly_tasks").update({carry_state:k==="null"?null:k}).in("id",grp[k]).eq("student_id",id));
+    if(r&&r.error){alert("Geri alınamadı: "+r.error.message);return}
+  }
   delete CLD[id];await loadTasks(id);try{await loadOD()}catch(e){}
   setSync("↩ Kaldırma geri alındı");render();
 }
 function clDoneCard(id){
   const C=CLD[id];if(!C)return "";
-  return `<div class="card undo"><div><b>✓ ${C.n} görev yeni haftaya eklenmedi, kaldırıldı</b><small>Öğrencinin ve veli raporunun listelerinden kalktı.</small></div><div class="undo-acts"><button class="btn" data-clundo="${id}">↩ Geri al</button><button class="chip" data-clok="${id}">Tamam</button></div></div>`;
+  const head=C.wk?`${C.n} görev iptal edildi · ${esc(C.wk)}`:`${C.n} görev yeni haftaya eklenmedi, kaldırıldı`;
+  return `<div class="card undo"><div><b>✓ ${head}</b><small>Öğrencinin ve veli raporunun listelerinden kalktı.</small></div><div class="undo-acts"><button class="btn" data-clundo="${id}">↩ Geri al</button><button class="chip" data-clok="${id}">Tamam</button></div></div>`;
 }
 
 /* tıklamalar (coach.js ui() içinden) */
 function autoUi(t){
   const D=t.dataset;
   if(D.clx){clClose(D.clx);return true}
+  if(D.clwk){clWeek(D.clwk);return true}
   if(D.clundo){clUndo(D.clundo);return true}
   if(D.clok){delete CLD[D.clok];render();return true}
   if(D.rdgo){rdGo(D.rdgo);return true}
