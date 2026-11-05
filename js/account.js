@@ -133,6 +133,8 @@ function pwAfterMsg(){
   ui=function(t){
     const id=t.id,D=t.dataset||{};
     if(id==="coach-details-save"){saveCoachDetails();return true}
+    if(id==="coach-info-save"){saveCoachInfo();return true}
+    if(id==="coach-signout-all"){coachSignOutAll();return true}
     if(id==="pwopen"){pwOpen();return true}
     if(id==="pwx"||id==="pwno"){pwClose();return true}
     if(id==="pwok"){once("pw",pwSubmit);return true}
@@ -162,6 +164,7 @@ function initCoachDetails(user){
     specialty: typeof meta.coach_specialty === "string" ? meta.coach_specialty.slice(0,120) : ""
   };
   coachDraft = {...coachDetails};
+  coachInfoInit(user);
 }
 
 function coachDetailsCard(){
@@ -196,3 +199,128 @@ async function saveCoachDetails(){
     render();
   }
 }
+
+
+/* ---- Koç profili eklemeleri (v5.0) ----
+   Tanıtım/iletişim, hesap bilgisi, tüm cihazlardan çıkış, açılış sayfası tercihi, profil doluluk çubuğu.
+   Veriler koçun kendi hesabında (user_metadata) ve cihazında (localStorage) durur; veritabanı değişikliği gerekmez. */
+const COACH_HOME_KEY = "karakis-coach-home";
+const COACH_HOMES = [["o","Genel bakış"],["v","Canlı pano"],["s","Öğrenciler"],["t","Görev yönetimi"]];
+let coachInfo = {bio:"", phone:"", hours:""};
+let coachInfoDraft = {bio:"", phone:"", hours:""};
+let coachInfoSaving = false;
+let coachInfoFeedback = "";
+let coachAcct = {user:"", last:""};
+let coachOutBusy = false;
+let coachSecFeedback = "";
+
+function coachInfoInit(user){
+  const m = (user && user.user_metadata) || {}, cut = (v,n) => typeof v === "string" ? v.slice(0,n) : "";
+  coachInfo = {bio:cut(m.coach_bio,300), phone:cut(m.coach_phone,24), hours:cut(m.coach_hours,80)};
+  coachInfoDraft = {...coachInfo};
+  const em = user && typeof user.email === "string" ? user.email : "";
+  let last = "";
+  try{ if(user && user.last_sign_in_at) last = new Date(user.last_sign_in_at).toLocaleString("tr-TR",{day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"}); }catch(e){}
+  coachAcct = {user:em.split("@")[0], last};
+  // Kayıtlı açılış sayfası (yalnızca menüde gerçekten var olan sayfalar)
+  try{
+    const h = localStorage.getItem(COACH_HOME_KEY);
+    if(h && typeof CPG !== "undefined" && COACH_HOMES.some(x => x[0] === h) && (typeof CPL === "undefined" || CPL[h])) CPG = h;
+  }catch(e){}
+}
+
+function coachCompleteness(){
+  const has = typeof PH !== "undefined" && typeof ME !== "undefined" && PH[ME];
+  const items = [["Fotoğraf",!!has],["Unvan",!!coachDetails.title],["Uzmanlık alanı",!!coachDetails.specialty],["Hakkımda",!!coachInfo.bio],["Telefon",!!coachInfo.phone],["Çalışma saatleri",!!coachInfo.hours]];
+  const done = items.filter(x => x[1]).length;
+  return {pct:Math.round(done/items.length*100), missing:items.filter(x => !x[1]).map(x => x[0])};
+}
+
+function coachCompleteCard(){
+  const c = coachCompleteness();
+  return `<div class="card"><h2>Profil doluluğu</h2><div class="kbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${c.pct}" aria-label="Profil doluluğu"><i style="width:${c.pct}%"></i></div>
+    <p class="empty" style="margin:8px 0 0;font-size:14px">${c.pct===100?"Profilin tamam ✓":"%"+c.pct+" tamam · Eksik: "+esc(c.missing.join(", "))}</p></div>`;
+}
+
+function coachInfoCard(){
+  const d = coachInfoSaving ? " disabled" : "", v = coachInfoDraft;
+  return `<div class="card"><h2>Tanıtım ve iletişim</h2>
+    <div class="pwf"><label for="coach-bio">Hakkımda (en fazla 300 karakter)</label><textarea id="coach-bio" maxlength="300" rows="4" placeholder="Kısa bir tanıtım yazısı"${d}>${esc(v.bio)}</textarea></div>
+    <div class="pwf"><label for="coach-phone">Telefon</label><input id="coach-phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="24" placeholder="05xx xxx xx xx" value="${esc(v.phone)}"${d}></div>
+    <div class="pwf"><label for="coach-hours">Çalışma saatleri</label><input id="coach-hours" maxlength="80" placeholder="Örn. Hafta içi 17:00–22:00" value="${esc(v.hours)}"${d}></div>
+    <div class="row"><button class="chip" id="coach-info-save"${d}>${coachInfoSaving?"Kaydediliyor…":"Kaydet"}</button><span role="status">${esc(coachInfoFeedback)}</span></div></div>`;
+}
+
+async function saveCoachInfo(){
+  if(ROLE !== "coach" || coachInfoSaving) return;
+  const n = {bio:coachInfoDraft.bio.trim(), phone:coachInfoDraft.phone.trim(), hours:coachInfoDraft.hours.trim()};
+  if(n.phone && !/^\+?[0-9 ()\-]{7,24}$/.test(n.phone)){
+    coachInfoFeedback = "Telefon numarası geçersiz. Rakam, boşluk, + ve - kullanabilirsin.";
+    render();
+    return;
+  }
+  coachInfoSaving = true;
+  coachInfoFeedback = "";
+  render();
+  try{
+    const r = await sb.auth.updateUser({data:{coach_bio:n.bio, coach_phone:n.phone, coach_hours:n.hours}});
+    if(r && r.error) throw r.error;
+    coachInfo = n;
+    coachInfoDraft = {...n};
+    coachInfoFeedback = "Bilgilerin kaydedildi.";
+  }catch(e){
+    coachInfoFeedback = "Kaydedilemedi. Tekrar dene.";
+  }finally{
+    coachInfoSaving = false;
+    render();
+  }
+}
+
+function coachPrefCard(){
+  let cur = "o";
+  try{ cur = localStorage.getItem(COACH_HOME_KEY) || "o"; }catch(e){}
+  const opts = COACH_HOMES.filter(x => typeof CPL === "undefined" || CPL[x[0]])
+    .map(x => `<option value="${x[0]}"${x[0]===cur?" selected":""}>${x[1]}</option>`).join("");
+  return `<div class="card"><h2>Tercihler</h2>
+    <div class="pwf"><label for="coach-home">Giriş yapınca açılacak sayfa</label><select id="coach-home">${opts}</select></div>
+    <div class="row" style="margin-top:10px"><button class="chip" data-cp="t">🔔 Bildirim ayarları › Görev yönetimi</button></div></div>`;
+}
+
+function coachSecurityCard(){
+  const a = coachAcct;
+  return `<div class="card"><h2>Hesap bilgileri ve güvenlik</h2>
+    <p class="empty" style="margin:6px 0 0;font-size:15px">Kullanıcı adın: <b>${esc(a.user||"—")}</b>${a.last?" · Son giriş: "+esc(a.last):""}</p>
+    <div class="row" style="margin-top:12px"><button class="chip" id="coach-signout-all"${coachOutBusy?" disabled":""}>${coachOutBusy?"Çıkış yapılıyor…":"🔒 Tüm cihazlardan çıkış yap"}</button><span role="status">${esc(coachSecFeedback)}</span></div>
+    <p class="empty" style="font-size:13px;margin:8px 0 0">Telefonunu ya da bilgisayarını kaybettiysen veya ortak bir cihazda açık bıraktıysan kullan.</p></div>`;
+}
+
+async function coachSignOutAll(){
+  if(ROLE !== "coach" || coachOutBusy) return;
+  if(!confirm("Tüm cihazlardaki oturumların kapatılsın mı? Bu cihazda da yeniden giriş yapman gerekir.")) return;
+  coachOutBusy = true;
+  coachSecFeedback = "";
+  render();
+  try{
+    const r = await sb.auth.signOut({scope:"global"});
+    if(r && r.error) throw r.error;
+  }catch(e){
+    coachOutBusy = false;
+    coachSecFeedback = "İşlem yapılamadı. Tekrar dene.";
+    render();
+    return;
+  }
+  coachOutBusy = false;
+  logout();
+}
+
+document.addEventListener("input", event => {
+  const id = event.target.id;
+  if(id === "coach-bio") coachInfoDraft.bio = event.target.value;
+  if(id === "coach-phone") coachInfoDraft.phone = event.target.value;
+  if(id === "coach-hours") coachInfoDraft.hours = event.target.value;
+});
+document.addEventListener("change", event => {
+  if(event.target.id === "coach-home" && COACH_HOMES.some(x => x[0] === event.target.value)){
+    try{ localStorage.setItem(COACH_HOME_KEY, event.target.value); }catch(e){}
+  }
+});

@@ -56,7 +56,7 @@ function coachView(){
   if(CPG==="c")return `<section id="coach-challenges" class="coach-section">${hd("Yarışmalar","Oluştur, duyur; sıralamayı ve sohbeti izle")}${chCoachCard(true)}</section>`;
   if(CPG==="p")return `<section id="coach-plan" class="coach-section">${hd("Program ver","Öğrenciye haftalık plan PDF'i yükle")}${planPickCard(all)}</section>`;
   if(CPG==="a")return `<section id="coach-class" class="coach-section">${hd("Deneme analizi","Takvim, eksik denemeler ve ortak zayıf konular")}${calCard()}${classCard()}</section>`;
-  if(CPG==="h")return `<section class="coach-section">${hd("Profilim","Koç hesabı")}${profileCard()}${coachDetailsCard()}${accountCard()}</section>${PWS?pwSheet():""}`;
+  if(CPG==="h")return `<section class="coach-section">${hd("Profilim","Koç hesabı")}${profileCard()}${coachCompleteCard()}${coachDetailsCard()}${coachInfoCard()}${coachPrefCard()}${accountCard()}${coachSecurityCard()}</section>${PWS?pwSheet():""}`;
   if(CPG==="y")return `<section id="coach-tools" class="coach-section">${hd("Ayarlar","Otomatik mesajlar, öğrenci ekleme, yedek ve eşikler")}${autoCard()}${addStudentCard()}${backupCard()}${thCard()}</section>`;
   const top=all.slice(0,6),nd=notifData(),odIds=nd.od.map(o=>o[0]),flIds=nd.fl.map(o=>o.id);
   return `<section id="coach-overview" class="coach-section">${hd("Genel bakış",esc(dt),`<button class="cta" data-cp="p"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Program ver</button>`)}<div class="kst">

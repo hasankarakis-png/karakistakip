@@ -921,3 +921,7 @@ body.coach .pwf > input { width: 100%; min-width: 0; }
   body.coach .kst { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   body.coach .kc { min-width: 0; overflow-wrap: anywhere; }
 }
+
+/* Koç profili (v5.0): çok satırlı alan ve seçim kutusu */
+body.coach .pwf > textarea,body.coach .pwf > select{width:100%;min-width:0;box-sizing:border-box;font:inherit}
+body.coach .pwf > textarea{resize:vertical;min-height:96px}

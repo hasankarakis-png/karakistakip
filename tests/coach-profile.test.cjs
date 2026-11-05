@@ -59,3 +59,58 @@ test('coach details preserve failed edits and save only professional metadata', 
   ctx.initCoachDetails({user_metadata:payload.data});
   assert.match(ctx.coachDetailsCard(), /value="YKS"/);
 });
+
+test('coach intro/contact card saves only its own metadata and rejects a bad phone', async () => {
+  const ctx = profileContext();
+  ctx.initCoachDetails({user_metadata:{coach_bio:'Merhaba', coach_phone:'0532 000 00 00'}, email:'hasan@takip.karakis.app'});
+  assert.match(ctx.coachInfoCard(), /Merhaba/);
+  assert.match(ctx.coachSecurityCard(), /hasan/);
+  vm.runInContext('coachInfoDraft.phone="abc"', ctx);
+  let called = false;
+  ctx.sb.auth.updateUser = async () => {called = true; return {error:null};};
+  await ctx.saveCoachInfo();
+  assert.equal(called, false);
+  assert.match(ctx.coachInfoCard(), /geçersiz/);
+  vm.runInContext('coachInfoDraft={bio:" Kısa tanıtım ",phone:"+90 532 111 22 33",hours:" 17:00-22:00 "}', ctx);
+  let payload;
+  ctx.sb.auth.updateUser = async value => {payload = value; return {error:null};};
+  await ctx.saveCoachInfo();
+  assert.deepEqual(JSON.parse(JSON.stringify(payload)), {data:{coach_bio:'Kısa tanıtım', coach_phone:'+90 532 111 22 33', coach_hours:'17:00-22:00'}});
+  assert.match(ctx.coachInfoCard(), /kaydedildi/);
+});
+
+test('coach intro save keeps the draft when the server fails', async () => {
+  const ctx = profileContext();
+  ctx.initCoachDetails({user_metadata:{}});
+  vm.runInContext('coachInfoDraft.bio="Yazdığım metin"', ctx);
+  ctx.sb.auth.updateUser = async () => ({error:'offline'});
+  await ctx.saveCoachInfo();
+  assert.match(ctx.coachInfoCard(), /Kaydedilemedi/);
+  assert.match(ctx.coachInfoCard(), /Yazdığım metin/);
+});
+
+test('profile completeness counts photo, title, specialty, bio, phone and hours', () => {
+  const ctx = profileContext();
+  ctx.initCoachDetails({user_metadata:{}});
+  assert.equal(ctx.coachCompleteness().pct, 0);
+  ctx.initCoachDetails({user_metadata:{coach_title:'A', coach_specialty:'B', coach_bio:'C', coach_phone:'05320000000', coach_hours:'D'}});
+  vm.runInContext('PH[ME]="x"', ctx);
+  assert.equal(ctx.coachCompleteness().pct, 100);
+  assert.match(ctx.coachCompleteCard(), /Profilin tamam/);
+});
+
+test('sign out of all devices asks first and uses the global scope', async () => {
+  const ctx = profileContext();
+  const calls = [];
+  ctx.sb.auth.signOut = async o => {calls.push(JSON.stringify(o)); return {error:null};};
+  ctx.logout = () => calls.push('logout');
+  ctx.confirm = () => false;
+  await ctx.coachSignOutAll();
+  assert.deepEqual(calls, []);
+  ctx.confirm = () => true;
+  await ctx.coachSignOutAll();
+  assert.deepEqual(calls, ['{"scope":"global"}', 'logout']);
+  ctx.sb.auth.signOut = async () => ({error:'offline'});
+  await ctx.coachSignOutAll();
+  assert.match(ctx.coachSecurityCard(), /yapılamadı/);
+});
