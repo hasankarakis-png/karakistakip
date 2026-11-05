@@ -47,7 +47,7 @@ function heatCard(){
 }
 function qaSheet(){
   const it=(ic,t,sub,tab,sc)=>`<button class="qa-i" data-qa="${tab}"${sc?` data-qs="${sc}"`:""}><span aria-hidden="true">${ic}</span><span><b>${t}</b><small>${sub}</small></span><i aria-hidden="true">›</i></button>`;
-  return `<button class="qa-bg" id="qabg" aria-label="Kapat"></button><div class="qa" role="dialog" aria-modal="true" aria-label="Hızlı işlemler"><div class="grab"></div><h2>Hızlı işlemler</h2>
+  return `<button class="qa-bg" id="qabg" aria-label="Kapat"></button><div class="qa" role="dialog" aria-modal="true" aria-label="Hızlı işlemler"><div class="qa-top"><button class="qa-grab" data-qclose="1" aria-label="Kapat"><span class="grab"></span></button><div class="qa-hd"><h2>Hızlı işlemler</h2><button class="qa-x" data-qclose="1" aria-label="Kapat">✕</button></div></div>
   ${it("⏱","Kronometre","Derse başla, mola ver, süreni gör","b")}
   ${it("✍️","Soru girişi","Çözdüğün soruları kaydet","b","qcard")}
   ${it("➕","Yeni Sınav Sonucu","Görseli ya da PDF'i yükle","d")}

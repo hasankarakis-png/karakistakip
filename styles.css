@@ -925,3 +925,12 @@ body.coach .pwf > input { width: 100%; min-width: 0; }
 /* Koç profili (v5.0): çok satırlı alan ve seçim kutusu */
 body.coach .pwf > textarea,body.coach .pwf > select{width:100%;min-width:0;box-sizing:border-box;font:inherit}
 body.coach .pwf > textarea{resize:vertical;min-height:96px}
+/* Hızlı işlemler: kaydırma + dokunarak kapatma (v5.1) */
+.qa{max-height:88vh;max-height:88dvh;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y}
+body:has(.qa){overflow:hidden}
+.qa-top{position:sticky;top:-12px;z-index:2;background:var(--card);margin:-12px -16px 0;padding:12px 16px 6px}
+.qa-grab{display:block;width:100%;background:none;border:0;padding:0 0 10px;cursor:pointer}
+.qa-grab .grab{margin:0 auto}
+.qa-hd{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.qa-hd h2{margin:0}
+.qa-x{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:var(--cream);color:var(--ink);font-size:20px;line-height:1;cursor:pointer;display:grid;place-items:center}

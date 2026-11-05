@@ -42,7 +42,7 @@ function ui(t){
   if(D.chsel||D.chnot||D.chdel||D.chhide||D.chtog||D.chman||D.chmsave||D.chmdel){chAct(D);return true}
   if(id==="chsend"){chatSend();return true}
   if(id==="qaopen"){QA=true;render();navOv();return true}
-  if(id==="qabg"){QA=false;render();return true}
+  if(id==="qabg"||D.qclose){QA=false;render();return true}
   if(D.qa){QA=false;tab=D.qa;if(D.qa==="d")ANT="n";render();window.scrollTo(0,0);if(D.qs)setTimeout(()=>{const e=document.getElementById(D.qs);if(e)e.scrollIntoView({behavior:"smooth",block:"center"});else setSync(S.status==="closed"?"Gün kapalı: soru girmek için önce “Günü yeniden aç”":"Soru girmek için önce ☀️ Uyandım'a bas")},60);return true}
   if(D.hm){HMSEL=D.hm;render();return true}
   if(D.kte||D.ktd!=null||D.ktt||D.ktall!=null){ktAct(D);return true}
