@@ -32,6 +32,7 @@ function ui(t){
   const D=t.dataset,id=t.id;
   if(navUi(t))return true;
   if(autoUi(t))return true;
+  if(typeof wpUi==="function"&&wpUi(t))return true;
   if(id==="who"||id==="hdrhome"||D.gohome){PLV=null;CPG="o";MV=false;if(ROLE==="coach"){sel=null;selDay=null;render()}else{tab="b";QA=false;render()}window.scrollTo(0,0);return true}
   if(D.tab){tab=D.tab;QA=false;render();window.scrollTo(0,0);return true}
   if(id==="phdel"){phDel();return true}
@@ -404,7 +405,7 @@ const setSync=m=>{const e=document.getElementById("sync");if(e)e.textContent=m};
 const dbw=p=>Promise.resolve(p).then(r=>{if(r&&r.error)setSync("⚠️ "+r.error.message);return r},()=>setSync("⚠️ Bağlantı yok"));
 // Arka plan yenilemesi (realtime/zamanlayıcı) ekranı yeniden çizerken yazılanı silmesin: odakta bir alan varsa
 // ya da kaydedilmemiş bir form taslağı (not, görev, soru girişi, seçilmiş dosya…) varsa yenileme ertelenir.
-const DRAFTS=["note","gq","gm","tkt","tka","bkt","bka","cht","sname","dad","dnet","qn","qc","qb","qk","exn","cph","cpp","tgn","tgp","tgu","tgb","tgs","bmt","bma","rpt","puwn","exf","puf","chin","cin","mts","mtk","dyt","pltn","rgt","rga","evt","pkn","pkt","csn","wbk","wbn","cmh","cmm","cmq","cmn"];
+const DRAFTS=["note","gq","gm","tkt","tka","bkt","bka","cht","sname","dad","dnet","qn","qc","qb","qk","exn","cph","cpp","tgn","tgp","tgu","tgb","tgs","bmt","bma","rpt","puwn","exf","puf","chin","cin","mts","mtk","dyt","pltn","rgt","rga","evt","pkn","pkt","csn","wbk","wbn","cmh","cmm","cmq","cmn","wpat","wpaa","wpet","wpea","wped","wpen","wpmd"];
 const dirty=()=>DRAFTS.some(id=>{const e=document.getElementById(id);if(!e)return false;if(e.type==="file")return !!(e.files&&e.files.length);return e.value!==e.defaultValue});
 // Gün sonu ekranı ya da kurulum sihirbazı açıkken de yenileme bekler (yazılanlar DC.v içinde, ama ekran zıplamasın).
 const busy=()=>!!window.DIAL_DRAG||/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||"")||dirty()||!!DC||ONB.open||(typeof AN!=="undefined"&&AN.open);

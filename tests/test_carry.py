@@ -15,6 +15,7 @@ with sync_playwright() as p:
     # 28 günlük pencere: 20 gün önceki görev görünür, 40 gün önceki görünmez
     E("__FX.weekly_tasks.push({id:9101,student_id:'s1',task_date:dayN(-20),title:'Eski görev 20 gün',subject:'Fizik',amount:null,done:false,source:'coach'},{id:9102,student_id:'s1',task_date:dayN(-40),title:'Çok eski görev',subject:'Fizik',amount:null,done:false,source:'coach'})")
     E("openStu('s1','g')"); wait(page, 1800)
+    page.click("[data-wptab='k']"); wait(page, 500)
     txt = page.inner_text(".dashboard-main")
     check("Geçen günlerden kalan görevler (3)" in txt, "Koç: Ayşe'nin kalan görevleri tek kartta (3 görev)")
     check("Eski görev 20 gün" in txt and "Çok eski görev" not in txt, "Pencere 28 gün: 20 gün önceki görünüyor, 40 gün önceki görünmüyor")
@@ -53,6 +54,7 @@ with sync_playwright() as p:
     # Haftanın kalanını tek tıkla iptal et: yapılmamışlar kapanır, yapılan kalır, geri almada 'carried' durumu korunur
     E("__FX.weekly_tasks.push({id:9110,student_id:'s1',task_date:wkMon(0),title:'Hafta görevi A',subject:'Fizik',amount:null,done:false,source:'coach'},{id:9111,student_id:'s1',task_date:addD(wkMon(0),6),title:'Hafta görevi B',subject:'Fizik',amount:null,done:true,source:'coach'},{id:9112,student_id:'s1',task_date:addD(wkMon(0),5),title:'Hafta görevi C',subject:'Fizik',amount:null,done:false,source:'coach',carry_state:'carried',carried_from:addD(wkMon(0),-3)},{id:9113,student_id:'s2',task_date:wkMon(0),title:'Başkasının görevi',subject:'Fizik',amount:null,done:false,source:'coach'})")
     E("openStu('s1','g')"); wait(page, 1500)
+    page.click("[data-wptab='h']"); wait(page, 500)
     check(page.query_selector("[data-clwk='s1']") is not None, "Haftalık takipte 'Kalan görevi iptal et' düğmesi var (koç)")
     page.click("[data-clwk='s1']"); wait(page, 1000)
     wk = E("__FX.weekly_tasks.filter(t=>t.carry_state==='closed'&&[9110,9111,9112,9113].includes(t.id)).map(t=>t.id).sort()")

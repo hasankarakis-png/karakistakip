@@ -14,6 +14,8 @@ function fileWeekName(fn){
 function weeksOf(id){
   const by={};(TK[id]||[]).forEach(t=>{const m=monOf(t.task_date);(by[m]=by[m]||{mon:m,L:[]}).L.push(t)});
   const cm=monOf(day());if(!by[cm])by[cm]={mon:cm,L:[]};
+  // Koçun hafta gezgininde gittiği boş hafta da seçili hafta olarak kalsın (selWeek bulamazsa bu haftaya dönerdi)
+  if(WSEL[id]&&!by[WSEL[id]])by[WSEL[id]]={mon:WSEL[id],L:[]};
   return Object.values(by).sort((a,b)=>b.mon.localeCompare(a.mon));
 }
 function weekName(w){const c={};w.L.forEach(t=>{if(t.week_title)c[t.week_title]=(c[t.week_title]||0)+1});const k=Object.keys(c).sort((a,b)=>c[b]-c[a])[0];return k||wkRange(w.mon)}

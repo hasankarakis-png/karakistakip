@@ -75,8 +75,9 @@ with sync_playwright() as p:
     # çift tıklama: görev iki kez eklenmesin
     E("openStu('s1','g')"); wait(page, 1200)
     n0 = E("__FX.weekly_tasks.length")
-    page.fill("#tkt", "Limit test 1-4")
-    E("document.getElementById('tkadd').click();document.getElementById('tkadd').click()"); wait(page, 600)
+    page.click("[data-wpadd]"); wait(page, 300)
+    page.fill("#wpat", "Limit test 1-4")
+    E("var b=document.querySelector('[data-wpaddgo]');b.click();b.click()"); wait(page, 600)
     check(E("__FX.weekly_tasks.length") == n0 + 1, f"Görev çift tıklamada bir kez eklendi ({E('__FX.weekly_tasks.length') - n0})")
     ctx.close(); b.close()
 srv.terminate()

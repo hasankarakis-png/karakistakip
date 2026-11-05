@@ -138,17 +138,21 @@ async function clClose(id){
 }
 /* Haftanın kalan görevlerini tek tıkla iptal et (koç): seçili haftada yapılmamış TÜM görevler (geçmiş + gelecek günler) kapanır.
    Yapılmış görevler kalır. Aynı 'closed' mekanizması: satır silinmez, geri alınabilir. */
-async function clWeek(id){
-  const W=selWeek(id),mon=W.mon,end=shift(mon,6);
-  const L=(TK[id]||[]).filter(t=>t.task_date>=mon&&t.task_date<=end&&!t.done);if(!L.length)return;
+async function clIds(id,want,label){
+  const set=new Set(want.map(String)),L=(TK[id]||[]).filter(t=>set.has(String(t.id))&&!t.done);
+  if(!L.length){alert("İptal edilecek açık görev yok (yapılanlar iptal edilmez).");return false}
   const nm=(STU.find(p=>p.id===id)||{}).name||"öğrenci";
-  if(!confirm(nm+" için "+weekName(W)+" haftasının yapılmamış "+L.length+" görevi iptal edilecek (yapılanlar kalır). Geri alabilirsin. Devam edilsin mi?"))return;
+  if(!confirm(nm+" için "+label+": yapılmamış "+L.length+" görev iptal edilecek (yapılanlar kalır). Geri alabilirsin. Devam edilsin mi?"))return false;
   const ids=L.map(t=>t.id),prev={};L.forEach(t=>prev[t.id]=t.carry_state||null);
   const r=await dbw(sb.from("weekly_tasks").update({carry_state:"closed"}).in("id",ids).eq("student_id",id).eq("done",false));
-  if(r&&r.error){alert("İptal edilemedi: "+r.error.message);return}
-  CLD[id]={ids,n:ids.length,wk:weekName(W),prev};RD[id]=null;
+  if(r&&r.error){alert("İptal edilemedi: "+r.error.message);return false}
+  CLD[id]={ids,n:ids.length,wk:label,prev};RD[id]=null;
   await loadTasks(id);try{await loadOD()}catch(e){}
-  setSync("✓ "+ids.length+" görev iptal edildi");render();
+  setSync("✓ "+ids.length+" görev iptal edildi");render();return true;
+}
+async function clWeek(id){
+  const W=selWeek(id),mon=W.mon,end=shift(mon,6);
+  return clIds(id,(TK[id]||[]).filter(t=>t.task_date>=mon&&t.task_date<=end&&!t.done).map(t=>t.id),weekName(W)+" haftası");
 }
 async function clUndo(id){
   const C=CLD[id];if(!C)return;

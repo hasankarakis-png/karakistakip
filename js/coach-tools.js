@@ -139,7 +139,7 @@ function detailView(){
   ${past||DTAB==="o"?`<div class="card"><h2>Derslere göre sorular</h2>${Object.keys(by).length?Object.entries(by).map(([k,v])=>`<div class="subj"><span>${esc(k)}${v.k.length?" ("+esc(v.k.join(", "))+")":""}</span><span>${v.n} soru · ${v.c} doğru${v.b?" · "+v.b+" boş":""}</span></div>`).join(""):`<p class="empty">Henüz soru girişi yok.</p>`}</div>
   ${x.mood?`<div class="card"><h2>Gün puanı</h2><p class="empty" style="margin:0">${x.mood} / 5</p></div>`:""}`:""}
   ${!past&&DTAB==="a"?`<div id="detail-target">${aiCard(x.id)+goalRoad(x.id)+netChartsCard(x.id)+trendCard(x)+coachCards(x,sn)+ktCoachCard(x.id)+wbCoachCard(x.id)+targetForm(x.id,false)}</div>`:""}
-  ${!past&&DTAB==="g"?`<div id="detail-tasks">${weekGrid(x)+taskCard(x)+planToolsCard(x)+planUploadCard(x)}</div>`:""}
+  ${!past&&DTAB==="g"?`<div id="detail-tasks">${typeof wpView==="function"?wpView(x):weekGrid(x)+taskCard(x)+planToolsCard(x)+planUploadCard(x)}</div>`:""}
   ${!past&&DTAB==="d"?`${profCard(x)+meetCard(x)+denemeCard(x)+reportCard(x)+parentCard(x)+kvkkCard(x)+contactCard(x)+pkgCard(x)+adminCard(x)}`:""}
   ${past||DTAB==="o"?`<div class="card"><h2>Günün akışı</h2>${!past&&x.rbk?`<p class="empty" style="color:var(--warn);margin:0 0 8px;font-size:14px">⚠️ Öğrenci bugün günü sıfırladı (saat ${hm(x.rbk.t)}). Önceki kayıt (${esc(x.rbk.txt)}) saklı; öğrenci ana sayfadaki “Geri getir” ile geri alabilir.</p>`:""}${x.L.length?`<ul class="tl">${x.L.slice().reverse().map(l=>`<li><time>${l.t}</time>${l.m}</li>`).join("")}</ul>`:`<p class="empty">${past?"Bu güne ait hareket kaydı yok.":"Bugün henüz bir hareket yok."}</p>`}</div>`:""}</div>`;
 }

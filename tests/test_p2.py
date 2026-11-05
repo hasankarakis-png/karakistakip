@@ -72,7 +72,7 @@ with sync_playwright() as p:
     page.screenshot(path=f"{SHOTS}/p2-diger.png", full_page=True)
     # plan araçları
     E("const m=wkMon(-1);__FX.weekly_tasks.push({id:9001,student_id:'s1',task_date:m,title:'Paragraf 30',subject:'Türkçe',amount:null,done:true,source:'coach'},{id:9002,student_id:'s1',task_date:addD(m,2),title:'Türev 40',subject:'Matematik',amount:'40 soru',done:false,source:'coach'})")
-    E("DTAB='g';render()"); wait(page, 500)
+    E("DTAB='g';render()"); wait(page, 500); page.click("[data-wptab='a']"); wait(page, 400)
     t0 = E("__FX.weekly_tasks.length"); page.click("[data-plcopy='s1']"); wait(page, 700)
     cp = E(f"__FX.weekly_tasks.slice({t0}).map(t=>t.task_date+'|'+t.title)")
     check(sorted(cp) == sorted([E("wkMon(0)") + "|Paragraf 30", E("addD(wkMon(0),2)") + "|Türev 40"]), f"Geçen hafta bu haftaya kopyalandı: {cp}")
