@@ -1036,3 +1036,18 @@ body:has(.qa){overflow:hidden}
 .h3-stage{position:relative;height:clamp(230px,64vw,330px);margin:6px 0;border-radius:14px;overflow:hidden;cursor:grab;touch-action:pan-y;user-select:none;-webkit-user-select:none}
 .h3-stage:active{cursor:grabbing}
 .h3-stage canvas{display:block;width:100%;height:100%}
+
+/* ===== Net grafiği 3B görünümü "Ders şeritleri" (js/net3d.js); düğme stili .h3-tg ile ortak ===== */
+.n3-hd{display:flex;justify-content:flex-end;margin-bottom:6px}
+.n3-stage{position:relative;height:clamp(260px,74vw,400px);margin:4px 0;border-radius:14px;overflow:hidden;cursor:grab;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.n3-stage:active{cursor:grabbing}
+.n3-stage canvas{display:block;width:100%;height:100%}
+.n3-sc{display:flex;align-items:center;gap:8px;margin:6px 0}
+.n3-sc button{border:1px solid var(--line);background:transparent;color:var(--ink);font:inherit;font-weight:700;min-width:44px;min-height:40px;border-radius:999px;cursor:pointer;padding:0 12px}
+.n3-sc button:focus-visible,.n3-sc input:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.n3-sc input{flex:1;min-width:0;accent-color:var(--acc);margin:0;min-height:28px}
+.n3-rd{font-size:14px;margin-bottom:4px}
+.n3-drs{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px;color:var(--mute)}
+.n3-dr{display:inline-flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums}
+.n3-dr i{width:10px;height:10px;border-radius:3px;display:inline-block;flex:none}
+.n3-dr b{color:var(--ink)}.n3-dr em{font-style:normal}.n3-dr em.up{color:var(--ok)}.n3-dr em.dn{color:var(--warn)}
