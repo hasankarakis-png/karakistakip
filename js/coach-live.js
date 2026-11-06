@@ -27,6 +27,8 @@
     return Math.max(0,Math.floor(ms/1000));
   }
 
+  window.lvSecs=secs; // live3d.js (3B görünüm) aynı saniye hesabını kullanır
+
   function card(x){
     const g=(typeof C!=="undefined"&&C.goals&&C.goals[x.id])||null,gm=g&&num(g.m)>0?num(g.m):0;
     const pc=gm?Math.min(100,Math.round(x.m/gm*100)):null,k=grp(x.st);

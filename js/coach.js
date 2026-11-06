@@ -39,7 +39,7 @@ function ui(t){
   if(id==="taask"){taAsk();return true}
   if(id==="chmk"){chCreate();return true}
   if(id==="chrf"){chLoad(true);return true}
-  if(D.chsel||D.chnot||D.chdel||D.chhide||D.chtog||D.chman||D.chmsave||D.chmdel){chAct(D);return true}
+  if(D.chsel||D.chnot||D.chdel||D.chhide||D.chtog||D.chnames||D.chman||D.chmsave||D.chmdel){chAct(D);return true}
   if(id==="chsend"){chatSend();return true}
   if(id==="qaopen"){QA=true;render();navOv();return true}
   if(id==="qabg"||D.qclose){QA=false;render();return true}

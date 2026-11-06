@@ -8,6 +8,8 @@
 const ROW=70,R3=5.4;
 const DN=["Paz","Pzt","Sal","Çar","Per","Cum","Cmt"];
 const LET="abcçdefgğhıijklmnoöprsştuüvyz";
+const FA='"Chakra Petch","Segoe UI",system-ui,sans-serif',FM='"IBM Plex Mono",ui-monospace,Consolas,monospace';
+if(!document.getElementById("pb-fonts")){const l=document.createElement("link");l.id="pb-fonts";l.rel="stylesheet";l.href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=DM+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap";document.head.appendChild(l)}
 const P={id:null,root:null,els:null,rows:{},feed:[],mask:{},t3:null,fetching:false,fetchAt:0,prev:null,nogl:false,l3:null,pend:false};
 const fN=n=>Math.round(n).toLocaleString("tr-TR");
 const clk=()=>{const d=new Date();return [d.getHours(),d.getMinutes(),d.getSeconds()].map(v=>String(v).padStart(2,"0")).join(":")};
@@ -28,8 +30,11 @@ function dIdx(c){const t=chDays(c.start_day,day());return t<0?-1:Math.min(t,chDa
 /* ---------- kurulum ---------- */
 function mount(root,c){
   P.root=root;
-  root.innerHTML=`<section class="pb-panel pb-hero"><div class="pb-stage"><div class="pb-hud tl"><b>Puan kulesi</b><span>Sütun yüksekliği = puan</span></div><div class="pb-hud leg"><span><i class="c-me"></i>Sen</span><span><i class="c-st"></i>Çalışıyor</span><span><i class="c-br"></i>Molada</span><span><i class="c-of"></i>Çevrimdışı</span></div><div class="pb-hud br">Sürükleyerek döndür</div><p class="pb-nogl">3B görünüm bu cihazda açılamadı. Grafik ve sıralama aşağıda çalışıyor.</p></div></section>
-<p class="pb-banner" data-ban></p>
+  root.innerHTML=`<div class="pb-top"><div class="pb-brand"><svg class="pb-logo" width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M20 37V12M20 29L10 21M20 29L30 21M20 23L13 15M20 23L27 15"/><circle cx="20" cy="9" r="2.2" fill="currentColor" stroke="none"/><circle cx="10" cy="21" r="2" fill="currentColor" stroke="none"/><circle cx="30" cy="21" r="2" fill="currentColor" stroke="none"/><circle cx="13" cy="15" r="2" fill="currentColor" stroke="none"/><circle cx="27" cy="15" r="2" fill="currentColor" stroke="none"/></svg><div><div class="pb-eyebrow">Karakış Eğitim &amp; Danışmanlık</div><h2 class="pb-h1" data-title></h2></div></div><div class="pb-formula">PUAN = <b>çözülen soru</b> + <b>çalışılan dakika</b></div></div>
+<ol class="pb-days" data-days aria-label="Yarışma günleri"></ol>
+<div class="pb-banner"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path data-slash d="M4 4l16 16"/></svg><p data-ban></p></div>
+<section class="pb-panel pb-hero"><div class="pb-stage"><div class="pb-hud tl"><b>Puan kulesi</b><span>Sütun yüksekliği = puan</span></div><div class="pb-hud leg"><span><i class="c-me"></i>Sen</span><span><i class="c-st"></i>Çalışıyor</span><span><i class="c-br"></i>Molada</span><span><i class="c-of"></i>Çevrimdışı</span></div><div class="pb-hud br">Sürükleyerek döndür</div><p class="pb-nogl">3B görünüm bu cihazda açılamadı. Grafik ve sıralama aşağıda çalışıyor.</p></div></section>
+<div class="pb-grid"><div class="pb-col">
 <article class="pb-panel pb-me" data-me hidden>
 <div><span class="pb-lab">Sıran</span><div class="pb-rr"><b class="pb-big" data-rank>#–</b><svg class="pb-ring" viewBox="0 0 64 64" aria-hidden="true"><circle class="trk" cx="32" cy="32" r="26"/><circle class="val" data-rv cx="32" cy="32" r="26" stroke-dasharray="163.4" stroke-dashoffset="163.4" transform="rotate(-90 32 32)"/><text x="32" y="36" text-anchor="middle" data-rt>0%</text></svg></div><span class="pb-sub" data-rn></span></div>
 <div><span class="pb-lab">Toplam puan</span><b class="pb-big" data-pts>0</b><div class="pb-split" aria-hidden="true"><i class="q" data-sq></i><i class="m" data-sm></i></div><div class="pb-leg"><span><u class="q"></u>Soru <b data-q>0</b></span><span><u class="m"></u>Dakika <b data-m>0</b></span></div></div>
@@ -37,11 +42,14 @@ function mount(root,c){
 </article>
 <section class="pb-panel"><div class="pb-chead"><h3>Puan akışı</h3><div class="pb-key"><span><i class="k1"></i>Sen</span><span><i class="k2"></i>İlk 3</span><span><i class="k3"></i>Diğerleri</span></div></div><canvas class="pb-chart" role="img" aria-label="Öğrencilerin puanlarının günlere göre değişimini gösteren çizgi grafiği"></canvas></section>
 <section><div class="pb-bhead"><h3>Sıralama</h3><span class="pb-live"><i></i>Canlı</span><span class="pb-clock" data-clk></span></div><ol class="pb-rows" data-rows></ol></section>
-<section class="pb-panel"><h3>Canlı akış</h3><ul class="pb-feed" data-feed></ul></section>`;
+</div><aside class="pb-col">
+<section class="pb-panel"><h3>Nasıl işler</h3><ul class="pb-rules"><li>Çözdüğün her soru 1 puan.</li><li>Çalıştığın her dakika 1 puan.</li><li>Süre, durumun “Çalışıyor” iken saniye saniye işler.</li><li>Çubuktaki altın kısım soruyu, mavi kısım süreyi gösterir.</li><li>Herkesin puanı ve süresi anlık görünür, isimleri koçun açtığı anda görürsün.</li></ul></section>
+<section class="pb-panel"><h3>Canlı akış</h3><ul class="pb-feed" data-feed></ul></section>
+</aside></div>`;
   const q=s=>root.querySelector(s);
-  P.els={stage:q(".pb-stage"),ban:q("[data-ban]"),me:q("[data-me]"),chart:q(".pb-chart"),rows:q("[data-rows]"),feed:q("[data-feed]"),clk:q("[data-clk]"),
+  P.els={stage:q(".pb-stage"),ban:q("[data-ban]"),slash:q("[data-slash]"),days:q("[data-days]"),title:q("[data-title]"),me:q("[data-me]"),chart:q(".pb-chart"),rows:q("[data-rows]"),feed:q("[data-feed]"),clk:q("[data-clk]"),
     rank:q("[data-rank]"),rv:q("[data-rv]"),rt:q("[data-rt]"),rn:q("[data-rn]"),pts:q("[data-pts]"),sq:q("[data-sq]"),sm:q("[data-sm]"),q:q("[data-q]"),m:q("[data-m]"),time:q("[data-time]"),gap:q("[data-gap]")};
-  P.rows={};P.feedSig="";
+  P.rows={};P.feedSig="";P.daySig="";
   attach3();
 }
 function rowEl(rid,i){
@@ -93,7 +101,7 @@ function chart(list,c){
   if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr)}
   const x=cv.getContext("2d");x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,w,h);
   const tn=dIdx(c),rev=list.some(a=>a.r.label&&!a.r.me),L=48,Rm=rev?96:62,T=10,Bm=22,pw=w-L-Rm,ph=h-T-Bm;
-  x.font='11px "Space Grotesk",system-ui,sans-serif';x.fillStyle="#8FA2C2";x.textAlign="center";x.textBaseline="middle";
+  x.font='11px '+FM;x.fillStyle="#8FA2C2";x.textAlign="center";x.textBaseline="middle";
   if(tn<0||pw<40){x.fillText("Yarışma henüz başlamadı",w/2,h/2);return}
   const S=list.map(a=>{const pts=[0];let cum=0;(a.r.days||[]).forEach(d=>{if(d[0]<tn){cum+=(+d[2]||0)+Math.floor((+d[1]||0)/60);pts.push(cum)}});pts.push(a.p);return {a,pts}});
   const nx=Math.max(1,tn+1);let lo=0,hi=1;S.forEach(s=>{s.pts.forEach(v=>{if(v>hi)hi=v})});hi*=1.06;
@@ -115,7 +123,7 @@ function chart(list,c){
     x.beginPath();x.arc(L+pw,yy,3.4,0,Math.PI*2);x.fillStyle=mine?"#E6BC52":"#7FD8FF";x.shadowColor=x.fillStyle;x.shadowBlur=10;x.fill();x.shadowBlur=0;
   });
   lab.sort((a,b)=>a.y-b.y);for(let j=1;j<lab.length;j++)if(lab[j].y-lab[j-1].y<13)lab[j].y=lab[j-1].y+13;
-  x.textAlign="left";x.textBaseline="middle";x.font='600 11px "Space Grotesk",system-ui,sans-serif';
+  x.textAlign="left";x.textBaseline="middle";x.font='500 11px '+FM;
   lab.forEach(l=>{x.fillStyle=l.c;x.fillText(l.t,L+pw+9,l.y)});
 }
 
@@ -173,11 +181,11 @@ function make3(){
   const pivot=new TH.Group();world.add(pivot);
   const sweep=new TH.Mesh(new TH.CircleGeometry(R3*1.78,64,0,.8),new TH.MeshBasicMaterial({color:0x7fd8ff,transparent:true,opacity:.09,side:TH.DoubleSide,depthWrite:false,blending:TH.AdditiveBlending}));
   sweep.rotation.x=-Math.PI/2;sweep.position.y=.02;pivot.add(sweep);
-  const FONT='"Space Grotesk","Segoe UI",sans-serif',cv=(w,h)=>{const c=document.createElement("canvas");c.width=w;c.height=h;return c};
+  const FONT=FA,cv=(w,h)=>{const c=document.createElement("canvas");c.width=w;c.height=h;return c};
   const rankC={},rankT={};
   const paintRank=i=>{const c=rankC[i],x=c.getContext("2d");x.clearRect(0,0,c.width,c.height);x.font="700 64px "+FONT;x.textAlign="center";x.textBaseline="middle";x.shadowColor="rgba(127,216,255,.9)";x.shadowBlur=14;x.fillStyle=i<3?"#E6BC52":"#EEE8D8";x.fillText(String(i+1),c.width/2,c.height/2+4);rankT[i].needsUpdate=true};
   const rankTex=i=>{if(!rankT[i]){rankC[i]=cv(128,96);rankT[i]=new TH.CanvasTexture(rankC[i]);paintRank(i)}return rankT[i]};
-  if(document.fonts&&document.fonts.load)document.fonts.load("700 64px \"Space Grotesk\"").then(()=>Object.keys(rankC).forEach(k=>paintRank(+k))).catch(()=>{});
+  if(document.fonts&&document.fonts.load)document.fonts.load("700 64px \"Chakra Petch\"").then(()=>Object.keys(rankC).forEach(k=>paintRank(+k))).catch(()=>{});
   const maskTex=t=>{const c=cv(512,96),x=c.getContext("2d");x.font="700 44px "+FONT;x.textAlign="center";x.textBaseline="middle";x.fillStyle="#000";x.shadowColor="rgba(220,235,255,.9)";x.shadowBlur=12;x.shadowOffsetX=1200;for(let k=0;k<2;k++)x.fillText(t,c.width/2-1200,c.height/2);return new TH.CanvasTexture(c)};
   const nameTex=(t,gold)=>{const c=cv(512,96),x=c.getContext("2d");x.font="700 44px "+FONT;x.textAlign="center";x.textBaseline="middle";x.shadowColor="rgba(127,216,255,.8)";x.shadowBlur=10;x.fillStyle=gold?"#E6BC52":"#EEE8D8";x.fillText(t,c.width/2,c.height/2);return new TH.CanvasTexture(c)};
   const gc=cv(128,128),gx=gc.getContext("2d"),gr=gx.createRadialGradient(64,64,0,64,64,64);
@@ -232,12 +240,28 @@ function make3(){
   return T;
 }
 
+/* ---------- gün şeridi ---------- */
+function paintDays(c,open){
+  const n=Math.min(31,chDays(c.start_day,c.end_day)+1),tn=dIdx(c),[sy,sm,sd]=c.start_day.split("-").map(Number);
+  const sig=c.start_day+n+tn+open;if(P.daySig===sig)return;P.daySig=sig;
+  P.els.days.style.gridTemplateColumns=n<=7?`repeat(${n},minmax(0,1fr))`:"repeat(auto-fit,minmax(44px,1fr))";
+  let h="";
+  for(let i=0;i<n;i++){
+    const d=new Date(sy,sm-1,sd+i),eye=i===n-1?`<svg class="eye" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>${open?"":'<path d="M4 4l16 16"/>'}</svg>`:'<span class="eye"></span>';
+    h+=`<li class="${i<tn?"done":i===tn?"now":""}"${i===tn?' aria-current="date"':""}><span>${DN[d.getDay()]}</span><span class="n">${d.getDate()}</span>${eye}</li>`;
+  }
+  P.els.days.innerHTML=h;
+}
+
 /* ---------- çizim ---------- */
 function paint(c,B){
   const E=P.els,list=build(B),n=list.length,max=n?Math.max(1,list[0].p):1,me=list.findIndex(a=>a.r.me);
-  const anyName=B.rows.some(r=>r.label&&!r.me);
-  E.ban.textContent=ROLE==="coach"?"Koç görünümü: isimler açık. Öğrenciler isimleri yarışmanın son günü ("+fd(c.end_day)+") görür."
-    :anyName?"İsimler açıldı.":"Rakiplerinin isimleri gizli. Puanlar ve çalışma durumları canlı akıyor, isimler son gün ("+fd(c.end_day)+") açılır.";
+  const anyName=B.rows.some(r=>r.rev&&!r.me),coach=ROLE==="coach",lead=list[0]&&list[0].r.label;
+  E.title.textContent=c.title;
+  E.ban.textContent=coach?"Koç görünümü: isimler sana hep açık. Öğrenciler isimleri şu an "+(c.names_open?"GÖRÜYOR.":"göremiyor (sıralamadaki 👁 düğmesiyle açarsın).")
+    :anyName?"İsimler açıldı."+(lead?" Şu an lider "+lead+" · "+fN(list[0].p)+" puan.":""):"Rakiplerinin isimleri gizli. Puanlar ve çalışma durumları canlı akıyor, isimleri koç açınca görünür.";
+  E.slash.style.display=(coach?c.names_open:anyName)?"none":"";
+  paintDays(c,coach?!!c.names_open:anyName);
   E.clk.textContent=chInfo(c);
   E.rows.style.height=(n*ROW)+"px";
   const seen={};
