@@ -1071,3 +1071,9 @@ body:has(.qa){overflow:hidden}
 .l3-rd svg{width:120px;height:38px;flex:none}
 .l3-open{min-height:40px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);font:inherit;font-weight:700;cursor:pointer}
 .l3-open:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+/* ===== Yarışma sıralaması 3B görünümü (js/ch3d.js); düğme stili .h3-tg, sahne/özet stili .l3-* ile ortak ===== */
+.c3-bar{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin:2px 0 8px}
+.c3-bar .l3-hint{margin-right:auto}
+.c3-stage{height:clamp(260px,62vw,400px)}
+.c3-rd{margin-bottom:6px}
