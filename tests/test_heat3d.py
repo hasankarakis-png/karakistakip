@@ -31,12 +31,13 @@ with sync_playwright() as p:
         E("render()");page.wait_for_timeout(600)
         check(E("!!document.querySelector('#h3stage canvas')"),"render() sonrası tuval yeni kutuda")
         # çubuğa dokunma HMSEL'i seçer
+        page.wait_for_timeout(1500)
         bx=page.query_selector("#h3stage").bounding_box()
         hit=None
-        for fx in (.5,.45,.55,.4,.6,.35,.65,.3,.7):
-            for fy in (.75,.7,.65,.6,.55,.8):
+        for fx in (.5,.45,.55,.4,.6,.35,.65,.3,.7,.25,.75,.2,.8):
+            for fy in (.75,.7,.65,.6,.55,.8,.5,.85,.45):
                 E("HMSEL=null")
-                page.mouse.click(bx["x"]+bx["width"]*fx,bx["y"]+bx["height"]*fy);page.wait_for_timeout(250)
+                page.mouse.click(bx["x"]+bx["width"]*fx,bx["y"]+bx["height"]*fy);page.wait_for_timeout(300)
                 if E("HMSEL"):hit=E("HMSEL");break
             if hit:break
         check(bool(hit),f"Çubuğa dokunmak günü seçti (HMSEL={hit})")
