@@ -76,7 +76,8 @@ async function chManSave(){
 async function chLoad(force){
   if(CH.busy||(CH.st!=="idle"&&!force))return;CH.busy=true;CH.st="load";
   try{
-    let r=await sb.from("challenges").select("id,title,metric,mode,start_day,end_day,notified_at,chat_open").order("id",{ascending:false}).limit(40);
+    let r=await sb.from("challenges").select("id,title,metric,mode,names_open,start_day,end_day,notified_at,chat_open").order("id",{ascending:false}).limit(40);
+    if(r&&r.error)r=await sb.from("challenges").select("id,title,metric,mode,start_day,end_day,notified_at,chat_open").order("id",{ascending:false}).limit(40);
     if(r&&r.error)r=await sb.from("challenges").select("id,title,metric,start_day,end_day,notified_at,chat_open").order("id",{ascending:false}).limit(40);
     CH.list=r&&Array.isArray(r.data)?r.data:[];
     if(!CH.list.find(x=>x.id===CH.sel)){const a=CH.list.find(chActive);CH.sel=(a||CH.list[0]||{}).id||null}
@@ -170,7 +171,7 @@ function yarisTab(){
 }
 function chCoachCard(page){
   chLoad();
-  const board=c=>`<div class="chdet"><h3 style="margin:4px 0 6px">${esc(c.title)} · sıralama</h3>${chPts(c)?pbRootHTML(c):chBoardHTML(c)}<div class="row"><button class="chip" data-chtog="${c.id}">${c.chat_open===false?"💬 Sohbeti aç":"🔒 Sohbeti kapat"}</button></div>${chManHTML(c)}${chatBox(c)}</div>`;
+  const board=c=>`<div class="chdet"><h3 style="margin:4px 0 6px">${esc(c.title)} · sıralama</h3>${chPts(c)?pbRootHTML(c):chBoardHTML(c)}<div class="row"><button class="chip" data-chtog="${c.id}">${c.chat_open===false?"💬 Sohbeti aç":"🔒 Sohbeti kapat"}</button>${chPts(c)?`<button class="chip" data-chnames="${c.id}" aria-pressed="${!!c.names_open}">${c.names_open?"👁 İsimler öğrencilere AÇIK · kapat":"🙈 İsimler öğrencilere GİZLİ · aç"}</button>`:""}</div>${chManHTML(c)}${chatBox(c)}</div>`;
   const rows=CH.list.map(c=>`<div class="chr${c.id===CH.sel?" me":""}"><button class="chsel" data-chsel="${c.id}" aria-expanded="${c.id===CH.sel}"><span class="chn"><b>${esc(c.title)}</b><small style="display:block;color:var(--mute)">${chInfo(c)}</small></span></button><span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${c.notified_at?`<span class="bd g">duyuruldu</span>`:`<button class="chip" data-chnot="${c.id}">📣 Duyur</button>`}<button class="chip" data-chdel="${c.id}">Sil</button></span></div>`+(c.id===CH.sel?board(c):"")).join("")
   const sel=CH.list.find(x=>x.id===CH.sel);
   const form=`<div class="row"><label>Başlık<input id="cht" type="text" maxlength="80" placeholder="Hafta şampiyonu" style="width:170px"></label><label>Ölçüt<select id="chmet"><option value="points">Puan (soru + dakika)</option><option value="minutes">Çalışma süresi</option><option value="questions">Çözülen soru</option></select></label><label>Başlangıç<input id="chs" type="date" value="${day()}" style="width:150px"></label><label>Bitiş<input id="che" type="date" value="${dayN(6)}" style="width:150px"></label><button class="btn" style="padding:11px 16px" id="chmk">Oluştur ve duyur</button></div>
@@ -213,6 +214,7 @@ async function chAct(D){
   if(D.chsel){CH.sel=+D.chsel;CH.board=null;CM.msg="";render();await chBoardLoad();render();return}
   if(D.chnot){const n=await callFn("challenge-notify",{id:+D.chnot});CH.msg=n.error?n.error:"Bildirim gönderildi: "+n.sent+" öğrenci.";await chLoad(true);return}
   if(D.chhide){await sb.rpc("challenge_msg_hide",{p_msg:+D.chhide});CHT.sig="";await chatLoad(CHT.id);return}
+  if(D.chnames){const c=CH.list.find(x=>x.id===+D.chnames);if(!c)return;const on=!c.names_open;const r=await dbw(sb.from("challenges").update({names_open:on}).eq("id",c.id));if(r&&r.error){CH.msg=/names_open/i.test(r.error.message||"")?"İsim açma düğmesi için veritabanı güncellemesi (supabase/schema-v51.sql) henüz uygulanmamış.":"Değiştirilemedi: "+r.error.message}else CH.msg=on?"İsimler öğrencilere açıldı.":"İsimler öğrencilere gizlendi.";CH.board=null;await chLoad(true);return}
   if(D.chtog){const c=CH.list.find(x=>x.id===+D.chtog);if(!c)return;await dbw(sb.from("challenges").update({chat_open:c.chat_open===false}).eq("id",c.id));CH.msg=c.chat_open===false?"Sohbet açıldı.":"Sohbet kapatıldı.";await chLoad(true);return}
   if(D.chdel){if(!confirm("Bu yarışma silinsin mi?"))return;await dbw(sb.from("challenges").delete().eq("id",+D.chdel));CH.msg="Yarışma silindi.";await chLoad(true)}
 }
