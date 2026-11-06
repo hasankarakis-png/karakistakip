@@ -4,7 +4,8 @@ let CH={st:"idle",list:[],sel:null,board:null,busy:false,msg:""};
 let CM={open:false,rows:[],msg:"",sid:"",d:""};
 const chDays=(a,b)=>{const p=s=>{const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d).getTime()};return Math.round((p(b)-p(a))/864e5)};
 const chActive=c=>c&&c.start_day<=day()&&c.end_day>=day();
-const chVal=(c,v)=>c.metric==="minutes"?hmin(Math.round(v)):Math.round(v)+" soru";
+const chPts=c=>!!c&&c.mode==="points";
+const chVal=(c,v)=>chPts(c)?Math.round(v)+" puan":c.metric==="minutes"?hmin(Math.round(v)):Math.round(v)+" soru";
 async function chBoardLoad(){
   const c=CH.list.find(x=>x.id===CH.sel);if(!c){CH.board=null;return}
   try{CH.board=(await chFetch(c))||{id:c.id,rows:[],at:Date.now()}}catch(e){CH.board={id:c.id,rows:[],at:Date.now()}}
@@ -13,6 +14,14 @@ async function chBoardLoad(){
 /* Sıralama verisi: challenge_board2 süreyi SANİYE cinsinden verir (ts/td) ve çalışanları işaretler (run). total/today dakika olarak da tutulur
    (genel bakış ve ana sayfa kartları dakikayla çalışır). Sunucuda yeni fonksiyon yoksa eski dakikalık fonksiyona döner. */
 async function chFetch(c){
+  /* Puan yarışması (mode='points'): challenge_board3. İsimler son güne kadar sunucuda gizli (label=null); total = soru + dakika */
+  if(chPts(c)){
+    const p=await sb.rpc("challenge_board3",{p_id:c.id});
+    if(!p||p.error||!Array.isArray(p.data))return null;
+    const rows=p.data.map(x=>{const sec=+x.sec||0,qn=+x.qn||0,tsec=+x.tsec||0,tqn=+x.tqn||0;
+      return {rid:String(x.rid),label:x.label||null,me:!!x.me,run:!!x.running,sec,qn,tsec,tqn,rev:!!x.rev,days:Array.isArray(x.days)?x.days:[],total:qn+Math.floor(sec/60),today:tqn+Math.floor(tsec/60)}});
+    return {id:c.id,rows,at:Date.now()};
+  }
   let r=await sb.rpc("challenge_board2",{p_id:c.id}),old=false;
   if(!r||r.error||!Array.isArray(r.data)){r=await sb.rpc("challenge_board",{p_id:c.id});old=true}
   if(!r||r.error||!Array.isArray(r.data))return null;
@@ -31,40 +40,44 @@ async function chManLoad(c){
 }
 function chManHTML(c){
   if(ROLE!=="coach")return "";
-  const isM=c.metric==="minutes",nm=id=>{const p=STU.find(x=>x.id===id);return p?esc(p.name):"?"};
+  const isP=chPts(c),isM=c.metric==="minutes"&&!isP,nm=id=>{const p=STU.find(x=>x.id===id);return p?esc(p.name):"?"};
   const tgl=`<div class="row"><button class="chip" data-chman="1">${CM.open?"✖ Kapat":"⏱ Elle süre ekle"}</button></div>`;
-  const list=CM.rows.length?CM.rows.map(r=>`<div class="chr"><span class="chn"><b>${nm(r.student_id)}</b><small style="display:block;color:var(--mute)">${fd(r.day)}${r.note?" · "+esc(r.note):""}</small></span><span style="display:flex;gap:8px;align-items:center"><span class="chv">${isM?hmin(r.minutes):r.questions+" soru"}</span><button class="chip" data-chmdel="${r.student_id}|${r.day}">Sil</button></span></div>`).join(""):`<p class="empty" style="font-size:13px;margin:6px 0 0">Bu yarışma için elle giriş yok.</p>`;
+  const list=CM.rows.length?CM.rows.map(r=>`<div class="chr"><span class="chn"><b>${nm(r.student_id)}</b><small style="display:block;color:var(--mute)">${fd(r.day)}${r.note?" · "+esc(r.note):""}</small></span><span style="display:flex;gap:8px;align-items:center"><span class="chv">${isP?hmin(r.minutes)+" · "+r.questions+" soru":isM?hmin(r.minutes):r.questions+" soru"}</span><button class="chip" data-chmdel="${r.student_id}|${r.day}">Sil</button></span></div>`).join(""):`<p class="empty" style="font-size:13px;margin:6px 0 0">Bu yarışma için elle giriş yok.</p>`;
   if(!CM.open)return tgl+(CM.rows.length?`<p class="sub2" style="margin:6px 2px 0;font-size:12px">${CM.rows.length} elle giriş var, sıralamaya dahil.</p>`:"");
   const d0=CM.d&&CM.d>=c.start_day&&CM.d<=c.end_day?CM.d:(day()<c.start_day?c.start_day:day()>c.end_day?c.end_day:day());
   const opts=STU.slice().sort((a,b)=>String(a.name).localeCompare(String(b.name),"tr")).map(p=>`<option value="${p.id}"${p.id===CM.sid?" selected":""}>${esc(p.name)}</option>`).join("");
-  const fld=isM?`<label>Saat<input id="cmh" type="number" inputmode="numeric" min="0" max="24" placeholder="0" style="width:80px"></label><label>Dakika<input id="cmm" type="number" inputmode="numeric" min="0" max="59" placeholder="0" style="width:80px"></label>`:`<label>Soru sayısı<input id="cmq" type="number" inputmode="numeric" min="0" max="3000" placeholder="0" style="width:110px"></label>`;
-  return tgl+`<div class="chdet" style="margin-top:8px"><h3 style="margin:4px 0 6px">⏱ Elle ${isM?"süre":"soru"} ekle</h3>
-  <p class="sub2" style="margin:0 0 8px;font-size:13px">İnternete bağlanamayan öğrencinin o günkü ${isM?"çalışma süresini":"soru sayısını"} gir. Aynı öğrenci ve gün için tekrar girersen önceki değerin yerine geçer. Değer, öğrencinin uygulamadan gelen kaydına eklenir; öğrenci bunu görmez ve değiştiremez.</p>
+  const fT=`<label>Saat<input id="cmh" type="number" inputmode="numeric" min="0" max="24" placeholder="0" style="width:80px"></label><label>Dakika<input id="cmm" type="number" inputmode="numeric" min="0" max="59" placeholder="0" style="width:80px"></label>`,fQ=`<label>Soru sayısı<input id="cmq" type="number" inputmode="numeric" min="0" max="3000" placeholder="0" style="width:110px"></label>`;
+  const fld=isP?fT+fQ:isM?fT:fQ;
+  return tgl+`<div class="chdet" style="margin-top:8px"><h3 style="margin:4px 0 6px">⏱ Elle ${isP?"süre ve soru":isM?"süre":"soru"} ekle</h3>
+  <p class="sub2" style="margin:0 0 8px;font-size:13px">İnternete bağlanamayan öğrencinin o günkü ${isP?"çalışma süresini ve soru sayısını":isM?"çalışma süresini":"soru sayısını"} gir. Aynı öğrenci ve gün için tekrar girersen önceki değerin yerine geçer. Değer, öğrencinin uygulamadan gelen kaydına eklenir; öğrenci bunu görmez ve değiştiremez.</p>
   <div class="row"><label>Öğrenci<select id="cmst"><option value="">Seç…</option>${opts}</select></label><label>Gün<input id="cmd" type="date" value="${d0}" min="${c.start_day}" max="${c.end_day}" style="width:150px"></label>${fld}<label>Not<input id="cmn" type="text" maxlength="200" placeholder="isteğe bağlı" style="width:150px"></label><button class="btn" style="padding:11px 16px" id="cmsave" data-chmsave="1">Kaydet</button></div>
   <p class="empty" style="font-size:13px;margin:6px 0 0">${CM.msg?esc(CM.msg):""}</p>
   <div style="margin-top:8px">${list}</div></div>`;
 }
 async function chManSave(){
   const c=CH.list.find(x=>x.id===CH.sel);if(!c)return;
-  const g=i=>document.getElementById(i),isM=c.metric==="minutes",sid=(g("cmst")||{}).value,d=(g("cmd")||{}).value;
+  const isP=chPts(c),g=i=>document.getElementById(i),isM=c.metric==="minutes"&&!isP,sid=(g("cmst")||{}).value,d=(g("cmd")||{}).value;
   const note=((g("cmn")||{}).value||"").trim().slice(0,200)||null;
-  const mins=isM?(parseInt((g("cmh")||{}).value,10)||0)*60+(parseInt((g("cmm")||{}).value,10)||0):0,qn=isM?0:(parseInt((g("cmq")||{}).value,10)||0);
+  const tm=(parseInt((g("cmh")||{}).value,10)||0)*60+(parseInt((g("cmm")||{}).value,10)||0),tq=parseInt((g("cmq")||{}).value,10)||0;
+  const mins=isP||isM?tm:0,qn=isP||!isM?tq:0;
   if(!sid){CM.msg="Önce öğrenciyi seç.";render();return}
   if(!d||d<c.start_day||d>c.end_day){CM.msg="Gün, yarışmanın tarih aralığında olmalı.";render();return}
-  if(isM?(mins<1||mins>1440):(qn<1||qn>3000)){CM.msg=isM?"Süre 1 dakika ile 24 saat arasında olmalı.":"Soru sayısı 1-3000 arasında olmalı.";render();return}
+  if(isP){if(mins<0||mins>1440||qn<0||qn>3000||mins+qn<1){CM.msg="Süre 0-24 saat, soru 0-3000 arasında olmalı; en az biri dolu olmalı.";render();return}}
+  else if(isM?(mins<1||mins>1440):(qn<1||qn>3000)){CM.msg=isM?"Süre 1 dakika ile 24 saat arasında olmalı.":"Soru sayısı 1-3000 arasında olmalı.";render();return}
   const old=CM.rows.find(r=>r.student_id===sid&&r.day===d)||{};
-  const row={student_id:sid,day:d,minutes:isM?mins:(old.minutes||0),questions:isM?(old.questions||0):qn,note,created_by:ME,updated_at:new Date().toISOString()};
+  const row={student_id:sid,day:d,minutes:isP||isM?mins:(old.minutes||0),questions:isP||!isM?qn:(old.questions||0),note,created_by:ME,updated_at:new Date().toISOString()};
   CM.sid=sid;CM.d=d;CM.msg="Kaydediliyor…";render();
   const r=await sb.from("challenge_manual").upsert(row,{onConflict:"student_id,day"});
   if(r&&r.error){CM.msg="Kaydedilemedi: "+r.error.message;render();return}
   const p=STU.find(x=>x.id===sid);
-  CM.msg="Kaydedildi: "+(p?p.name:"öğrenci")+" · "+fd(d)+" · "+(isM?hmin(mins):qn+" soru");
+  CM.msg="Kaydedildi: "+(p?p.name:"öğrenci")+" · "+fd(d)+" · "+(isP?hmin(mins)+" · "+qn+" soru":isM?hmin(mins):qn+" soru");
   await chBoardLoad();render();
 }
 async function chLoad(force){
   if(CH.busy||(CH.st!=="idle"&&!force))return;CH.busy=true;CH.st="load";
   try{
-    const r=await sb.from("challenges").select("id,title,metric,start_day,end_day,notified_at,chat_open").order("id",{ascending:false}).limit(40);
+    let r=await sb.from("challenges").select("id,title,metric,mode,start_day,end_day,notified_at,chat_open").order("id",{ascending:false}).limit(40);
+    if(r&&r.error)r=await sb.from("challenges").select("id,title,metric,start_day,end_day,notified_at,chat_open").order("id",{ascending:false}).limit(40);
     CH.list=r&&Array.isArray(r.data)?r.data:[];
     if(!CH.list.find(x=>x.id===CH.sel)){const a=CH.list.find(chActive);CH.sel=(a||CH.list[0]||{}).id||null}
     await chBoardLoad();
@@ -142,7 +155,7 @@ function chBoardRows(c){
 }
 function chInfo(c){
   const left=chDays(day(),c.end_day),st=day()<c.start_day?`${chDays(day(),c.start_day)} gün sonra başlıyor`:left>=0?(left===0?"son gün":left+" gün kaldı"):"bitti";
-  return `${c.metric==="minutes"?"En çok çalışma süresi":"En çok çözülen soru"} · ${fd(c.start_day)} – ${fd(c.end_day)} · ${st}`;
+  return `${chPts(c)?"En çok puan (soru + dakika)":c.metric==="minutes"?"En çok çalışma süresi":"En çok çözülen soru"} · ${fd(c.start_day)} – ${fd(c.end_day)} · ${st}`;
 }
 function chHomeCard(){
   chLoad();const c=CH.list.find(chActive);if(!c)return "";
@@ -153,14 +166,14 @@ function yarisTab(){
   chLoad();
   const chips=CH.list.map(c=>`<button class="chip" data-chsel="${c.id}" aria-pressed="${c.id===CH.sel}">${esc(c.title.length>18?c.title.slice(0,17)+"…":c.title)}</button>`).join("");
   const c=CH.list.find(x=>x.id===CH.sel);
-  return `${stHead("Yarışma")}${CH.st!=="ok"?`<p class="empty">Yükleniyor…</p>`:!c?`<div class="card"><p class="empty" style="margin:0">Şu an bir yarışma yok. Koçun yarışma başlatınca burada ve bildirimde göreceksin.</p></div>`:`${CH.list.length>1?`<div class="chips" style="margin-bottom:10px">${chips}</div>`:""}<div class="card"><h2>${esc(c.title)}</h2><p class="sub2" style="margin:2px 0 12px">${chInfo(c)}</p>${chBoardHTML(c)}<button class="chip" id="chrf" style="margin-top:12px">↻ Yenile</button></div><p class="sub2" style="margin:10px 4px">Sıralamada isimler kısaltılmış görünür. Yeşil nokta şu an çalışıyor demek.</p>${chatBox(c)}`}`;
+  return `${stHead("Yarışma")}${CH.st!=="ok"?`<p class="empty">Yükleniyor…</p>`:!c?`<div class="card"><p class="empty" style="margin:0">Şu an bir yarışma yok. Koçun yarışma başlatınca burada ve bildirimde göreceksin.</p></div>`:`${CH.list.length>1?`<div class="chips" style="margin-bottom:10px">${chips}</div>`:""}${chPts(c)?`<div class="card"><h2>${esc(c.title)}</h2><p class="sub2" style="margin:2px 0 12px">${chInfo(c)}</p><p class="sub2" style="margin:0 0 12px">Her çözdüğün soru 1 puan, çalıştığın her dakika 1 puan.</p>${pbRootHTML(c)}</div>${chatBox(c)}`:`<div class="card"><h2>${esc(c.title)}</h2><p class="sub2" style="margin:2px 0 12px">${chInfo(c)}</p>${chBoardHTML(c)}<button class="chip" id="chrf" style="margin-top:12px">↻ Yenile</button></div><p class="sub2" style="margin:10px 4px">Sıralamada isimler kısaltılmış görünür. Yeşil nokta şu an çalışıyor demek.</p>${chatBox(c)}`}`}`;
 }
 function chCoachCard(page){
   chLoad();
-  const board=c=>`<div class="chdet"><h3 style="margin:4px 0 6px">${esc(c.title)} · sıralama</h3>${chBoardHTML(c)}<div class="row"><button class="chip" data-chtog="${c.id}">${c.chat_open===false?"💬 Sohbeti aç":"🔒 Sohbeti kapat"}</button></div>${chManHTML(c)}${chatBox(c)}</div>`;
+  const board=c=>`<div class="chdet"><h3 style="margin:4px 0 6px">${esc(c.title)} · sıralama</h3>${chPts(c)?pbRootHTML(c):chBoardHTML(c)}<div class="row"><button class="chip" data-chtog="${c.id}">${c.chat_open===false?"💬 Sohbeti aç":"🔒 Sohbeti kapat"}</button></div>${chManHTML(c)}${chatBox(c)}</div>`;
   const rows=CH.list.map(c=>`<div class="chr${c.id===CH.sel?" me":""}"><button class="chsel" data-chsel="${c.id}" aria-expanded="${c.id===CH.sel}"><span class="chn"><b>${esc(c.title)}</b><small style="display:block;color:var(--mute)">${chInfo(c)}</small></span></button><span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${c.notified_at?`<span class="bd g">duyuruldu</span>`:`<button class="chip" data-chnot="${c.id}">📣 Duyur</button>`}<button class="chip" data-chdel="${c.id}">Sil</button></span></div>`+(c.id===CH.sel?board(c):"")).join("")
   const sel=CH.list.find(x=>x.id===CH.sel);
-  const form=`<div class="row"><label>Başlık<input id="cht" type="text" maxlength="80" placeholder="Hafta şampiyonu" style="width:170px"></label><label>Ölçüt<select id="chmet"><option value="minutes">Çalışma süresi</option><option value="questions">Çözülen soru</option></select></label><label>Başlangıç<input id="chs" type="date" value="${day()}" style="width:150px"></label><label>Bitiş<input id="che" type="date" value="${dayN(6)}" style="width:150px"></label><button class="btn" style="padding:11px 16px" id="chmk">Oluştur ve duyur</button></div>
+  const form=`<div class="row"><label>Başlık<input id="cht" type="text" maxlength="80" placeholder="Hafta şampiyonu" style="width:170px"></label><label>Ölçüt<select id="chmet"><option value="points">Puan (soru + dakika)</option><option value="minutes">Çalışma süresi</option><option value="questions">Çözülen soru</option></select></label><label>Başlangıç<input id="chs" type="date" value="${day()}" style="width:150px"></label><label>Bitiş<input id="che" type="date" value="${dayN(6)}" style="width:150px"></label><button class="btn" style="padding:11px 16px" id="chmk">Oluştur ve duyur</button></div>
   <p class="empty" style="font-size:13px;margin:6px 0 0">${CH.msg?esc(CH.msg):"Oluşturunca tüm öğrencilere bildirim gider. En fazla 60 gün."}</p>`;
   const list=CH.st!=="ok"?`<p class="empty" style="margin-top:10px">Yükleniyor…</p>`:rows?`<div style="margin-top:10px">${rows}</div>`:`<p class="empty" style="margin-top:10px">Henüz yarışma yok. Yukarıdan ilkini oluştur.</p>`;
   if(page)return `<div class="card"><h2>➕ Yeni yarışma</h2>${form}</div><div class="card"><h2>🏆 Yarışmalar</h2>${list}</div>`;
@@ -180,8 +193,10 @@ async function chCreate(){
   if(!a||!b||b<a||chDays(a,b)>60){CH.msg="Tarihleri kontrol et (bitiş başlangıçtan önce olamaz, en fazla 60 gün).";render();return}
   if(!confirm("“"+title+"” yarışması oluşturulsun ve tüm öğrencilere bildirim gitsin mi?"))return;
   CH.msg="Oluşturuluyor…";render();
-  const r=await sb.from("challenges").insert({title,metric:m,start_day:a,end_day:b,created_by:ME}).select("id");
-  if(r&&r.error||!(r&&r.data&&r.data[0])){CH.msg="Oluşturulamadı: "+((r&&r.error&&r.error.message)||"hata");render();return}
+  const pt=m==="points",rec={title,metric:pt?"minutes":m,start_day:a,end_day:b,created_by:ME};
+  if(pt)rec.mode="points";
+  const r=await sb.from("challenges").insert(rec).select("id");
+  if(r&&r.error||!(r&&r.data&&r.data[0])){const em=(r&&r.error&&r.error.message)||"hata";CH.msg=pt&&/mode/i.test(em)?"Puan yarışması için veritabanı güncellemesi (supabase/schema-v50.sql) henüz uygulanmamış.":"Oluşturulamadı: "+em;render();return}
   const id=r.data[0].id;CH.sel=id;
   const n=await callFn("challenge-notify",{id});
   CH.msg=n.error?"Yarışma oluşturuldu ama bildirim gitmedi: "+n.error+" (listeden “Duyur” ile tekrar dene)":"Yarışma oluşturuldu. "+n.sent+" öğrenciye bildirim gönderildi.";
