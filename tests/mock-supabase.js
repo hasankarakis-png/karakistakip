@@ -74,6 +74,7 @@
         gorevler:[{tarih:dn(-2),baslik:"Paragraf 30 soru",ders:"Türkçe",tamam:true},{tarih:dn(-1),baslik:"Türev 40 soru",ders:"Matematik",tamam:false}],
         denemeler:[{ad:"MEBİ 2",tur:"TYT",tarih:dn(-2),net:75},{ad:"MEBİ 1",tur:"TYT",tarih:dn(-13),net:72.5}],hedef:85,hedef_tur:"TYT"}),error:null};
       if(n==="push_coverage")return {data:(window.__PUSHCOV||[{student_id:"s1",n:1}]),error:null};
+      if(n==="challenge_board3")return {data:[{rid:"r1",label:null,sec:38400,qn:120,tsec:4800,tqn:30,running:true,me:false,rev:false,days:[[0,10000,40],[1,14400,40],[2,14000,40]]},{rid:"r2",label:"Ayşe Y.",sec:31200,qn:80,tsec:7200,tqn:20,running:false,me:true,rev:false,days:[[0,10000,30],[1,10000,30],[2,11200,20]]},{rid:"r3",label:null,sec:5400,qn:10,tsec:0,tqn:0,running:false,me:false,rev:false,days:[[0,5400,10]]}],error:null};
       if(n==="challenge_board2")return {data:[{label:"Ayşe Y.",total:38400,today:4800,running:true,me:false},{label:"Zeynep K.",total:31200,today:7200,running:false,me:false},{label:"Ali Ç.",total:5400,today:0,running:false,me:false}],error:null};
       if(n==="challenge_board")return {data:[{label:"Ayşe Y.",total:640,today:80,live:true},{label:"Zeynep K.",total:520,today:120},{label:"Ali Ç.",total:90,today:0}],error:null};
       return {data:[],error:null}},
