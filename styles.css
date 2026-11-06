@@ -1051,3 +1051,23 @@ body:has(.qa){overflow:hidden}
 .n3-dr{display:inline-flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums}
 .n3-dr i{width:10px;height:10px;border-radius:3px;display:inline-block;flex:none}
 .n3-dr b{color:var(--ink)}.n3-dr em{font-style:normal}.n3-dr em.up{color:var(--ok)}.n3-dr em.dn{color:var(--warn)}
+
+/* ===== Canlı pano 3B görünümü (js/live3d.js); düğme stili .h3-tg ile ortak ===== */
+.lv-head .h3-tg{margin-left:auto}
+.l3-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:4px 0 8px}
+.l3-hint{color:var(--mute);font-size:13px}
+.l3-stage{position:relative;height:clamp(300px,64vw,460px);border-radius:14px;overflow:hidden;cursor:grab;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.l3-stage:active{cursor:grabbing}
+.l3-stage canvas{display:block;width:100%;height:100%}
+.l3-stage:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.l3-rd{display:flex;flex-wrap:wrap;align-items:center;gap:10px 20px;margin-top:10px;min-height:56px}
+.l3-who{min-width:0;flex:1 1 180px;display:flex;flex-direction:column}
+.l3-who b{font-size:18px}
+.l3-st{display:inline-flex;align-items:center;gap:6px;color:var(--mute);font-size:13px}
+.l3-st i{width:9px;height:9px;border-radius:3px;display:inline-block}
+.l3-nums{display:flex;gap:18px;font-variant-numeric:tabular-nums}
+.l3-nums small{display:block;color:var(--mute);font-size:12px}
+.l3-nums b{font-size:20px}
+.l3-rd svg{width:120px;height:38px;flex:none}
+.l3-open{min-height:40px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);font:inherit;font-weight:700;cursor:pointer}
+.l3-open:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
