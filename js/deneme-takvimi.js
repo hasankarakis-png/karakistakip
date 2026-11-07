@@ -574,6 +574,9 @@
   const today=()=>{const n=new Date();return n.getFullYear()+"-"+pad(n.getMonth()+1)+"-"+pad(n.getDate())};
   const tr=s=>s.toLocaleLowerCase("tr");
   const isOn=()=>typeof ROLE!=="undefined"&&ROLE==="coach"&&typeof CPG!=="undefined"&&CPG==="e";
+  // Öğrenci: Analiz → Denemeler sayfası açıkken
+  const isStu=()=>typeof ROLE!=="undefined"&&ROLE==="student"&&typeof tab!=="undefined"&&tab==="d"&&typeof ANT!=="undefined"&&ANT==="n";
+  const needRender=()=>isOn()||isStu();
 
   // load: 0 yüklenmedi, 1 yükleniyor, 2 hazır (sunucu), 3 hazır (yalnız bu tarayıcı)
   const DT={view:"cal",m:null,t:{T:1,A:1,Y:1},club:false,q:"",pick:new Set(),load:0,msg:""};
@@ -587,8 +590,8 @@
     Promise.resolve(q).then(r=>{
       if(r&&!r.error&&Array.isArray(r.data)){DT.pick=new Set(r.data.map(x=>x.code));DT.load=2;DT.msg=""}
       else{DT.pick=new Set(localRead());DT.load=3;DT.msg="Seçimler sunucuya kaydedilemiyor, bu tarayıcıda tutuluyor."}
-      if(isOn())render();
-    },()=>{DT.pick=new Set(localRead());DT.load=3;DT.msg="Bağlantı yok, seçimler bu tarayıcıda tutuluyor.";if(isOn())render()});
+      if(needRender())render();
+    },()=>{DT.pick=new Set(localRead());DT.load=3;DT.msg="Bağlantı yok, seçimler bu tarayıcıda tutuluyor.";if(needRender())render()});
   }
   function toggle(code){
     if(!BYCODE[code])return;
@@ -646,6 +649,44 @@
       <p class="dt-note">Tarihler denemetakvimim.com (Hangi Kaynak) takviminden 7 Kasım 2026'da alındı. Site, tarihlerin yıl içinde değişebileceğini söylüyor.</p></section>`;
   }
 
+  // ---- Öğrenci kartı: koçun işaretlediği, tarihi gelmemiş denemeler ----
+  let STUALL=false;
+  function stuCard(){
+    load();
+    const td=today(),t0=pdt(td);
+    let body;
+    if(DT.load<2)body=`<p class="dt-empty"><span class="spin" aria-hidden="true"></span> Yükleniyor…</p>`;
+    else{
+      // Öğrenci sunucudan okuyamadıysa (DT.load===3) koçun yerel işaretlerini göstermek yanlış olur.
+      const up=DT.load===2?ALL.filter(e=>DT.pick.has(e.code)&&e.date>=td):[];
+      if(DT.load===3)body=`<p class="dt-empty">Takvim şu an yüklenemedi. Sayfayı yenileyip tekrar dene.</p>`;
+      else if(!up.length)body=`<p class="dt-empty">Yaklaşan deneme yok. Koçun denemeleri seçince burada tarihleriyle görünür.</p>`;
+      else{
+        const left=d=>{const n=Math.round((pdt(d)-t0)/864e5);return n<=0?"Bugün":n===1?"Yarın":n+" gün kaldı"};
+        const row=e=>`<div class="dt-ln"><time>${dayLbl(e.date)}</time><span class="dt-b dt-${e.t}">${TY[e.t]}</span><span class="dt-nm">${esc(e.name)}</span><span class="dt-tg${e.date===td||left(e.date)==="Yarın"?"":" dt-k"}">${left(e.date)}</span></div>`;
+        let all="";
+        if(STUALL){
+          const by={};up.forEach(e=>(by[mk(e.date)]=by[mk(e.date)]||[]).push(e));
+          all=Object.keys(by).sort().map(m=>`<section class="dt-mm"><h3>${MON[+m.slice(5)-1]} ${m.slice(0,4)} <small>(${by[m].length})</small></h3>${by[m].map(row).join("")}</section>`).join("");
+        }else all=up.slice(0,5).map(row).join("");
+        body=all+(up.length>5?`<div class="row" style="margin-top:10px"><button class="chip" data-dtstu="1" aria-expanded="${STUALL}">${STUALL?"Yalnız yaklaşan 5 denemeyi göster":"Tüm takvimi göster ("+up.length+")"}</button></div>`:"");
+      }
+    }
+    return `<div class="card dt-stu"><h2>Yaklaşan denemeler</h2><p class="empty" style="margin:0 0 6px">Koçunun seçtiği deneme sınavlarının tarihleri. Tarihler değişebilir.</p>${body}</div>`;
+  }
+  if(typeof analizTab==="function"){
+    const baseAnaliz=analizTab;
+    analizTab=function(){
+      const html=baseAnaliz.apply(this,arguments);
+      try{
+        if(!isStu())return html;
+        const i=html.indexOf('class="ktseg"');if(i<0)return html;
+        const j=html.indexOf("</div>",i);if(j<0)return html;
+        return html.slice(0,j+6)+stuCard()+html.slice(j+6);
+      }catch(e){console.error("Yaklaşan denemeler çizilemedi:",e);return html}
+    };
+  }
+
   const reg=()=>{try{if(typeof CPL==="object"&&CPL&&!CPL.e)CPL.e="Deneme takvimi"}catch(e){}};
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",reg);else reg();
 
@@ -666,6 +707,7 @@
   };
   ui=function(t){
     const D=t.dataset||{};
+    if(D.dtstu){STUALL=!STUALL;render();return true}
     if(D.dtp){toggle(D.dtp);render();return true}
     if(D.dtm){DT.m=D.dtm;render();return true}
     if(D.dtv){DT.view=D.dtv==="mine"?"mine":"cal";render();return true}

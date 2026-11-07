@@ -1,6 +1,6 @@
 /* Karakış Takip · Koç "Deneme takvimi" (js/deneme-takvimi.js). Yalnızca .dt* sınıfları; mevcut kurallara dokunmaz. */
-.dt{--dt-t:#53bdeb;--dt-a:#ffb84d;--dt-y:#a898ff;--dt-ok:var(--acc)}
-:root[data-theme="light"] .dt{--dt-t:#1d6fa5;--dt-a:#a85a00;--dt-y:#6a4fd1}
+.dt,.dt-stu{--dt-t:#53bdeb;--dt-a:#ffb84d;--dt-y:#a898ff;--dt-ok:var(--acc)}
+:root[data-theme="light"] .dt,:root[data-theme="light"] .dt-stu{--dt-t:#1d6fa5;--dt-a:#a85a00;--dt-y:#6a4fd1}
 .dt-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:14px}
 .dt-kpi{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;display:flex;flex-direction:column;gap:6px;min-width:0}
 .dt-kpi h3{margin:0;font:500 13px var(--fb);color:var(--mute)}
