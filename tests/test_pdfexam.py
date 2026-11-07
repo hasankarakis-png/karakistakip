@@ -46,6 +46,21 @@ with sync_playwright() as p:
         check(sum(x["dogru"]+x["yanlis"]+x["bos"] for x in k["konular"])==21,"K14 konu istatistiği tabloyla birebir (Matematik sütun taşması dahil)")
         check(all("tarih" not in u or True for u in r3["uyarilar"]) and len([u for u in r3["uyarilar"] if "uyuşmuyor" in u or "farklı" in u])==0,"K14 tutarsızlık uyarısı yok: %r"%r3["uyarilar"])
         check("AYŞE" not in str(r3).upper() and "KURUM" not in str(k["sinav_adi"]).upper(),"K14 öğrenci adı ve kurum adı alınmadı")
+    # K14Net "Eğim-Önya" karnesi (sahte veri): ders tablosunda BOŞ sütunu yok, kazanım tabloları 2 sütun, küçük harf = yanlış
+    r4=run("/tests/fixtures/sonuc-egim.pdf");g=r4["exam"]
+    check(g is not None,"Eğim-Önya düzeni okundu: %r"%r4.get("why"))
+    if g:
+        check((g["sinav_adi"],g["tur"],g["tarih"],g["puan"],g["siralama"])==("TEST-TYT 9 DENEME","TYT","2026-11-02",301.5,"Kurum 10/41"),"Eğim ad/tür/tarih (rapor tarihi değil)/puan/sıra: %r"%[g["sinav_adi"],g["tur"],g["tarih"],g["puan"],g["siralama"]])
+        gd={x["ders"]:x for x in g["dersler"]}
+        check(list(gd)==["Türkçe","Din Kültürü","Matematik","Fizik"],"Eğim dersler: %s"%list(gd))
+        check((gd["Din Kültürü"]["dogru"],gd["Din Kültürü"]["yanlis"],gd["Din Kültürü"]["bos"])==(1,1,1),"Eğim boş = soru − doğru − yanlış, kazanımdaki boş cevapla tutuyor")
+        check((gd["Matematik"]["dogru"],gd["Matematik"]["yanlis"],gd["Matematik"]["net"])==(4,1,3.75),"Eğim sağ sütundaki Matematik D/Y/net")
+        check(g["toplam_net_gorsel"]==8.75 and g["soru_satiri"]==16,"Eğim toplam net ve 16 soru satırı: %r %r"%(g["toplam_net_gorsel"],g["soru_satiri"]))
+        kn={(k["ders"],k["konu"]):k for k in g["konular"]}
+        check(("Matematik","Dik Prizmalar Ve Dik Piramitlerin Uzunluk, Alan Ve Haci") in kn and kn[("Matematik","Dik Prizmalar Ve Dik Piramitlerin Uzunluk, Alan Ve Haci")]["yanlis"]==1,"Eğim kırpılmış kazanım adı tam adla birleşti, yanlış sayıldı")
+        check(sum(x["dogru"]+x["yanlis"]+x["bos"] for x in g["konular"])==16,"Eğim konu istatistiği tabloyla birebir")
+        check(r4["uyarilar"]==[],"Eğim uyarı yok: %r"%r4["uyarilar"])
+        check("AYŞE" not in str(r4).upper() and "1234" not in str(g),"Eğim öğrenci adı ve numarası alınmadı")
     b.close()
 srv.terminate()
 print("JS hataları:",errs or "yok");sys.exit(1 if bad or errs else 0)

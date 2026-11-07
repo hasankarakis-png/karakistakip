@@ -250,6 +250,105 @@ function peK14(pages){
   return peAssemble({tur,dersler,toplamNet,sinav_adi,tarih,puan,siralama,rows,warn});
 }
 
+/* ===== K14Net "Eğim-Önya" öğrenci karnesi (üstte kurum logosu, "Kazanım Bazlı Detaylı Analiz" sayfası) =====
+   Sayfa 1: sınav adı (TARİH yazısının solu), özet kartları (Toplam Net / Puan + tür / Kurum Sırası), "Ders Soru Doğ Yan Net Şube Kurum Genel"
+   tablosu (BOŞ sütunu yok: boş = soru − doğru − yanlış; sonda 4 yüzde: şube, kurum, genel, öğrenci başarısı), altta "Net ve Başarı Yüzdeleri"
+   satırında sınav tarihi (sayfa başındaki TARİH rapor tarihidir, alınmaz).
+   Sayfa 2: "<Ders> (A)  Cvp Öğr Şube% Kurum% Genel%" blokları, 2 sütun. Satır: sıra, kazanım (kırpılmış), Cvp = doğru cevap, Öğr = öğrencinin cevabı:
+   BÜYÜK harf ve Cvp ile aynıysa doğru, küçük harfse yanlış, boşsa boş. Kırpılmış kazanım adları, sonraki sayfalardaki "KAZANIM DETAYI" tablosundan
+   tek eşleşme varsa tam adla değiştirilir. Öğrenci adı/şube/no alınmaz. */
+function peEgim(pages){
+  PEWHY="";
+  const P=pages.map(peWords),W0=P[0]||[],warn=[];
+  const L1=/^[A-Za-zÇĞİÖŞÜçğıöşü]$/,HAS=/[A-Za-zÇĞİÖŞÜçğıöşü]/,gl=s=>!/[A-Za-zÇĞİÖŞÜçğıöşü0-9]/.test(s);
+  const near=(a,b,t=3)=>Math.abs(a.y-b.y)<t,cx=w=>w.x+w.w/2;
+  const dh=W0.find(w=>w.s==="Ders"&&W0.some(v=>v.s==="Doğ"&&near(v,w))&&W0.some(v=>v.s==="Yan"&&near(v,w)));
+  if(!dh||!P.some(W=>W.some(w=>w.s==="Cvp")&&W.some(w=>w.s==="Öğr")))return null;
+  // --- ders tablosu
+  const dersler=[];
+  for(const g of peGroup(W0.filter(w=>w.x>=dh.x-12&&w.y<dh.y-3))){
+    const tk=g.w.map(w=>w.s).filter(s=>!gl(s));let i=0;const nm=[];
+    while(i<tk.length&&!PE_NUM.test(tk[i])){nm.push(tk[i]);i++}
+    if(!nm.length)continue;
+    const nums=[],pc=[];
+    for(;i<tk.length;i++){const t=tk[i];if(!PE_NUM.test(t))break;if(t.endsWith("%"))pc.push(peNum(t));else if(!pc.length)nums.push(peNum(t));else break}
+    if(nums.length<4||pc.length<3)continue;
+    const name=nm.join(" ");if(name.length<3||name.length>40)continue;
+    const [soru,d,y,net]=nums;
+    if(![soru,d,y].every(v=>Number.isInteger(v)&&v>=0&&v<=500)||d+y>soru||dersler.some(x=>peSame(x.ders,name)))continue;
+    const pct=v=>(typeof v==="number"&&isFinite(v)&&v>=0&&v<=100?peR2(v):null);
+    dersler.push({ders:peClean(name,60),soru_sayisi:soru,dogru:d,yanlis:y,bos:soru-d-y,net_gorsel:isFinite(net)?peR2(net):null,
+      ogrenci_yuzde:pc.length>=4?pct(pc[3]):null,kurum_yuzde:pct(pc[1])});
+  }
+  if(!dersler.length){PEWHY="Ders tablosunda ders satırı okunamadı (ders, soru, doğru, yanlış, net)";return null}
+  // --- başlık: sınav adı, tarih, puan/tür, kurum sırası, toplam net
+  const tw=W0.find(w=>w.s==="TARİH");let sinav_adi=null;
+  if(tw){const t=W0.filter(w=>near(w,tw)&&w.x<tw.x-3).sort((a,b)=>a.x-b.x).map(w=>w.s).join(" ");if(HAS.test(t))sinav_adi=peClean(t)}
+  let tarih=null;
+  for(const w of W0){
+    const m=/^(\d{2})\/(\d{2})\/(20\d{2})$/.exec(w.s);if(!m||(tw&&near(w,tw)))continue;
+    const iso=`${m[3]}-${m[2]}-${m[1]}`;if(!isNaN(Date.parse(iso))&&iso<=peYmd()){tarih=iso;break}
+  }
+  if(!tarih)warn.push("Belgede sınav tarihi okunamadı; kaydederken bugünün tarihi yazılır, gerekirse düzelt.");
+  const dec=s=>/^\d+(?:\.\d+)?$/.test(s);
+  const above=(lb,min,max)=>W0.filter(w=>dec(w.s)&&w.y>lb.y+min&&w.y<lb.y+max&&Math.abs(cx(w)-cx(lb))<55).sort((a,b)=>a.y-b.y)[0];
+  let puan=null,tur="BILINMIYOR";
+  const pl=W0.find(w=>w.s==="Puan");
+  if(pl){
+    const c=above(pl,8,50);if(c){const v=peNum(c.s);if(v>0&&v<=600)puan=peR2(v)}
+    const t=W0.find(w=>/^(TYT|AYT|LGS)$/.test(w.s)&&w.y>pl.y+5&&w.y<pl.y+50&&Math.abs(cx(w)-cx(pl))<55);if(t)tur=t.s;
+  }
+  if(tur==="BILINMIYOR"){const all=(sinav_adi||"")+" \n "+W0.slice(0,12).map(w=>w.s).join(" ");for(const t of ["TYT","AYT","LGS"])if(new RegExp("(^|[^A-ZÇĞİÖŞÜa-zçğıöşü])"+t+"([^A-ZÇĞİÖŞÜa-zçğıöşü]|$)").test(all)){tur=t;break}}
+  if(tur==="BILINMIYOR")warn.push("Sınav türü anlaşılamadı, lütfen sen seç.");
+  let siralama=null;
+  const kl=W0.find(w=>w.s==="Kurum"&&W0.some(v=>v.s==="Sırası"&&near(v,w,2)&&v.x>w.x&&v.x-w.x<50));
+  if(kl){
+    const t=peGroup(W0.filter(w=>w.x>=kl.x-5&&w.x<=kl.x+95&&w.y<kl.y-8&&w.y>kl.y-45)).map(g=>g.w.map(w=>w.s).join(" ")).join(" ");
+    const m=/(\d{1,5})\s*\/\s*(\d{1,5})/.exec(t);if(m)siralama=`Kurum ${m[1]}/${m[2]}`;
+  }
+  let toplamNet=null;
+  const tl=W0.find(w=>w.s==="Toplam"&&W0.some(v=>v.s==="Net"&&near(v,w,2)&&v.x>w.x&&v.x-w.x<45));
+  if(tl){const c=above(tl,8,50);if(c)toplamNet=peR2(peNum(c.s))}
+  // --- soru bazlı kazanımlar (2 sütun) ve sonraki sayfalardaki tam kazanım adları
+  const rows=[],seen=new Set(),full=[];
+  P.forEach(W=>{
+    const cv=W.filter(w=>w.s==="Cvp");
+    if(!cv.length){
+      for(const g of peGroup(W)){
+        const t=g.w.map(w=>w.s).join(" ");
+        if(!/^\d{1,3}\s/.test(t)||!/\d+ - \d+ - \d+/.test(t)||g.w[0].x>45)continue;
+        const nm=peClean(g.w.filter(w=>w.x>50&&w.x<325).map(w=>w.s).join(" "),100);if(nm)full.push(nm);
+      }
+      return;
+    }
+    const heads=cv.map(c=>{
+      const og=W.find(w=>w.s==="Öğr"&&near(w,c)&&w.x>c.x&&w.x-c.x<40);
+      const nw=W.filter(w=>near(w,c)&&w.x<c.x-10&&w.x>c.x-170).sort((a,b)=>a.x-b.x);
+      const tk=[];for(const w of nw){if(/^\([A-Z]\)$/.test(w.s))break;tk.push(w.s)}
+      return {y:c.y,cx:c.x+c.w/2,ox:og?og.x+og.w/2:c.x+c.w/2+21.5,start:nw.length?nw[0].x:c.x-162,name:tk.join(" ")};
+    }).filter(h=>h.name);
+    const starts=[...new Set(heads.map(h=>Math.round(h.start/20)))].sort((a,b)=>a-b);
+    heads.forEach(h=>{
+      const si=starts.indexOf(Math.round(h.start/20)),x1=h.start-6,x2=si+1<starts.length?starts[si+1]*20-26:Infinity;
+      const nxt=heads.filter(o=>Math.round(o.start/20)===Math.round(h.start/20)&&o.y<h.y-3).sort((a,b)=>b.y-a.y)[0];
+      const ws=W.filter(w=>w.x>=x1&&w.x<x2&&w.y<h.y-3&&(!nxt||w.y>nxt.y+3));
+      for(const g of peGroup(ws)){
+        const f=g.w[0];
+        if(!/^\d{1,3}$/.test(f.s)||Math.abs(f.x-h.start)>8)continue;
+        const cw=g.w.find(w=>L1.test(w.s)&&Math.abs(cx(w)-h.cx)<=7);
+        if(!cw)continue;
+        const ow=g.w.find(w=>w!==cw&&L1.test(w.s)&&Math.abs(cx(w)-h.ox)<=7);
+        const key=cw.s.toUpperCase(),durum=!ow?"BOS":ow.s===key?"DOGRU":"YANLIS";
+        const kz=peClean(g.w.filter(w=>w!==f&&w.x>f.x+8&&w.x<h.cx-8).map(w=>w.s).join(" "),100)||"Belirtilmemiş",no=+f.s,id=peKey(h.name)+"#"+no;
+        if(!seen.has(id)){seen.add(id);rows.push({ders:h.name,no,kazanim:kz,durum})}
+      }
+    });
+  });
+  const fn=[...new Set(full)],fk=fn.map(peNorm);
+  for(const r of rows){const t=peNorm(r.kazanim);if(t.length<8||fk.includes(t))continue;const c=fn.filter((s,i)=>fk[i].startsWith(t));if(c.length===1)r.kazanim=c[0]}
+  return peAssemble({tur,dersler,toplamNet,sinav_adi,tarih,puan,siralama,rows,warn});
+}
+
 function peAssemble(c){
   const {tur,dersler,toplamNet,sinav_adi,tarih,puan,siralama,rows,warn}=c,k0=tur==="LGS"?3:4;
   for(const d of dersler){
@@ -285,6 +384,7 @@ async function pdfExamLocal(file){
   let r=null,why="";
   try{r=peK14(pages)}catch(e){r=null;PEWHY="okuma hatası"}
   why=PEWHY;
+  if(!r){PEWHY="";try{r=peEgim(pages)}catch(e){r=null;PEWHY="okuma hatası"}if(PEWHY)why=PEWHY}
   if(!r){PEWHY="";r=pdfExamParse(lines);if(!r)why=why||PEWHY||"ders tablosu bulunamadı"}
   return r?{exam:r.exam,uyarilar:r.uyarilar,hasText:true}:{exam:null,uyarilar:[],hasText:true,why,lines:lines.length};
 }
